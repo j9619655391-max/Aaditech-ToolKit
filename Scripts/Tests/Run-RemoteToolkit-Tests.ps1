@@ -7,11 +7,17 @@ Simple runner for RemoteToolkit tests. Usage:
 If Pester is not installed, this script will suggest installation instructions.
 #>
 
-#if running inside Windows PowerShell/Core, ensure Pester is available
-if (-not (Get-Command Invoke-Pester -ErrorAction SilentlyContinue)) {
+#ensure Pester is available (works with Pester 5.x and 6.x)
+if (-not (Get-Module -ListAvailable Pester -ErrorAction SilentlyContinue)) {
     Write-Host 'Pester not found. Install with: Install-Module -Name Pester -Scope CurrentUser' -ForegroundColor Yellow
     exit 2
 }
+Import-Module Pester
+$testFile = Join-Path $PSScriptRoot 'RemoteToolkit.tests.ps1'
 
-#$PSScriptRoot is Tests folder; run Invoke-Pester against this file
-Invoke-Pester -Script (Join-Path $PSScriptRoot 'RemoteToolkit.tests.ps1') -EnableExit
+if ((Get-Module Pester).Version.Major -ge 6) {
+    Invoke-Pester -Path $testFile            # Pester 6+: no -EnableExit (exit by result)
+}
+else {
+    Invoke-Pester -Script $testFile -EnableExit
+}

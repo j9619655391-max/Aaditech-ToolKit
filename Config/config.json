@@ -129,6 +129,17 @@
     "sanitizeLogs": true,
     "encryptSensitiveData": true
   },
+  "sanitization": {
+    "maskEmails": true,
+    "maskIPs": true,
+    "maskAccounts": true,
+    "maskHostnames": true,
+    "notes": "Controls PII masking applied to exported content (event logs, reports). Disable a mask only if you trust the output destination."
+  },
+  "data": {
+    "databasePath": "Data/ToolkitData.sqlite3",
+    "notes": "SQLite data layer location (Phase 2). Relative paths resolve against the toolkit root."
+  },
   "ui": {
     "coloredOutput": true,
     "verboseLogging": false,

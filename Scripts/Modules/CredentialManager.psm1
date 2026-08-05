@@ -84,7 +84,7 @@ function Get-StoreKey {
     return [System.IO.File]::ReadAllBytes($script:KeyFile)
 }
 
-function Store-ToolkitCredential {
+function Save-ToolkitCredential {
     <#
     .SYNOPSIS
         Stores a PSCredential object securely without exposing its password.
@@ -255,4 +255,9 @@ function Test-CredentialValid {
     }
 }
 
-Export-ModuleMember -Function Store-ToolkitCredential, Get-ToolkitCredential, Remove-ToolkitCredential, Test-CredentialValid
+Export-ModuleMember -Function Save-ToolkitCredential, Get-ToolkitCredential, Remove-ToolkitCredential, Test-CredentialValid
+
+# Backward-compatible alias for the original name (Store- is not an approved verb,
+# so the canonical name is Save- with Store- kept as an alias).
+Set-Alias -Name Store-ToolkitCredential -Value Save-ToolkitCredential
+Export-ModuleMember -Alias Store-ToolkitCredential

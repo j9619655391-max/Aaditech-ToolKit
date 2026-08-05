@@ -5,3 +5,4 @@ Logs/*
 Scalling Plan/.gitkeep
 *.tmp
 *.log
+Data/*.sqlite3*
