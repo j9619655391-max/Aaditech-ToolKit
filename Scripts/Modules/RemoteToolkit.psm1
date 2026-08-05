@@ -10,7 +10,7 @@
 
 .NOTES
     Author: IT Toolkit Team
-    Version: 1.0
+    Version: 1.1
     Phase: 2
 #>
 
@@ -177,12 +177,21 @@ function Invoke-RemoteNetworkDiagnostic {
 
     $scriptBlock = {
         param($remoteRoot)
-        $networkScript = Join-Path $remoteRoot 'Scripts\Network-Diagnostic.ps1'
-        if (Test-Path $networkScript) {
-            & powershell -ExecutionPolicy Bypass -File $networkScript
-        } else {
-            Write-Error "Network-Diagnostic script not found at $networkScript"
+        if (-not $remoteRoot -or $remoteRoot.Trim() -eq '') {
+            throw 'ToolkitRoot must not be empty.'
         }
+        $resolvedRoot = [System.IO.Path]::GetFullPath($remoteRoot)
+        $networkScript = Join-Path $resolvedRoot 'Scripts/Network-Diagnostic.ps1'
+        $fullPath = [System.IO.Path]::GetFullPath($networkScript)
+        $scriptsDir = [System.IO.Path]::GetFullPath((Join-Path $resolvedRoot 'Scripts'))
+        $isInside = $fullPath -eq $scriptsDir -or $fullPath.StartsWith($scriptsDir + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+        if (-not $isInside) {
+            throw "Refusing to execute script outside toolkit Scripts directory: $fullPath"
+        }
+        if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+            throw "Network-Diagnostic script not found at $fullPath"
+        }
+        & $fullPath
     }
 
     return Invoke-RemoteCommand -ComputerName $ComputerName -ScriptBlock $scriptBlock -Credential $Credential -UseSSL:$UseSSL -ArgumentList $ToolkitRoot
@@ -210,12 +219,21 @@ function Invoke-QuickCheckRemote {
 
     $scriptBlock = {
         param($remoteRoot)
-        $quickCheckPath = Join-Path $remoteRoot 'Scripts\QuickCheck.ps1'
-        if (Test-Path $quickCheckPath) {
-            & powershell -ExecutionPolicy Bypass -File $quickCheckPath
-        } else {
-            Write-Error "QuickCheck script not found at $quickCheckPath"
+        if (-not $remoteRoot -or $remoteRoot.Trim() -eq '') {
+            throw 'ToolkitRoot must not be empty.'
         }
+        $resolvedRoot = [System.IO.Path]::GetFullPath($remoteRoot)
+        $quickCheckPath = Join-Path $resolvedRoot 'Scripts/QuickCheck.ps1'
+        $fullPath = [System.IO.Path]::GetFullPath($quickCheckPath)
+        $scriptsDir = [System.IO.Path]::GetFullPath((Join-Path $resolvedRoot 'Scripts'))
+        $isInside = $fullPath -eq $scriptsDir -or $fullPath.StartsWith($scriptsDir + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+        if (-not $isInside) {
+            throw "Refusing to execute script outside toolkit Scripts directory: $fullPath"
+        }
+        if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+            throw "QuickCheck script not found at $fullPath"
+        }
+        & $fullPath
     }
 
     return Invoke-RemoteCommand -ComputerName $ComputerName -ScriptBlock $scriptBlock -Credential $Credential -UseSSL:$UseSSL -ArgumentList $ToolkitRoot
