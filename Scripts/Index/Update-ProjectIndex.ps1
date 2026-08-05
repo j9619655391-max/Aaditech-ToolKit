@@ -360,5 +360,9 @@ if ($Check) {
         Write-Host "INDEX CHECK FAILED. Run 'pwsh -NoProfile -File Scripts/Index/Update-ProjectIndex.ps1' and commit the regenerated index files."
         exit 1
     }
+    # Fresh: restore the regenerated index files so the working tree stays clean.
+    foreach ($p in @('project-index.json', 'project-state.json', 'project-progress.json')) {
+        & git -C $repoRoot checkout -- $p 2>$null
+    }
     Write-Host "Index is up to date."
 }
