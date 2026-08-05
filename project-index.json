@@ -1,14 +1,11 @@
 {
-  "index_version": "1.0",
+  "index_version": "2.0",
   "path": "project-index.json",
-  "generated": "2026-08-05T23:15:00+05:30",
-  "last_verified_commit": "983d8d7b844becbaca7d0d8b4dcf0938fbe5a8bf",
-  "last_verified_date": "2026-08-05T23:07:13+05:30",
-  "previous_index_reference": {
-    "audit/index.json": "generated 2026-08-05T22:34:32, 59 files, pre-remediation snapshot",
-    "audit/issues.json": "17 issues (4 CRITICAL, 5 HIGH, 7 MEDIUM, 1 LOW), all resolved",
-    "audit/reports/final.md": "recalculated release score 100/100"
-  },
+  "generated": "2026-08-06T03:16:19+05:30",
+  "last_verified_commit": "219f071dae0e8774c829732abff5963f0431a54a",
+  "last_verified_date": "2026-08-06T00:21:44+05:30",
+  "auto_indexed": true,
+  "indexer": "Scripts/Index/Update-ProjectIndex.ps1",
   "repository": {
     "name": "IT-Toolkit",
     "version": "2.0",
@@ -16,31 +13,538 @@
     "project_type": "Windows desktop-support toolkit (PowerShell scripts + batch launchers + markdown docs)",
     "git_repo": true,
     "branch": "main",
-    "commit_count": 17,
-    "tracked_files": 75
+    "commit_count": 19,
+    "tracked_files": 81,
+    "working_tree_clean": false
   },
   "current_state": {
-    "total_files": 57,
-    "total_directories": 17,
-    "total_loc": 13763,
-    "directories": [
-      ".github", "Config", "Documentation", "Drivers", "Logs", "Remote-Tools",
-      "Scaling Plan", "Scripts", "Software", "Templates", "audit"
-    ],
+    "total_files": 60,
     "extension_counts": {
       ".bat": 3,
-      ".md": 23,
-      ".ps1": 14,
+      "(none)": 1,
       ".psm1": 7,
-      ".json": 1,
+      ".md": 23,
+      ".xlsx": 1,
+      ".html": 1,
+      ".gitignore": 1,
+      ".ps1": 16,
       ".yml": 1,
       ".txt": 5,
-      ".html": 1,
-      ".xlsx": 1
+      ".json": 1
     }
   },
   "file_inventory": {
     "scan_basis": "audit/index.json (pre-remediation, 59 files) + delta detection at 2026-08-05T23:15:00",
+    "current_snapshot": {
+      "Remote-Tools/Generate-RDP-Shortcuts.ps1": "C7FACEF5AAB50C19",
+      "Scripts/Remote/README.md": "617FD53DD38EA499",
+      "Templates/AI-Assistant-Prompts.txt": "24917D3B26468BBF",
+      "Templates/CMD-Commands-Reference.txt": "B95C18F99396DCBD",
+      "Scripts/Modules/ExportEngine.psm1": "F9DE33C74893F279",
+      "COMPLETION-REPORT.md": "780E0FC1C45EF736",
+      "Scripts/README.md": "798CD3C7EBCB6F2B",
+      ".gitignore": "2D14279761DF88FE",
+      "Scripts/Printer-Fix.ps1": "A153029A777F5F41",
+      "Scaling Plan/ARCHITECTURE.md": "2AA4CFDBF7BBDA02",
+      ".githooks/pre-commit": "7C10E966D139FDAB",
+      "Scaling Plan/START-HERE.md": "1C20761210783D23",
+      "Scripts/Network-Diagnostic.ps1": "8B9F39B847F8042B",
+      "Scripts/Run-QuickCheck.bat": "B7A5EAF5466D88AC",
+      "Scaling Plan/README-IMPLEMENTATION.md": "3D09B658CF73DA5A",
+      "Scripts/Pin-QuickAccess-Folders.ps1": "A9CD9431CC4FDED7",
+      "Scripts/Templates/Report-Template.html": "AD42679B20E7E25F",
+      "Toolkit-Menu.bat": "3AFBA39E9AD7CFC5",
+      "Scripts/Modules/CredentialManager.psm1": "38203AEEE1B77CBA",
+      "Templates/Ticket-Reply-Templates.txt": "22B5CF98150035E4",
+      "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1": "600F8663B519C2A4",
+      "Scaling Plan/QUICK-REFERENCE.md": "F4D84638A578C75E",
+      "Scaling Plan/IMPLEMENTATION-PLAN.md": "FE14CFCE5A9F0EDE",
+      "Software/Portable-Software-Links.md": "9132209449371D1C",
+      "IT-TOOLKIT-GAP-ANALYSIS.md": "FE245A969FADF51E",
+      "Documentation/Cheat-Sheet.md": "5AEF066924286207",
+      "Scaling Plan/DOCUMENTATION-INDEX.md": "64A600DB89C864EC",
+      "Scripts/Tests/RemoteToolkit.tests.ps1": "A5F425446B3CF977",
+      "Scripts/Tests/Run-RemoteToolkit-Tests.ps1": "8B93EAE99C23EF21",
+      "Scripts/Modules/RemoteToolkit.psm1": "C3F1BCC274A20EB8",
+      "Scripts/Modules/AlertEngine.psm1": "8A4356B2CAE9433F",
+      "Scripts/Tests/Phase1-Regression.Tests.ps1": "A65CA83589FAAAEC",
+      "Remote-Tools/README.md": "93C454DD5F63B141",
+      "Enterprise_Audit_Prompt.md": "1A76EA837F17543A",
+      "QUICK-SUMMARY.md": "9C9EC2A58797C4A3",
+      "Scripts/Index/Install-GitHook.ps1": "4297737FFE05AD6C",
+      "CHANGELOG.md": "EC5C3812A4C7030C",
+      "Scripts/User-Inventory.ps1": "304B5225DED0D8F2",
+      "Scripts/Firewall-Test.ps1": "BCD2E24F539A8DBD",
+      "Documentation/Troubleshooting-Flowcharts.md": "FC7D660B6003DE36",
+      "Logs/README.txt": "D4700D874CD57092",
+      "Scripts/Remote/Invoke-RemoteQuickCheck.ps1": "9076A751DEFC1627",
+      "Scripts/Tests/README.md": "92C6A4FFCC10F389",
+      "Drivers/README.txt": "FFE4F43CAEBDCFF3",
+      "Scripts/Modules/LogManager.psm1": "2D51E3B8CFD9D742",
+      "Documentation/README.md": "6C1FBADF7432B035",
+      "Scripts/Modules/ToolkitConfig.psm1": "0C2734BE83029928",
+      "Scripts/QuickCheck.ps1": "081186741B8CBDF5",
+      "Documentation/Setup-Guide.md": "15AD4F2B22B74B9C",
+      "Scaling Plan/DELIVERY-SUMMARY.md": "E9E9C7352013146E",
+      "Scaling Plan/PROGRESS-TRACKING.md": "86023E79F453BB40",
+      "Scripts/Index/Update-ProjectIndex.ps1": "E149B3422D5771AC",
+      "Scripts/Modules/ReportGenerator.psm1": "9F944735E7A1968F",
+      "ANALYSIS-RECOMMENDATIONS.md": "E0E7C629B68F39B6",
+      ".github/workflows/ci.yml": "DD9A7A3007626A36",
+      "Config/config.json": "090A46D548670797",
+      "Setup-Wizard.bat": "EAF6EF8B41AD1A84",
+      "Scripts/Export-EventLogs.ps1": "8E0DCD390558EFE1",
+      "Templates/Knowledge-Base.xlsx": "B9EA0A5696BA4C10",
+      "Scripts/Remote/BatchScan.ps1": "90393C433ED0F7EC"
+    },
+    "files": [
+      {
+        "path": ".gitignore",
+        "size_bytes": 80,
+        "lines": 7,
+        "last_modified": "2026-08-05T22:45:28",
+        "sha256_short": "2D14279761DF88FE"
+      },
+      {
+        "path": "ANALYSIS-RECOMMENDATIONS.md",
+        "size_bytes": 48188,
+        "lines": 1361,
+        "last_modified": "2026-07-10T00:51:15",
+        "sha256_short": "E0E7C629B68F39B6"
+      },
+      {
+        "path": "CHANGELOG.md",
+        "size_bytes": 5106,
+        "lines": 99,
+        "last_modified": "2026-08-06T00:22:57",
+        "sha256_short": "EC5C3812A4C7030C"
+      },
+      {
+        "path": "COMPLETION-REPORT.md",
+        "size_bytes": 16715,
+        "lines": 540,
+        "last_modified": "2026-07-10T00:51:15",
+        "sha256_short": "780E0FC1C45EF736"
+      },
+      {
+        "path": "Enterprise_Audit_Prompt.md",
+        "size_bytes": 9403,
+        "lines": 830,
+        "last_modified": "2026-08-02T03:36:42",
+        "sha256_short": "1A76EA837F17543A"
+      },
+      {
+        "path": "IT-TOOLKIT-GAP-ANALYSIS.md",
+        "size_bytes": 11021,
+        "lines": 303,
+        "last_modified": "2026-07-10T04:23:00",
+        "sha256_short": "FE245A969FADF51E"
+      },
+      {
+        "path": "QUICK-SUMMARY.md",
+        "size_bytes": 12652,
+        "lines": 277,
+        "last_modified": "2026-07-10T00:51:15",
+        "sha256_short": "9C9EC2A58797C4A3"
+      },
+      {
+        "path": "Setup-Wizard.bat",
+        "size_bytes": 10046,
+        "lines": 349,
+        "last_modified": "2026-08-05T22:58:39",
+        "sha256_short": "EAF6EF8B41AD1A84"
+      },
+      {
+        "path": "Toolkit-Menu.bat",
+        "size_bytes": 4053,
+        "lines": 132,
+        "last_modified": "2026-08-05T22:45:56",
+        "sha256_short": "3AFBA39E9AD7CFC5"
+      },
+      {
+        "path": "Documentation/Cheat-Sheet.md",
+        "size_bytes": 3042,
+        "lines": 62,
+        "last_modified": "2026-07-06T16:17:53",
+        "sha256_short": "5AEF066924286207"
+      },
+      {
+        "path": "Documentation/README.md",
+        "size_bytes": 10828,
+        "lines": 377,
+        "last_modified": "2026-07-10T00:51:15",
+        "sha256_short": "6C1FBADF7432B035"
+      },
+      {
+        "path": "Documentation/Setup-Guide.md",
+        "size_bytes": 7019,
+        "lines": 121,
+        "last_modified": "2026-07-06T16:37:54",
+        "sha256_short": "15AD4F2B22B74B9C"
+      },
+      {
+        "path": "Documentation/Troubleshooting-Flowcharts.md",
+        "size_bytes": 2472,
+        "lines": 136,
+        "last_modified": "2026-07-06T16:18:07",
+        "sha256_short": "FC7D660B6003DE36"
+      },
+      {
+        "path": ".githooks/pre-commit",
+        "size_bytes": 813,
+        "lines": 24,
+        "last_modified": "2026-08-06T00:17:32",
+        "sha256_short": "7C10E966D139FDAB"
+      },
+      {
+        "path": "Drivers/README.txt",
+        "size_bytes": 136,
+        "lines": 1,
+        "last_modified": "2026-07-06T16:18:36",
+        "sha256_short": "FFE4F43CAEBDCFF3"
+      },
+      {
+        "path": "Config/config.json",
+        "size_bytes": 4121,
+        "lines": 159,
+        "last_modified": "2026-08-05T22:56:26",
+        "sha256_short": "090A46D548670797"
+      },
+      {
+        "path": "Remote-Tools/Generate-RDP-Shortcuts.ps1",
+        "size_bytes": 1659,
+        "lines": 50,
+        "last_modified": "2026-07-06T18:40:12",
+        "sha256_short": "C7FACEF5AAB50C19"
+      },
+      {
+        "path": "Remote-Tools/README.md",
+        "size_bytes": 1332,
+        "lines": 23,
+        "last_modified": "2026-07-06T16:35:53",
+        "sha256_short": "93C454DD5F63B141"
+      },
+      {
+        "path": "Software/Portable-Software-Links.md",
+        "size_bytes": 2252,
+        "lines": 31,
+        "last_modified": "2026-07-06T16:35:42",
+        "sha256_short": "9132209449371D1C"
+      },
+      {
+        "path": "Logs/README.txt",
+        "size_bytes": 113,
+        "lines": 1,
+        "last_modified": "2026-08-05T22:34:01",
+        "sha256_short": "D4700D874CD57092"
+      },
+      {
+        "path": "Scripts/Export-EventLogs.ps1",
+        "size_bytes": 3445,
+        "lines": 72,
+        "last_modified": "2026-08-05T22:59:35",
+        "sha256_short": "8E0DCD390558EFE1"
+      },
+      {
+        "path": "Scripts/Firewall-Test.ps1",
+        "size_bytes": 6794,
+        "lines": 164,
+        "last_modified": "2026-08-05T22:57:23",
+        "sha256_short": "BCD2E24F539A8DBD"
+      },
+      {
+        "path": "Scripts/Network-Diagnostic.ps1",
+        "size_bytes": 5372,
+        "lines": 111,
+        "last_modified": "2026-08-05T22:57:39",
+        "sha256_short": "8B9F39B847F8042B"
+      },
+      {
+        "path": "Scripts/Pin-QuickAccess-Folders.ps1",
+        "size_bytes": 1204,
+        "lines": 36,
+        "last_modified": "2026-07-06T16:36:18",
+        "sha256_short": "A9CD9431CC4FDED7"
+      },
+      {
+        "path": "Scripts/Printer-Fix.ps1",
+        "size_bytes": 1939,
+        "lines": 43,
+        "last_modified": "2026-07-06T16:36:10",
+        "sha256_short": "A153029A777F5F41"
+      },
+      {
+        "path": "Scripts/QuickCheck.ps1",
+        "size_bytes": 14190,
+        "lines": 284,
+        "last_modified": "2026-08-05T22:57:10",
+        "sha256_short": "081186741B8CBDF5"
+      },
+      {
+        "path": "Scripts/README.md",
+        "size_bytes": 11615,
+        "lines": 440,
+        "last_modified": "2026-08-05T23:00:44",
+        "sha256_short": "798CD3C7EBCB6F2B"
+      },
+      {
+        "path": "Scripts/Run-QuickCheck.bat",
+        "size_bytes": 243,
+        "lines": 5,
+        "last_modified": "2026-07-06T16:16:38",
+        "sha256_short": "B7A5EAF5466D88AC"
+      },
+      {
+        "path": "Scripts/User-Inventory.ps1",
+        "size_bytes": 7841,
+        "lines": 177,
+        "last_modified": "2026-08-05T22:57:14",
+        "sha256_short": "304B5225DED0D8F2"
+      },
+      {
+        "path": "Scripts/Tests/Phase1-Regression.Tests.ps1",
+        "size_bytes": 6680,
+        "lines": 175,
+        "last_modified": "2026-08-05T22:53:27",
+        "sha256_short": "A65CA83589FAAAEC"
+      },
+      {
+        "path": "Scripts/Tests/README.md",
+        "size_bytes": 665,
+        "lines": 23,
+        "last_modified": "2026-07-12T19:56:40",
+        "sha256_short": "92C6A4FFCC10F389"
+      },
+      {
+        "path": "Scripts/Tests/RemoteToolkit.tests.ps1",
+        "size_bytes": 1385,
+        "lines": 35,
+        "last_modified": "2026-07-13T14:39:39",
+        "sha256_short": "A5F425446B3CF977"
+      },
+      {
+        "path": "Scripts/Tests/Run-RemoteToolkit-Tests.ps1",
+        "size_bytes": 634,
+        "lines": 17,
+        "last_modified": "2026-07-13T14:39:46",
+        "sha256_short": "8B93EAE99C23EF21"
+      },
+      {
+        "path": "Scripts/Index/Install-GitHook.ps1",
+        "size_bytes": 1630,
+        "lines": 47,
+        "last_modified": "2026-08-06T00:17:37",
+        "sha256_short": "4297737FFE05AD6C"
+      },
+      {
+        "path": "Scripts/Index/Update-ProjectIndex.ps1",
+        "size_bytes": 14462,
+        "lines": 361,
+        "last_modified": "2026-08-06T03:15:58",
+        "sha256_short": "E149B3422D5771AC"
+      },
+      {
+        "path": "Scripts/Templates/Report-Template.html",
+        "size_bytes": 895,
+        "lines": 23,
+        "last_modified": "2026-07-12T19:23:18",
+        "sha256_short": "AD42679B20E7E25F"
+      },
+      {
+        "path": "Scripts/Modules/AlertEngine.psm1",
+        "size_bytes": 5923,
+        "lines": 211,
+        "last_modified": "2026-07-13T14:22:29",
+        "sha256_short": "8A4356B2CAE9433F"
+      },
+      {
+        "path": "Scripts/Modules/CredentialManager.psm1",
+        "size_bytes": 9549,
+        "lines": 258,
+        "last_modified": "2026-08-05T22:48:39",
+        "sha256_short": "38203AEEE1B77CBA"
+      },
+      {
+        "path": "Scripts/Modules/ExportEngine.psm1",
+        "size_bytes": 5147,
+        "lines": 178,
+        "last_modified": "2026-07-13T14:22:29",
+        "sha256_short": "F9DE33C74893F279"
+      },
+      {
+        "path": "Scripts/Modules/LogManager.psm1",
+        "size_bytes": 2713,
+        "lines": 90,
+        "last_modified": "2026-08-05T22:55:43",
+        "sha256_short": "2D51E3B8CFD9D742"
+      },
+      {
+        "path": "Scripts/Modules/RemoteToolkit.psm1",
+        "size_bytes": 9942,
+        "lines": 262,
+        "last_modified": "2026-08-05T22:53:33",
+        "sha256_short": "C3F1BCC274A20EB8"
+      },
+      {
+        "path": "Scripts/Modules/ReportGenerator.psm1",
+        "size_bytes": 4346,
+        "lines": 136,
+        "last_modified": "2026-07-12T19:23:18",
+        "sha256_short": "9F944735E7A1968F"
+      },
+      {
+        "path": "Scripts/Modules/ToolkitConfig.psm1",
+        "size_bytes": 3036,
+        "lines": 101,
+        "last_modified": "2026-08-05T22:57:05",
+        "sha256_short": "0C2734BE83029928"
+      },
+      {
+        "path": "Scripts/Remote/BatchScan.ps1",
+        "size_bytes": 2763,
+        "lines": 77,
+        "last_modified": "2026-08-05T23:04:04",
+        "sha256_short": "90393C433ED0F7EC"
+      },
+      {
+        "path": "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1",
+        "size_bytes": 1609,
+        "lines": 49,
+        "last_modified": "2026-08-05T23:03:43",
+        "sha256_short": "600F8663B519C2A4"
+      },
+      {
+        "path": "Scripts/Remote/Invoke-RemoteQuickCheck.ps1",
+        "size_bytes": 1575,
+        "lines": 49,
+        "last_modified": "2026-07-13T14:22:29",
+        "sha256_short": "9076A751DEFC1627"
+      },
+      {
+        "path": "Scripts/Remote/README.md",
+        "size_bytes": 1250,
+        "lines": 27,
+        "last_modified": "2026-07-13T14:22:29",
+        "sha256_short": "617FD53DD38EA499"
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "size_bytes": 2132,
+        "lines": 62,
+        "last_modified": "2026-08-06T03:15:40",
+        "sha256_short": "DD9A7A3007626A36"
+      },
+      {
+        "path": "Templates/AI-Assistant-Prompts.txt",
+        "size_bytes": 13168,
+        "lines": 302,
+        "last_modified": "2026-07-10T00:51:15",
+        "sha256_short": "24917D3B26468BBF"
+      },
+      {
+        "path": "Templates/CMD-Commands-Reference.txt",
+        "size_bytes": 3123,
+        "lines": 64,
+        "last_modified": "2026-07-06T16:36:39",
+        "sha256_short": "B95C18F99396DCBD"
+      },
+      {
+        "path": "Templates/Knowledge-Base.xlsx",
+        "size_bytes": 11414,
+        "lines": 77,
+        "last_modified": "2026-07-06T16:17:27",
+        "sha256_short": "B9EA0A5696BA4C10"
+      },
+      {
+        "path": "Templates/Ticket-Reply-Templates.txt",
+        "size_bytes": 2500,
+        "lines": 92,
+        "last_modified": "2026-07-06T16:17:39",
+        "sha256_short": "22B5CF98150035E4"
+      },
+      {
+        "path": "Scaling Plan/ARCHITECTURE.md",
+        "size_bytes": 12875,
+        "lines": 443,
+        "last_modified": "2026-07-10T04:31:17",
+        "sha256_short": "2AA4CFDBF7BBDA02"
+      },
+      {
+        "path": "Scaling Plan/DELIVERY-SUMMARY.md",
+        "size_bytes": 13058,
+        "lines": 498,
+        "last_modified": "2026-08-05T22:55:14",
+        "sha256_short": "E9E9C7352013146E"
+      },
+      {
+        "path": "Scaling Plan/DOCUMENTATION-INDEX.md",
+        "size_bytes": 13021,
+        "lines": 451,
+        "last_modified": "2026-07-10T04:34:14",
+        "sha256_short": "64A600DB89C864EC"
+      },
+      {
+        "path": "Scaling Plan/IMPLEMENTATION-PLAN.md",
+        "size_bytes": 50075,
+        "lines": 1727,
+        "last_modified": "2026-07-10T04:28:16",
+        "sha256_short": "FE14CFCE5A9F0EDE"
+      },
+      {
+        "path": "Scaling Plan/PROGRESS-TRACKING.md",
+        "size_bytes": 32949,
+        "lines": 1075,
+        "last_modified": "2026-07-12T19:23:18",
+        "sha256_short": "86023E79F453BB40"
+      },
+      {
+        "path": "Scaling Plan/QUICK-REFERENCE.md",
+        "size_bytes": 11859,
+        "lines": 457,
+        "last_modified": "2026-07-10T04:30:30",
+        "sha256_short": "F4D84638A578C75E"
+      },
+      {
+        "path": "Scaling Plan/README-IMPLEMENTATION.md",
+        "size_bytes": 12171,
+        "lines": 365,
+        "last_modified": "2026-07-10T04:31:59",
+        "sha256_short": "3D09B658CF73DA5A"
+      },
+      {
+        "path": "Scaling Plan/START-HERE.md",
+        "size_bytes": 12349,
+        "lines": 390,
+        "last_modified": "2026-07-10T04:32:39",
+        "sha256_short": "1C20761210783D23"
+      }
+    ],
+    "latest_delta": {
+      "detected_at": "2026-08-06T03:16:19+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [],
+      "unchanged_count": 60
+    },
+    "delta_history": [
+      {
+        "detected_at": "2026-08-06T00:21:53+05:30",
+        "baseline_established": true,
+        "note": "Baseline hash snapshot established (files list captured above). Prior semantic delta retained under previous_delta_sections.",
+        "unchanged_count": 0
+      },
+      {
+        "detected_at": "2026-08-06T03:16:01+05:30",
+        "added": [],
+        "removed": [],
+        "changed": [
+          ".github/workflows/ci.yml",
+          "CHANGELOG.md",
+          "Scripts/Index/Update-ProjectIndex.ps1"
+        ],
+        "unchanged_count": 57
+      }
+    ],
     "unchanged_files": 37,
     "changed_files_since_audit": 19,
     "added_files_since_audit": 3,
@@ -57,7 +561,12 @@
       "audit/ledger.json"
     ],
     "renamed": [
-      { "from": "Scalling Plan/*", "to": "Scaling Plan/*", "reason": "LOW-001 folder typo", "files": 8 }
+      {
+        "from": "Scalling Plan/*",
+        "to": "Scaling Plan/*",
+        "reason": "LOW-001 folder typo",
+        "files": 8
+      }
     ],
     "changed": {
       "CHANGELOG.md": "DOC-001/DOC-002/OPS-001/OPS-002 - accurate QA + ops sections",
@@ -80,36 +589,151 @@
     }
   },
   "modules": [
-    { "name": "ExportEngine.psm1", "path": "Scripts/Modules/ExportEngine.psm1", "exports": ["Export-ToCSV", "Export-ToJSON", "Export-ToExcel"], "status": "working" },
-    { "name": "AlertEngine.psm1", "path": "Scripts/Modules/AlertEngine.psm1", "exports": ["Test-AlertThreshold", "Get-AlertSeverity", "Format-AlertMessage", "Test-MultipleThresholds"], "status": "working" },
-    { "name": "LogManager.psm1", "path": "Scripts/Modules/LogManager.psm1", "exports": ["Remove-OldLogs"], "status": "working" },
-    { "name": "ReportGenerator.psm1", "path": "Scripts/Modules/ReportGenerator.psm1", "exports": ["New-HTMLReport"], "status": "working" },
-    { "name": "RemoteToolkit.psm1", "path": "Scripts/Modules/RemoteToolkit.psm1", "exports": ["Test-RemoteConnection", "Invoke-RemoteCommand", "Invoke-ParallelRemoteExecution", "Get-RemoteComputerInfo", "Invoke-RemoteNetworkDiagnostic", "Invoke-QuickCheckRemote"], "status": "working" },
-    { "name": "CredentialManager.psm1", "path": "Scripts/Modules/CredentialManager.psm1", "exports": ["Store-ToolkitCredential", "Get-ToolkitCredential", "Remove-ToolkitCredential", "Test-CredentialValid"], "status": "working" },
-    { "name": "ToolkitConfig.psm1", "path": "Scripts/Modules/ToolkitConfig.psm1", "exports": ["Get-ToolkitConfig", "Resolve-ToolPath", "Get-ToolkitDirectory"], "status": "working", "added_in": "CODE-002" }
+    {
+      "name": "AlertEngine.psm1",
+      "path": "Scripts/Modules/AlertEngine.psm1",
+      "exports": [
+        "Test-AlertThreshold",
+        "Get-AlertSeverity",
+        "Format-AlertMessage",
+        "Test-MultipleThresholds"
+      ],
+      "status": "working"
+    },
+    {
+      "name": "CredentialManager.psm1",
+      "path": "Scripts/Modules/CredentialManager.psm1",
+      "exports": [
+        "Store-ToolkitCredential",
+        "Get-ToolkitCredential",
+        "Remove-ToolkitCredential",
+        "Test-CredentialValid"
+      ],
+      "status": "working"
+    },
+    {
+      "name": "ExportEngine.psm1",
+      "path": "Scripts/Modules/ExportEngine.psm1",
+      "exports": [
+        "Export-ToCSV",
+        "Export-ToJSON",
+        "Export-ToExcel"
+      ],
+      "status": "working"
+    },
+    {
+      "name": "LogManager.psm1",
+      "path": "Scripts/Modules/LogManager.psm1",
+      "exports": [
+        "Remove-OldLogs"
+      ],
+      "status": "working"
+    },
+    {
+      "name": "RemoteToolkit.psm1",
+      "path": "Scripts/Modules/RemoteToolkit.psm1",
+      "exports": [
+        "Test-RemoteConnection",
+        "Invoke-RemoteCommand",
+        "Invoke-ParallelRemoteExecution",
+        "Get-RemoteComputerInfo",
+        "Invoke-RemoteNetworkDiagnostic",
+        "Invoke-QuickCheckRemote"
+      ],
+      "status": "working"
+    },
+    {
+      "name": "ReportGenerator.psm1",
+      "path": "Scripts/Modules/ReportGenerator.psm1",
+      "exports": [
+        "Convert-ObjectArrayToHtmlTable",
+        "New-HTMLReport"
+      ],
+      "status": "working"
+    },
+    {
+      "name": "ToolkitConfig.psm1",
+      "path": "Scripts/Modules/ToolkitConfig.psm1",
+      "exports": [
+        "Get-ToolkitConfig",
+        "Resolve-ToolPath",
+        "Get-ToolkitDirectory"
+      ],
+      "status": "working"
+    }
   ],
   "scripts": [
-    { "name": "QuickCheck.ps1", "path": "Scripts/QuickCheck.ps1" },
-    { "name": "Network-Diagnostic.ps1", "path": "Scripts/Network-Diagnostic.ps1" },
-    { "name": "Printer-Fix.ps1", "path": "Scripts/Printer-Fix.ps1" },
-    { "name": "Export-EventLogs.ps1", "path": "Scripts/Export-EventLogs.ps1" },
-    { "name": "Pin-QuickAccess-Folders.ps1", "path": "Scripts/Pin-QuickAccess-Folders.ps1" },
-    { "name": "User-Inventory.ps1", "path": "Scripts/User-Inventory.ps1" },
-    { "name": "Firewall-Test.ps1", "path": "Scripts/Firewall-Test.ps1" },
-    { "name": "Remote/Invoke-RemoteQuickCheck.ps1", "path": "Scripts/Remote/Invoke-RemoteQuickCheck.ps1" },
-    { "name": "Remote/Invoke-RemoteNetworkDiagnostic.ps1", "path": "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1" },
-    { "name": "Remote/BatchScan.ps1", "path": "Scripts/Remote/BatchScan.ps1" },
-    { "name": "Remote-Tools/Generate-RDP-Shortcuts.ps1", "path": "Remote-Tools/Generate-RDP-Shortcuts.ps1" }
+    {
+      "name": "Export-EventLogs.ps1",
+      "path": "Scripts/Export-EventLogs.ps1"
+    },
+    {
+      "name": "Firewall-Test.ps1",
+      "path": "Scripts/Firewall-Test.ps1"
+    },
+    {
+      "name": "Network-Diagnostic.ps1",
+      "path": "Scripts/Network-Diagnostic.ps1"
+    },
+    {
+      "name": "Pin-QuickAccess-Folders.ps1",
+      "path": "Scripts/Pin-QuickAccess-Folders.ps1"
+    },
+    {
+      "name": "Printer-Fix.ps1",
+      "path": "Scripts/Printer-Fix.ps1"
+    },
+    {
+      "name": "QuickCheck.ps1",
+      "path": "Scripts/QuickCheck.ps1"
+    },
+    {
+      "name": "User-Inventory.ps1",
+      "path": "Scripts/User-Inventory.ps1"
+    },
+    {
+      "name": "Remote/BatchScan.ps1",
+      "path": "Scripts/Remote/BatchScan.ps1"
+    },
+    {
+      "name": "Remote/Invoke-RemoteNetworkDiagnostic.ps1",
+      "path": "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1"
+    },
+    {
+      "name": "Remote/Invoke-RemoteQuickCheck.ps1",
+      "path": "Scripts/Remote/Invoke-RemoteQuickCheck.ps1"
+    },
+    {
+      "name": "Remote-Tools/Generate-RDP-Shortcuts.ps1",
+      "path": "Remote-Tools/Generate-RDP-Shortcuts.ps1"
+    }
   ],
   "batch_files": [
-    { "name": "Toolkit-Menu.bat", "path": "Toolkit-Menu.bat", "status": "working (CRIT-002 fixed)" },
-    { "name": "Setup-Wizard.bat", "path": "Setup-Wizard.bat", "status": "working (CODE-003 fixed)" },
-    { "name": "Scripts/Run-QuickCheck.bat", "path": "Scripts/Run-QuickCheck.bat", "status": "working" }
+    {
+      "name": "Toolkit-Menu.bat",
+      "path": "Toolkit-Menu.bat",
+      "status": "working (CRIT-002 fixed)"
+    },
+    {
+      "name": "Setup-Wizard.bat",
+      "path": "Setup-Wizard.bat",
+      "status": "working (CODE-003 fixed)"
+    },
+    {
+      "name": "Scripts/Run-QuickCheck.bat",
+      "path": "Scripts/Run-QuickCheck.bat",
+      "status": "working"
+    }
   ],
   "config_files": {
     "Config/config.json": {
       "sections": 15,
-      "security_defaults": { "encryptSensitiveData": true, "winrmSSL": true, "winrmPort": 5986, "credentialVault": "ITToolkitVault" },
+      "security_defaults": {
+        "encryptSensitiveData": true,
+        "winrmSSL": true,
+        "winrmPort": 5986,
+        "credentialVault": "ITToolkitVault"
+      },
       "notes": "SEC-003 remediated; users told not to store secrets here"
     }
   },
@@ -135,8 +759,16 @@
     "doc_accuracy": "all previously false claims corrected (DOC-001, DOC-002)"
   },
   "tests": {
-    "phase1_regression": { "path": "Scripts/Tests/Phase1-Regression.Tests.ps1", "status": "PASSING (exit 0)", "note": "TEST-001 corrected 3 assertions" },
-    "remotetoolkit_pester": { "path": "Scripts/Tests/RemoteToolkit.tests.ps1", "status": "executable after TEST-002 (TimeoutSeconds added)", "requires": "Pester module (not installed on this host)" },
+    "phase1_regression": {
+      "path": "Scripts/Tests/Phase1-Regression.Tests.ps1",
+      "status": "PASSING (exit 0)",
+      "note": "TEST-001 corrected 3 assertions"
+    },
+    "remotetoolkit_pester": {
+      "path": "Scripts/Tests/RemoteToolkit.tests.ps1",
+      "status": "executable after TEST-002 (TimeoutSeconds added)",
+      "requires": "Pester module (not installed on this host)"
+    },
     "runner": "Scripts/Tests/Run-RemoteToolkit-Tests.ps1",
     "last_run": "2026-08-05T23:07:13+05:30",
     "last_result": "Phase1 regression: all passed"
@@ -144,37 +776,127 @@
   "ci_cd": {
     "workflow": ".github/workflows/ci.yml",
     "runner": "windows-latest (pwsh)",
-    "steps": ["parse all .ps1/.psm1", "validate JSON config", "run Phase 1 regression suite", "PSScriptAnalyzer (Error severity)"],
-    "trigger": ["push main", "pull_request", "workflow_dispatch"],
+    "steps": [
+      "parse all .ps1/.psm1",
+      "validate JSON config",
+      "run Phase 1 regression suite",
+      "PSScriptAnalyzer (Error severity)"
+    ],
+    "trigger": [
+      "push main",
+      "pull_request",
+      "workflow_dispatch"
+    ],
     "docker": "N/A (desktop PowerShell toolkit; documented decision)"
   },
-  "security_findings": {
-    "original_audit": { "critical": 2, "high": 1, "medium": 2, "source": "audit/security.md" },
-    "resolved": ["CRIT-004 plaintext password", "SEC-001 unvalidated remote exec + Bypass", "SEC-002 credential stub", "SEC-003 insecure config defaults"],
-    "remaining_known": [
-      "Scripts are unsigned (no Authenticode signing infrastructure)",
-      "Batch launchers use -ExecutionPolicy Bypass for LOCAL launches (documented, intentional for a portable toolkit)",
-      "Event-log sanitization masks emails/IPs/domain paths; hostnames/usernames require manual review"
-    ]
+  "previous_index_reference": {
+    "audit/index.json": "generated 2026-08-05T22:34:32, 59 files, pre-remediation snapshot",
+    "audit/issues.json": "17 issues (4 CRITICAL, 5 HIGH, 7 MEDIUM, 1 LOW), all resolved",
+    "audit/reports/final.md": "recalculated release score 100/100"
   },
   "fixed_issues": [
-    { "id": "CRIT-001", "severity": "CRITICAL", "commit": "b33b40e", "verified": true },
-    { "id": "CRIT-002", "severity": "CRITICAL", "commit": "45f51bc", "verified": true },
-    { "id": "CRIT-003", "severity": "CRITICAL", "commit": "cb3dd7c", "verified": true },
-    { "id": "CRIT-004", "severity": "CRITICAL", "commit": "888c028", "verified": true },
-    { "id": "SEC-001", "severity": "HIGH", "commit": "8f3cc4e, d6ff3ec", "verified": true },
-    { "id": "SEC-002", "severity": "HIGH", "commit": "888c028 (with CRIT-004)", "verified": true },
-    { "id": "TEST-001", "severity": "HIGH", "commit": "9633980", "verified": true },
-    { "id": "TEST-002", "severity": "HIGH", "commit": "9633980", "verified": true },
-    { "id": "DOC-001", "severity": "HIGH", "commit": "28bb8f9", "verified": true },
-    { "id": "CODE-001", "severity": "MEDIUM", "commit": "bf26126", "verified": true },
-    { "id": "SEC-003", "severity": "MEDIUM", "commit": "b66ad5b", "verified": true },
-    { "id": "CODE-002", "severity": "MEDIUM", "commit": "d30e5a5", "verified": true },
-    { "id": "CODE-003", "severity": "MEDIUM", "commit": "34d885a", "verified": true },
-    { "id": "DOC-002", "severity": "MEDIUM", "commit": "5fa7e42", "verified": true },
-    { "id": "OPS-001", "severity": "MEDIUM", "commit": "a2a2a72", "verified": true },
-    { "id": "OPS-002", "severity": "MEDIUM", "commit": "a2a2a72", "verified": true },
-    { "id": "LOW-001", "severity": "LOW", "commit": "27d5e62", "verified": true }
+    {
+      "id": "CRIT-001",
+      "severity": "CRITICAL",
+      "commit": "b33b40e",
+      "verified": true
+    },
+    {
+      "id": "CRIT-002",
+      "severity": "CRITICAL",
+      "commit": "45f51bc",
+      "verified": true
+    },
+    {
+      "id": "CRIT-003",
+      "severity": "CRITICAL",
+      "commit": "cb3dd7c",
+      "verified": true
+    },
+    {
+      "id": "CRIT-004",
+      "severity": "CRITICAL",
+      "commit": "888c028",
+      "verified": true
+    },
+    {
+      "id": "SEC-001",
+      "severity": "HIGH",
+      "commit": "8f3cc4e, d6ff3ec",
+      "verified": true
+    },
+    {
+      "id": "SEC-002",
+      "severity": "HIGH",
+      "commit": "888c028 (with CRIT-004)",
+      "verified": true
+    },
+    {
+      "id": "TEST-001",
+      "severity": "HIGH",
+      "commit": "9633980",
+      "verified": true
+    },
+    {
+      "id": "TEST-002",
+      "severity": "HIGH",
+      "commit": "9633980",
+      "verified": true
+    },
+    {
+      "id": "DOC-001",
+      "severity": "HIGH",
+      "commit": "28bb8f9",
+      "verified": true
+    },
+    {
+      "id": "CODE-001",
+      "severity": "MEDIUM",
+      "commit": "bf26126",
+      "verified": true
+    },
+    {
+      "id": "SEC-003",
+      "severity": "MEDIUM",
+      "commit": "b66ad5b",
+      "verified": true
+    },
+    {
+      "id": "CODE-002",
+      "severity": "MEDIUM",
+      "commit": "d30e5a5",
+      "verified": true
+    },
+    {
+      "id": "CODE-003",
+      "severity": "MEDIUM",
+      "commit": "34d885a",
+      "verified": true
+    },
+    {
+      "id": "DOC-002",
+      "severity": "MEDIUM",
+      "commit": "5fa7e42",
+      "verified": true
+    },
+    {
+      "id": "OPS-001",
+      "severity": "MEDIUM",
+      "commit": "a2a2a72",
+      "verified": true
+    },
+    {
+      "id": "OPS-002",
+      "severity": "MEDIUM",
+      "commit": "a2a2a72",
+      "verified": true
+    },
+    {
+      "id": "LOW-001",
+      "severity": "LOW",
+      "commit": "27d5e62",
+      "verified": true
+    }
   ],
   "pending_issues": [],
   "known_risks": [
@@ -195,9 +917,28 @@
     "report": "audit/reports/final.md",
     "status": "RELEASE READY"
   },
+  "security_findings": {
+    "original_audit": {
+      "critical": 2,
+      "high": 1,
+      "medium": 2,
+      "source": "audit/security.md"
+    },
+    "resolved": [
+      "CRIT-004 plaintext password",
+      "SEC-001 unvalidated remote exec + Bypass",
+      "SEC-002 credential stub",
+      "SEC-003 insecure config defaults"
+    ],
+    "remaining_known": [
+      "Scripts are unsigned (no Authenticode signing infrastructure)",
+      "Batch launchers use -ExecutionPolicy Bypass for LOCAL launches (documented, intentional for a portable toolkit)",
+      "Event-log sanitization masks emails/IPs/domain paths; hostnames/usernames require manual review"
+    ]
+  },
   "progress": {
-    "percent": 100,
+    "percent": 100.0,
     "issues_resolved": "17/17",
-    "last_verified_commit": "983d8d7b844becbaca7d0d8b4dcf0938fbe5a8bf"
+    "last_verified_commit": "219f071dae0e8774c829732abff5963f0431a54a"
   }
 }

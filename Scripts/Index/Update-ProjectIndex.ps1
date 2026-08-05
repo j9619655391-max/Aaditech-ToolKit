@@ -5,7 +5,8 @@
 
 [CmdletBinding()]
 param(
-    [switch]$ForceFullRebuild
+    [switch]$ForceFullRebuild,
+    [switch]$Check
 )
 
 $ErrorActionPreference = 'Stop'
@@ -159,8 +160,13 @@ $deltaHistory = @()
 if ($prev -and $prev.file_inventory -and $prev.file_inventory.delta_history) {
     $deltaHistory = @($prev.file_inventory.delta_history)
 }
-$deltaHistory += $delta
-if ($deltaHistory.Count -gt 20) { $deltaHistory = $deltaHistory[-20..-1] }
+# Idempotency: only append a delta entry when it represents an actual change, so
+# regenerating an unchanged tree produces byte-identical output (CI freshness check).
+$hasRealChange = ($added.Count -gt 0) -or ($removed.Count -gt 0) -or ($changed.Count -gt 0)
+if ($hasRealChange) {
+    $deltaHistory += $delta
+    if ($deltaHistory.Count -gt 20) { $deltaHistory = $deltaHistory[-20..-1] }
+}
 
 $fileInventory = [ordered]@{
     scan_basis = 'incremental (auto-indexer, schema v2)'
@@ -304,3 +310,52 @@ $progress | ConvertTo-Json -Depth 8 | Set-Content $progressPath -Encoding UTF8
 Write-Host "Index updated: $now"
 Write-Host "  files: $($snapshot.Count)  added: $($added.Count)  removed: $($removed.Count)  changed: $($changed.Count)  unchanged: $($unchanged.Count)"
 Write-Host "  commits: $($gitInfo.count)  branch: $($gitInfo.branch)  progress: $percent%"
+
+# ---------- Check mode: verify committed index matches meaningful content ----------
+if ($Check) {
+    # Volatile fields (timestamps) always change on regeneration; ignore them for the
+    # freshness check so CI only fails on real index drift, not wall-clock noise.
+    function Remove-Volatile {
+        param($obj)
+        if ($null -eq $obj) { return $null }
+        if ($obj -is [System.Management.Automation.PSCustomObject]) {
+            $clone = [ordered]@{}
+            foreach ($p in $obj.PSObject.Properties) {
+                if ($p.Name -in @('generated', 'last_verified_date', 'detected_at', 'last_modified', 'latest_delta')) { continue }
+                $clone[$p.Name] = Remove-Volatile $p.Value
+            }
+            return [PSCustomObject]$clone
+        }
+        if ($obj -is [System.Collections.IEnumerable] -and $obj -isnot [string]) {
+            return @($obj | ForEach-Object { Remove-Volatile $_ })
+        }
+        return $obj
+    }
+
+    $stale = $false
+    foreach ($p in @('project-index.json', 'project-state.json', 'project-progress.json')) {
+        $committed = & git -C $repoRoot show "HEAD:$p" 2>$null
+        $onDisk = Get-Content (Join-Path $repoRoot $p) -Raw -ErrorAction SilentlyContinue
+        if (-not $committed -or -not $onDisk) { Write-Host "${p}: missing comparison target"; continue }
+        try {
+            $a = Remove-Volatile ($committed | ConvertFrom-Json)
+            $b = Remove-Volatile ($onDisk | ConvertFrom-Json)
+            $aJson = $a | ConvertTo-Json -Depth 12 -Compress
+            $bJson = $b | ConvertTo-Json -Depth 12 -Compress
+            if ($aJson -ne $bJson) {
+                Write-Host "${p}: STALE - content differs from committed HEAD baseline."
+                $stale = $true
+            } else {
+                Write-Host "${p}: fresh (matches committed baseline)."
+            }
+        } catch {
+            Write-Host "${p}: comparison error: $_"
+            $stale = $true
+        }
+    }
+    if ($stale) {
+        Write-Host "INDEX CHECK FAILED. Run 'pwsh -NoProfile -File Scripts/Index/Update-ProjectIndex.ps1' and commit the regenerated index files."
+        exit 1
+    }
+    Write-Host "Index is up to date."
+}
