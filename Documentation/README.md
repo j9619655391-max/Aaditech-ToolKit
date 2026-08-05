@@ -149,6 +149,21 @@ Complete guide to all documentation files and resources in the toolkit.
 
 ---
 
+### Windows-Smoke-Run.md
+**Purpose:** Manual release gate for Windows-only behavior (added v1.0.0)
+
+**Covers:**
+- Real `cmd.exe` execution of `Toolkit-Menu.bat` / `Setup-Wizard.bat`
+- RemoteToolkit end-to-end over WinRM
+- Interactive WinForms GUI dashboard
+- `schtasks.exe` scheduled-task registration
+- DPAPI credential vault, Authenticode signing, ToolkitData on a Windows host
+- Final release gate checklist (full Pester suite + index freshness)
+
+**When to use:** Before declaring a release fully shipped — cannot be verified on macOS
+
+---
+
 ## Other Important Files
 
 ### CHANGELOG.md
@@ -213,6 +228,7 @@ Documentation/
 ├── Setup-Guide.md ..................... First-time setup (start here)
 ├── Cheat-Sheet.md ..................... Quick reference (print this)
 ├── Troubleshooting-Flowcharts.md ...... Decision trees (use when stuck)
+├── Windows-Smoke-Run.md ............... Manual Windows release gate (new)
 └── README.md (this file) ............. Documentation overview
 
 Scripts/
@@ -316,6 +332,7 @@ Config/
 - **Using AI for help** → AI-Assistant-Prompts.txt
 - **Remote access** → Remote-Tools/README.md
 - **Downloading tools** → Software/Portable-Software-Links.md
+- **Releasing on Windows** → Windows-Smoke-Run.md
 
 ### By Issue Type
 - **Computer not booting** → Troubleshooting-Flowcharts.md

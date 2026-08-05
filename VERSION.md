@@ -58,3 +58,5 @@ one-time manual smoke run on a Windows machine before deployment:
 - Interactive WinForms GUI (`Scripts/GUI/Toolkit-GUI.ps1`)
 - Authenticode signing of shipped scripts
 - `schtasks.exe` registration via `Register-ToolkitScheduledTask`
+
+> Full step-by-step instructions: `Documentation/Windows-Smoke-Run.md`
