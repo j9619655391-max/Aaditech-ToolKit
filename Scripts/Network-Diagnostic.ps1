@@ -10,33 +10,11 @@ Write-Host "=================================================" -ForegroundColor 
 
 # Load configuration if available
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$configPath = Join-Path $scriptDir "..\Config\config.json"
-$logsDir = Join-Path $scriptDir "..\Logs"
-if (Test-Path $configPath) {
-    try {
-        $config = Get-Content $configPath -Raw | ConvertFrom-Json
-    } catch {
-        # ignore config parse errors, use defaults
-    }
-}
 
-function Resolve-ToolPath {
-    param(
-        [Parameter(Mandatory=$true)]
-        [string]$Path
-    )
-
-    if ([System.IO.Path]::IsPathRooted($Path)) {
-        return $Path
-    }
-
-    $rootPath = Split-Path -Parent $scriptDir
-    return Join-Path $rootPath $Path
-}
-
-if ($config -and $config.paths -and $config.paths.logs) {
-    $logsDir = Resolve-ToolPath $config.paths.logs
-}
+# Shared config/path helpers (single source of truth)
+Import-Module (Join-Path $scriptDir "Modules\ToolkitConfig.psm1") -ErrorAction SilentlyContinue
+$config = Get-ToolkitConfig -ScriptDir $scriptDir
+$logsDir = Get-ToolkitDirectory -Config $config -Key "logs" -Default "Logs" -ScriptDir $scriptDir
 
 # Import Phase 1 export and cleanup modules
 $modulePath = Join-Path $scriptDir "Modules"

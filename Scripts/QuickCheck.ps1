@@ -9,33 +9,13 @@
 
 # Load configuration
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-$configPath = Join-Path $scriptDir "..\Config\config.json"
-if (Test-Path $configPath) {
-    try {
-        $config = Get-Content $configPath -Raw | ConvertFrom-Json
-    } catch {
-        Write-Warning "Unable to parse config.json. Using defaults."
-        $config = $null
-    }
-}
 
-function Resolve-ToolPath {
-    param(
-        [Parameter(Mandatory=$true)]
-        [string]$Path
-    )
-
-    if ([System.IO.Path]::IsPathRooted($Path)) {
-        return $Path
-    }
-
-    $rootPath = Split-Path -Parent $scriptDir
-    return Join-Path $rootPath $Path
-}
-
-$logsDir = if ($config -and $config.paths -and $config.paths.logs) { Resolve-ToolPath $config.paths.logs } else { Join-Path $scriptDir "..\Logs" }
-$scriptsDir = if ($config -and $config.paths -and $config.paths.scripts) { Resolve-ToolPath $config.paths.scripts } else { Join-Path $scriptDir "..\Scripts" }
-$templatesDir = if ($config -and $config.paths -and $config.paths.templates) { Resolve-ToolPath $config.paths.templates } else { Join-Path $scriptDir "..\Templates" }
+# Shared config/path helpers (single source of truth)
+Import-Module (Join-Path $scriptDir "Modules\ToolkitConfig.psm1") -ErrorAction SilentlyContinue
+$config = Get-ToolkitConfig -ScriptDir $scriptDir
+$logsDir = Get-ToolkitDirectory -Config $config -Key "logs" -Default "Logs" -ScriptDir $scriptDir
+$scriptsDir = Get-ToolkitDirectory -Config $config -Key "scripts" -Default "Scripts" -ScriptDir $scriptDir
+$templatesDir = Get-ToolkitDirectory -Config $config -Key "templates" -Default "Templates" -ScriptDir $scriptDir
 
 # Import required Phase 1 modules
 $modulePath = Join-Path $scriptDir "Modules"
