@@ -104,11 +104,11 @@ if ($config -and $config.firewallTest -and $config.firewallTest.customPorts) {
 }
 
 $results = @()
-foreach ($host in $testHosts) {
+foreach ($testHost in $testHosts) {
     try {
-        if ($host.Protocol -eq "TCP") {
+        if ($testHost.Protocol -eq "TCP") {
             $socket = New-Object System.Net.Sockets.TcpClient
-            $iar = $socket.BeginConnect($host.Host, $host.Port, $null, $null)
+            $iar = $socket.BeginConnect($testHost.Host, $testHost.Port, $null, $null)
             $wait = $iar.AsyncWaitHandle.WaitOne($timeoutMs, $false)
             if ($socket.Connected) {
                 $status = "✓ OPEN"
@@ -119,7 +119,7 @@ foreach ($host in $testHosts) {
         } else {
             # UDP test - try to send
             $udp = New-Object System.Net.Sockets.UdpClient
-            $iar = $udp.BeginConnect($host.Host, $host.Port, $null, $null)
+            $iar = $udp.BeginConnect($testHost.Host, $testHost.Port, $null, $null)
             $wait = $iar.AsyncWaitHandle.WaitOne(2000, $false)
             if ($wait) {
                 $status = "✓ REACHABLE"
@@ -133,7 +133,7 @@ foreach ($host in $testHosts) {
     }
     
     $results += [PSCustomObject]@{
-        Test = $host.Name
+        Test = $testHost.Name
         Status = $status
     }
 }
