@@ -56,3 +56,14 @@ jobs:
             throw "$($results.Count) analyzer error(s) found"
           }
           Write-Host "No PSScriptAnalyzer errors."
+
+      - name: Verify project index is up to date
+        run: |
+          pwsh -NoProfile -File ./Scripts/Index/Update-ProjectIndex.ps1
+          $dirty = git status --porcelain project-index.json project-state.json project-progress.json
+          if ($dirty) {
+            Write-Host "Index is stale. Run Scripts/Index/Update-ProjectIndex.ps1 and commit the result:"
+            Write-Host $dirty
+            exit 1
+          }
+          Write-Host "Project index is up to date."

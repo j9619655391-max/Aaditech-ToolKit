@@ -1,0 +1,24 @@
+#!/bin/sh
+# Auto-index hook: regenerate project index before each commit and stage it.
+# Keeps project-index.json / project-state.json / project-progress.json fresh.
+# Installed via Scripts/Index/Install-GitHook.ps1 (symlink to this file).
+
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+indexer="$repo_root/Scripts/Index/Update-ProjectIndex.ps1"
+
+if [ ! -f "$indexer" ]; then
+    echo "pre-commit: indexer not found, skipping auto-index"
+    exit 0
+fi
+
+if command -v pwsh >/dev/null 2>&1; then
+    echo "pre-commit: updating project index..."
+    pwsh -NoProfile -File "$indexer" || exit 1
+    git add "$repo_root/project-index.json" \
+            "$repo_root/project-state.json" \
+            "$repo_root/project-progress.json"
+else
+    echo "pre-commit: pwsh not found, skipping auto-index"
+fi
+
+exit 0
