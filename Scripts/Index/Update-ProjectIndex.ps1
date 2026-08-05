@@ -313,16 +313,19 @@ Write-Host "  commits: $($gitInfo.count)  branch: $($gitInfo.branch)  progress: 
 
 # ---------- Check mode: verify committed index matches meaningful content ----------
 if ($Check) {
-    # Volatile fields (timestamps) always change on regeneration; ignore them for the
-    # freshness check so CI only fails on real index drift, not wall-clock noise.
+    # Volatile fields (timestamps + git identity) always change on regeneration or
+    # lag by one commit in the pre-commit hook; ignore them for the freshness check
+    # so CI only fails on real index drift, not wall-clock/hash-order noise.
+    # Object properties are sorted so ordering differences do not count.
     function Remove-Volatile {
         param($obj)
         if ($null -eq $obj) { return $null }
         if ($obj -is [System.Management.Automation.PSCustomObject]) {
             $clone = [ordered]@{}
-            foreach ($p in $obj.PSObject.Properties) {
-                if ($p.Name -in @('generated', 'last_verified_date', 'detected_at', 'last_modified', 'latest_delta')) { continue }
-                $clone[$p.Name] = Remove-Volatile $p.Value
+            $names = @($obj.PSObject.Properties.Name | Sort-Object)
+            foreach ($n in $names) {
+                if ($n -in @('generated', 'last_verified_date', 'detected_at', 'last_modified', 'latest_delta', 'last_verified_commit', 'commit_count')) { continue }
+                $clone[$n] = Remove-Volatile $obj.$n
             }
             return [PSCustomObject]$clone
         }
