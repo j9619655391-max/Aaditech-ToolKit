@@ -1,0 +1,7 @@
+.DS_Store
+*.DS_Store
+Logs/*
+!Logs/README.txt
+Scalling Plan/.gitkeep
+*.tmp
+*.log

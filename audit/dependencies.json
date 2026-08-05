@@ -1,0 +1,297 @@
+{
+  "path": "/audit/dependencies.json",
+  "generated": "2026-08-05T22:35:00",
+  "imports_graph": [
+    {
+      "from": "/Scripts/Firewall-Test.ps1",
+      "to": "ExportEngine.psm1"
+    },
+    {
+      "from": "/Scripts/Firewall-Test.ps1",
+      "to": "LogManager.psm1"
+    },
+    {
+      "from": "/Scripts/Network-Diagnostic.ps1",
+      "to": "ExportEngine.psm1"
+    },
+    {
+      "from": "/Scripts/Network-Diagnostic.ps1",
+      "to": "LogManager.psm1"
+    },
+    {
+      "from": "/Scripts/User-Inventory.ps1",
+      "to": "ExportEngine.psm1"
+    },
+    {
+      "from": "/Scripts/User-Inventory.ps1",
+      "to": "LogManager.psm1"
+    },
+    {
+      "from": "/Scripts/QuickCheck.ps1",
+      "to": "ExportEngine.psm1"
+    },
+    {
+      "from": "/Scripts/QuickCheck.ps1",
+      "to": "AlertEngine.psm1"
+    },
+    {
+      "from": "/Scripts/QuickCheck.ps1",
+      "to": "ReportGenerator.psm1"
+    },
+    {
+      "from": "/Scripts/QuickCheck.ps1",
+      "to": "LogManager.psm1"
+    },
+    {
+      "from": "/Scripts/Tests/Phase1-Regression.Tests.ps1",
+      "to": "Import-Module $path -Force -ErrorAction Stop"
+    },
+    {
+      "from": "/Scripts/Tests/RemoteToolkit.tests.ps1",
+      "to": "RemoteToolkit.psm1"
+    },
+    {
+      "from": "/Scripts/Remote/BatchScan.ps1",
+      "to": "RemoteToolkit.psm1"
+    },
+    {
+      "from": "/Scripts/Remote/Invoke-RemoteQuickCheck.ps1",
+      "to": "RemoteToolkit.psm1"
+    },
+    {
+      "from": "/Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1",
+      "to": "RemoteToolkit.psm1"
+    }
+  ],
+  "exports_graph": [
+    {
+      "module": "AlertEngine.psm1",
+      "exports": [
+        "Test-AlertThreshold",
+        "Get-AlertSeverity",
+        "Format-AlertMessage",
+        "Test-MultipleThresholds"
+      ]
+    },
+    {
+      "module": "CredentialManager.psm1",
+      "exports": [
+        "Store-ToolkitCredential",
+        "Get-ToolkitCredential",
+        "Test-CredentialValid"
+      ]
+    },
+    {
+      "module": "ExportEngine.psm1",
+      "exports": [
+        "Export-ToCSV",
+        "Export-ToJSON",
+        "Export-ToExcel"
+      ]
+    },
+    {
+      "module": "LogManager.psm1",
+      "exports": [
+        "Remove-OldLogs"
+      ]
+    },
+    {
+      "module": "RemoteToolkit.psm1",
+      "exports": [
+        "Test-RemoteConnection",
+        "Invoke-RemoteCommand",
+        "Invoke-ParallelRemoteExecution",
+        "Get-RemoteComputerInfo",
+        "Invoke-RemoteNetworkDiagnostic",
+        "Invoke-QuickCheckRemote"
+      ]
+    },
+    {
+      "module": "ReportGenerator.psm1",
+      "exports": [
+        "Convert-ObjectArrayToHtmlTable",
+        "New-HTMLReport"
+      ]
+    }
+  ],
+  "runtime_graph": [
+    {
+      "service": "QuickCheck.ps1",
+      "depends_on": [
+        "ExportEngine.psm1",
+        "AlertEngine.psm1",
+        "ReportGenerator.psm1",
+        "LogManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "User-Inventory.ps1",
+      "depends_on": [
+        "ExportEngine.psm1",
+        "LogManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "Firewall-Test.ps1",
+      "depends_on": [
+        "ExportEngine.psm1",
+        "LogManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "Network-Diagnostic.ps1",
+      "depends_on": [
+        "ExportEngine.psm1",
+        "LogManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "BatchScan.ps1",
+      "depends_on": [
+        "RemoteToolkit.psm1",
+        "CredentialManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "Invoke-RemoteQuickCheck.ps1",
+      "depends_on": [
+        "RemoteToolkit.psm1",
+        "CredentialManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "Invoke-RemoteNetworkDiagnostic.ps1",
+      "depends_on": [
+        "RemoteToolkit.psm1",
+        "CredentialManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "Toolkit-Menu.bat",
+      "depends_on": [
+        "QuickCheck.ps1",
+        "Network-Diagnostic.ps1",
+        "Printer-Fix.ps1",
+        "Export-EventLogs.ps1",
+        "Pin-QuickAccess-Folders.ps1",
+        "Generate-RDP-Shortcuts.ps1",
+        "User-Inventory.ps1",
+        "Firewall-Test.ps1",
+        "Invoke-RemoteQuickCheck.ps1",
+        "BatchScan.ps1",
+        "Invoke-RemoteNetworkDiagnostic.ps1"
+      ]
+    },
+    {
+      "service": "ReportGenerator.psm1",
+      "depends_on": [
+        "Scripts/Templates/Report-Template.html"
+      ]
+    }
+  ],
+  "service_graph": [
+    {
+      "service": "QuickCheck.ps1",
+      "depends_on": [
+        "ExportEngine.psm1",
+        "AlertEngine.psm1",
+        "ReportGenerator.psm1",
+        "LogManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "User-Inventory.ps1",
+      "depends_on": [
+        "ExportEngine.psm1",
+        "LogManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "Firewall-Test.ps1",
+      "depends_on": [
+        "ExportEngine.psm1",
+        "LogManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "Network-Diagnostic.ps1",
+      "depends_on": [
+        "ExportEngine.psm1",
+        "LogManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "BatchScan.ps1",
+      "depends_on": [
+        "RemoteToolkit.psm1",
+        "CredentialManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "Invoke-RemoteQuickCheck.ps1",
+      "depends_on": [
+        "RemoteToolkit.psm1",
+        "CredentialManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "Invoke-RemoteNetworkDiagnostic.ps1",
+      "depends_on": [
+        "RemoteToolkit.psm1",
+        "CredentialManager.psm1",
+        "Config/config.json"
+      ]
+    },
+    {
+      "service": "Toolkit-Menu.bat",
+      "depends_on": [
+        "QuickCheck.ps1",
+        "Network-Diagnostic.ps1",
+        "Printer-Fix.ps1",
+        "Export-EventLogs.ps1",
+        "Pin-QuickAccess-Folders.ps1",
+        "Generate-RDP-Shortcuts.ps1",
+        "User-Inventory.ps1",
+        "Firewall-Test.ps1",
+        "Invoke-RemoteQuickCheck.ps1",
+        "BatchScan.ps1",
+        "Invoke-RemoteNetworkDiagnostic.ps1"
+      ]
+    },
+    {
+      "service": "ReportGenerator.psm1",
+      "depends_on": [
+        "Scripts/Templates/Report-Template.html"
+      ]
+    }
+  ],
+  "database_graph": [],
+  "agent_graph": [],
+  "api_graph": [],
+  "tool_graph": [
+    {
+      "tool": "Toolkit-Menu.bat",
+      "invokes": 11
+    },
+    {
+      "tool": "Setup-Wizard.bat",
+      "invokes": 4
+    }
+  ],
+  "authentication_flow": [],
+  "authorization_flow": [],
+  "event_flow": []
+}

@@ -1,0 +1,136 @@
+{
+  "path": "/audit/statistics.json",
+  "generated": "2026-08-05T22:34:32",
+  "method": "computed dynamically",
+  "total_files": 59,
+  "total_source_files": 25,
+  "total_test_files": 5,
+  "total_documentation_files": 23,
+  "total_configuration_files": 3,
+  "total_images": 0,
+  "total_scripts": 24,
+  "total_directories": 15,
+  "total_loc": 13763,
+  "average_file_size_bytes": 7676.03,
+  "largest_files": [
+    {
+      "path": "/Scalling Plan/IMPLEMENTATION-PLAN.md",
+      "lines": 1727,
+      "bytes": 50075
+    },
+    {
+      "path": "/ANALYSIS-RECOMMENDATIONS.md",
+      "lines": 1361,
+      "bytes": 48188
+    },
+    {
+      "path": "/Scalling Plan/PROGRESS-TRACKING.md",
+      "lines": 1075,
+      "bytes": 32949
+    },
+    {
+      "path": "/Enterprise_Audit_Prompt.md",
+      "lines": 830,
+      "bytes": 9403
+    },
+    {
+      "path": "/COMPLETION-REPORT.md",
+      "lines": 540,
+      "bytes": 16715
+    },
+    {
+      "path": "/Scalling Plan/DELIVERY-SUMMARY.md",
+      "lines": 498,
+      "bytes": 13031
+    },
+    {
+      "path": "/Scalling Plan/QUICK-REFERENCE.md",
+      "lines": 457,
+      "bytes": 11859
+    },
+    {
+      "path": "/Scalling Plan/DOCUMENTATION-INDEX.md",
+      "lines": 451,
+      "bytes": 13021
+    },
+    {
+      "path": "/Scalling Plan/ARCHITECTURE.md",
+      "lines": 443,
+      "bytes": 12875
+    },
+    {
+      "path": "/Scripts/README.md",
+      "lines": 438,
+      "bytes": 11290
+    }
+  ],
+  "largest_folders": [
+    {
+      "folder": "/",
+      "files": 9
+    },
+    {
+      "folder": "/Scalling Plan",
+      "files": 9
+    },
+    {
+      "folder": "/Scripts",
+      "files": 9
+    },
+    {
+      "folder": "/Scripts/Modules",
+      "files": 6
+    },
+    {
+      "folder": "/Documentation",
+      "files": 4
+    },
+    {
+      "folder": "/Scripts/Tests",
+      "files": 4
+    },
+    {
+      "folder": "/Scripts/Remote",
+      "files": 4
+    },
+    {
+      "folder": "/Templates",
+      "files": 4
+    },
+    {
+      "folder": "/audit",
+      "files": 3
+    },
+    {
+      "folder": "/Remote-Tools",
+      "files": 2
+    }
+  ],
+  "extension_counts": {
+    "bat": 3,
+    "md": 23,
+    "none": 2,
+    "txt": 5,
+    "json": 3,
+    "ps1": 15,
+    "html": 1,
+    "psm1": 6,
+    "xlsx": 1
+  },
+  "language_counts": {
+    "Batch": 3,
+    "Markdown": 23,
+    "Unknown": 2,
+    "Text": 5,
+    "JSON": 3,
+    "PowerShell": 21,
+    "HTML": 1,
+    "Excel": 1
+  },
+  "dependency_count": 0,
+  "unused_files": [],
+  "dead_code": [],
+  "duplicate_files": [],
+  "circular_dependencies": [],
+  "largest_dependency_graph": ""
+}

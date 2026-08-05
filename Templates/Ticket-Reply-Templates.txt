@@ -1,0 +1,92 @@
+====================================================
+IT TOOLKIT - TICKET REPLY TEMPLATES
+Copy the one you need, paste into your ticket/email tool,
+fill in the [bracketed] parts, send.
+====================================================
+
+--- ISSUE RESOLVED ---
+Hello [Name],
+
+The issue has been resolved. I made the following change: [brief fix summary].
+
+Please verify from your end and reply to confirm, or let me know if the issue persists.
+
+Regards,
+[Your Name] | IT Support
+
+--- ASK TO RESTART ---
+Hello [Name],
+
+Could you please restart your system once and let me know if the issue persists afterward?
+This clears temporary glitches in about 80% of similar cases.
+
+Regards,
+[Your Name] | IT Support
+
+--- ASK FOR SCREENSHOT/ERROR DETAILS ---
+Hello [Name],
+
+To help me diagnose this faster, could you share:
+1. A screenshot of the exact error message
+2. The approximate time it occurred
+3. What you were doing right before it happened
+
+Regards,
+[Your Name] | IT Support
+
+--- WAITING ON THIRD PARTY / VENDOR ---
+Hello [Name],
+
+I've escalated this to [vendor/team name] as it requires their access/expertise.
+I'll update you as soon as I hear back. Expected response time: [timeframe].
+
+Regards,
+[Your Name] | IT Support
+
+--- SCHEDULING A VISIT/REMOTE SESSION ---
+Hello [Name],
+
+I'd like to take a closer look at this. Are you available for a [remote session/desk visit]
+at [proposed time]? Please let me know a time that works for you.
+
+Regards,
+[Your Name] | IT Support
+
+--- PASSWORD / ACCOUNT RESET DONE ---
+Hello [Name],
+
+Your account has been reset. Temporary password: [temp password]
+You'll be prompted to set a new password on next login.
+
+For security, please do not share this password with anyone.
+
+Regards,
+[Your Name] | IT Support
+
+--- CLOSING TICKET DUE TO NO RESPONSE ---
+Hello [Name],
+
+I haven't heard back in [X] days, so I'm closing this ticket for now.
+If the issue comes up again, please reopen or submit a new ticket anytime.
+
+Regards,
+[Your Name] | IT Support
+
+--- FOLLOW-UP CHECK-IN ---
+Hello [Name],
+
+Just checking in - is everything working fine after the fix we applied on [date]?
+Happy to take another look if needed.
+
+Regards,
+[Your Name] | IT Support
+
+--- SETTING EXPECTATIONS (COMPLEX ISSUE) ---
+Hello [Name],
+
+Thanks for reporting this. This looks like it will take a bit longer to resolve because
+[reason - hardware order / vendor dependency / needs testing]. I'll keep you updated on progress.
+Estimated resolution: [timeframe].
+
+Regards,
+[Your Name] | IT Support

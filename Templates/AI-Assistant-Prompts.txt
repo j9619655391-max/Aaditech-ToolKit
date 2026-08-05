@@ -1,0 +1,302 @@
+====================================================
+        IT TOOLKIT - AI ASSISTANT PROMPTS v2.0
+Keep one AI chat tab open (Claude, ChatGPT, Copilot)
+Paste one of these prompts instead of freeform asking
+Saves 10-15 minutes per incident vs manual searching
+====================================================
+
+IMPORTANT - SANITIZE FIRST:
+Before pasting error codes, logs, or screenshots, REMOVE:
+  • Hostnames and server names → replace with <HOSTNAME>
+  • Real IP addresses → replace with <IP>
+  • Usernames → replace with <USERNAME>
+  • Domain names → replace with <DOMAIN>
+  • Customer/company info → generalize
+These are public AI tools. Your company policy matters.
+
+====================================================
+SECTION 1: TROUBLESHOOTING & ERROR ANALYSIS
+====================================================
+
+--- PROMPT 1: Decode Windows Error Code ---
+"I'm a desktop support engineer troubleshooting a Windows system. Explain this error 
+in simple terms, most likely cause, and the fastest fix:
+Error Code: [paste code, e.g., 0x80004005]
+Error Message: [paste full error text]
+Context: [where did it occur, what were you doing]"
+
+--- PROMPT 2: Event Viewer Log Analysis ---
+"I found this event log entry on a Windows machine. Explain if it's a real problem 
+I need to fix or just an informational log I can ignore:
+Event ID: [paste]
+Source: [paste]
+Full Log Text: [paste sanitized log]"
+
+--- PROMPT 3: Blue Screen of Death (BSOD) Analysis ---
+"Explain what caused this BSOD and the most reliable way to fix it:
+Error: [e.g., DRIVER_IRQL_NOT_LESS_OR_EQUAL]
+Context: [when it happens - startup, specific app, random?]
+Recent changes: [any new software, drivers, Windows updates?]
+(Also give me the fastest fix vs the thorough fix)"
+
+--- PROMPT 4: Application Crash Troubleshooting ---
+"This application keeps crashing with this error. Give me a step-by-step diagnostic plan 
+ordered by likelihood/ease of fix:
+Application: [name]
+Error Message: [paste]
+When it crashes: [startup / when opening a file / during a specific task]
+Environment: [Windows 10/11 version, corporate domain or personal machine]"
+
+--- PROMPT 5: Performance Issue Diagnosis ---
+"A user reported their machine is running slowly. Walk me through the most efficient 
+way to diagnose the cause (CPU, RAM, disk, network) and what to look for:
+Symptoms: [laggy? freezes? specific app slow? all apps slow?]
+Recent changes: [new software, Windows update, hardware change?]
+What tools should I check in Task Manager?"
+
+--- PROMPT 6: Network Connectivity Troubleshooting ---
+"A user can't connect to [service/internet/server]. Walk me through the diagnostic 
+steps from most likely/easiest to least likely/hardest:
+Service they can't reach: [e.g., company VPN, website, internal server]
+Their OS: [Windows 10/11]
+Network type: [corporate domain / home / guest WiFi]
+What I've already tried: [list anything already tested]"
+
+--- PROMPT 7: Printer Not Working ---
+"Printer isn't working correctly. Help me troubleshoot in order of likelihood:
+Symptom: [won't print at all / prints garbled / prints very slowly / offline]
+Printer type: [USB connected / network / cloud / thermal]
+OS: [Windows 10/11]
+What I've already tried: [list steps]"
+
+--- PROMPT 8: Slow Network Speed ---
+"A user reports slow network speeds. Give me the fastest way to test if it's their 
+computer, their ISP, or just network congestion:
+Speed they're getting: [Mbps if known]
+What they're using it for: [browsing / video calls / downloading]
+Connection type: [WiFi or Ethernet, corporate or home]
+Are other users reporting the same issue?"
+
+====================================================
+SECTION 2: POWERSHELL & COMMAND HELP
+====================================================
+
+--- PROMPT 9: PowerShell One-Liner Explanation ---
+"Before I run this command on a user's machine, explain what each part does and 
+any risks (especially around deletion, registry changes, or service stops):
+Command: [paste the command]
+Context: [what I'm trying to accomplish]
+Target: [single user machine / server / all machines in domain?]"
+
+--- PROMPT 10: CMD Commands Reference ---
+"I need a Windows CMD command to [describe task]. Give me the exact command, 
+explain what it does, and any safety considerations:
+Task: [e.g., disable a service, check a log, list network connections]
+Target: [local computer / remote machine / multiple machines]"
+
+--- PROMPT 11: Registry Edit Assistance ---
+"I need to make a registry change to [describe change]. Give me the exact registry 
+path, the value to change, and what it does. Also, how do I undo it if something breaks:
+Goal: [what I'm trying to fix]
+Affected OS: [Windows 10/11 version]
+Is it domain-managed? [yes/no]"
+
+--- PROMPT 12: Group Policy Troubleshooting ---
+"A Group Policy setting isn't applying to users. Help me diagnose why:
+GPO Name: [the policy that's not working]
+Expected behavior: [what should happen]
+Actual behavior: [what's actually happening]
+Is this a domain? [yes/no, domain version?]"
+
+--- PROMPT 13: Task Scheduler Task Creation ---
+"I need a scheduled task that [describe what you want automated]. Build me the 
+PowerShell command/XML to create it:
+What should run: [command or script path]
+When should it run: [daily 9am? weekly? on login?]
+Should it require admin: [yes/no]
+Should it run even if user is logged out: [yes/no]"
+
+====================================================
+SECTION 3: SECURITY & PERMISSIONS
+====================================================
+
+--- PROMPT 14: File Permission Troubleshooting ---
+"A user can't access this file/folder. Help me diagnose and fix the permission issue:
+Resource: [full path]
+What happens when they try: [permission denied? can't see it? other?]
+User type: [admin / standard user / guest]
+Is this on a domain machine: [yes/no]"
+
+--- PROMPT 15: UAC (User Account Control) Issues ---
+"We have UAC problems on our machines. Explain what UAC does and the safest way to 
+adjust UAC settings without compromising security:
+Current problem: [specific UAC blocking something / users complaining]
+Environment: [corporate domain / personal machines / mixed]
+Recommended solution for security + usability: [?]"
+
+--- PROMPT 16: Password/Account Lockout Troubleshooting ---
+"User account keeps getting locked. Help me diagnose the cause:
+Lockout frequency: [immediate / after a few days / random?]
+Where locked out from: [domain / local machine / both?]
+Is this a domain account: [yes/no]
+Any recent changes: [new password? new device? new app?]
+Give me the steps to check why they're locked out."
+
+--- PROMPT 17: Firewall Rule Creation ---
+"I need a Windows Firewall rule that [describe what should be allowed/blocked]. 
+Build me the exact PowerShell command:
+What to allow/block: [traffic type: HTTP, RDP, custom app, etc]
+Source: [specific IP/network or any?]
+Destination: [local machine, specific server, any?]
+Profile: [Domain / Private / Public / all?]"
+
+====================================================
+SECTION 4: UPDATES & PATCHING
+====================================================
+
+--- PROMPT 18: Windows Update Stuck ---
+"Windows Update is stuck. Walk me through troubleshooting and fixing it:
+Stuck on: [specific update / downloading / installing?]
+Time stuck: [how long has it been frozen?]
+OS Version: [Windows 10 or 11, specific build?]
+Have you restarted: [yes/no]"
+
+--- PROMPT 19: Driver Update Issues ---
+"A driver installation is failing. Help me diagnose and fix:
+Device: [which hardware: printer driver, GPU, network, etc]
+Error message: [paste full error]
+OS: [Windows version]
+Is this a domain machine: [yes/no]"
+
+--- PROMPT 20: Preventing Unwanted Updates ---
+"We need to block [specific update] from installing across domain machines. 
+Explain the safest method and any risks:
+Update to block: [KB number or description]
+Environment: [Windows 10/11 domain, version?]
+Why blocking: [breaks compatibility? slows down? causes BSOD?]"
+
+====================================================
+SECTION 5: REMOTE ACCESS & CONNECTIVITY
+====================================================
+
+--- PROMPT 21: Remote Desktop (RDP) Not Working ---
+"RDP connection is failing. Help me troubleshoot:
+Error message: [paste exact error]
+Connecting from: [Windows / Mac / Linux?]
+Target machine: [hostname/IP]
+Have you verified the machine is on/online: [yes/no]
+Is this a domain network: [yes/no]"
+
+--- PROMPT 22: VPN Connection Issues ---
+"User can't connect to VPN. Walk me through diagnostics:
+VPN type: [corporate VPN / personal NordVPN / OpenVPN]
+Error: [paste error message]
+OS: [Windows 10/11]
+Network they're on: [home / corporate / public WiFi / mobile hotspot]"
+
+--- PROMPT 23: Wake-On-LAN Setup ---
+"I need to set up Wake-On-LAN so I can wake machines remotely. Give me:
+1. The BIOS settings to enable
+2. The network driver settings to change
+3. The PowerShell command to test/use it
+Is this a domain environment: [yes/no]"
+
+====================================================
+SECTION 6: HARDWARE & DIAGNOSTICS
+====================================================
+
+--- PROMPT 24: Disk Space Critical ---
+"A machine is out of disk space. I need to free up space quickly without breaking anything.
+Walk me through, in order of most recoverable:
+Current free space: [GB]
+What's installed: [Office, Adobe, CAD, etc]
+Can user move files elsewhere: [yes/no]
+Critical data on this drive: [yes/no, what?]"
+
+--- PROMPT 25: RAM & Memory Issues ---
+"User reports system is very slow with lots of RAM in use. Help me diagnose:
+RAM installed: [e.g., 16GB]
+Current usage shown in Task Manager: [e.g., 90%]
+What's running: [office apps, browser tabs, other?]
+Has this happened before: [yes/no]
+Suggested fix: [more RAM vs finding memory leak vs optimizing?]"
+
+--- PROMPT 26: Hardware Compatibility Check ---
+"I want to upgrade hardware on this machine [monitor/GPU/RAM/SSD]. Check for 
+compatibility and recommend the best option:
+Current specs: [motherboard model, OS, current components]
+Use case: [office work / video editing / gaming / development?]
+Budget: [range?]"
+
+--- PROMPT 27: Overheating Machine Diagnosis ---
+"Machine is overheating and shutting down. Help me diagnose the cause:
+Temperature: [if known in Task Manager / BIOS]
+When it happens: [during boot / under load / always?]
+Recent changes: [dust, moved to new location, removed case cover?]
+Background processes using high CPU: [what's running?]"
+
+====================================================
+SECTION 7: SOFTWARE & INSTALLATION
+====================================================
+
+--- PROMPT 28: Software Installation Failing ---
+"Installer keeps failing. Help me troubleshoot:
+Software: [name and version]
+Error: [paste full error message]
+OS: [Windows 10/11 version and build]
+Is this a domain machine: [yes/no]
+Have you tried: [running as admin? disabling antivirus? other?]"
+
+--- PROMPT 29: Uninstall Won't Complete ---
+"Software won't uninstall properly (leaves behind files/registry entries). 
+How do I completely remove it:
+Software: [name]
+What remains: [config files? registry entries? folder?]
+Tools available: [CCleaner / manual registry editing / other?]"
+
+--- PROMPT 30: Portable App Configuration ---
+"I need to run a portable application from USB without installing it.
+Explain setup, any limitations, and how to make it portable-friendly:
+Application: [name]
+Source OS: [where portable version comes from]
+Target environment: [Windows 10/11 domain machines?]
+Persistence needed: [save settings between runs? yes/no]"
+
+====================================================
+SECTION 8: WRITING DOCUMENTATION & TICKETS
+====================================================
+
+--- PROMPT 31: Turn Messy Notes Into Professional Ticket ---
+"Clean up these rough notes into a professional IT ticket resolution note 
+for the user:
+[paste your bullet points / rough notes]
+Also suggest a clear subject line if this was a ticket."
+
+--- PROMPT 32: Create User-Facing Instructions ---
+"Turn these technical steps into simple instructions a non-technical user 
+can follow:
+[paste the technical steps]
+Include: safety warnings if needed, what to expect"
+
+--- PROMPT 33: Knowledge Base Article from Fix ---
+"I just fixed [issue description]. Help me write a knowledge base article 
+someone else can follow:
+Problem: [what the user experienced]
+Root cause: [what was wrong]
+Solution: [what I did to fix it]
+Make it simple enough for users to self-serve."
+
+====================================================
+TIPS FOR BEST RESULTS
+====================================================
+
+✓ Copy entire prompt INCLUDING the quotes, not just the content
+✓ Always include your actual error messages (sanitized)
+✓ Be specific about your environment (OS, version, domain/personal)
+✓ Mention what you've already tried
+✓ Ask follow-up questions if the first response isn't clear enough
+✓ Never trust AI output blindly - verify before running on production
+✓ AI is fastest at explanation, second-fastest at scripting, slowest at complex judgment
+
+Remember: AI is a reference tool to speed you up, not a replacement for thinking.
+Always understand what you're doing before you do it, especially on live systems.

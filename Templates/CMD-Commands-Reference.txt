@@ -1,0 +1,64 @@
+====================================================
+IT TOOLKIT - CMD / QUICK COMMAND REFERENCE
+Open this in Notepad and copy/paste as needed, or
+type these directly into an elevated Command Prompt.
+====================================================
+
+--- NETWORK ---
+ipconfig /all                  Full network configuration
+ipconfig /release               Release current IP
+ipconfig /renew                 Request new IP
+ipconfig /flushdns              Clear DNS cache
+ping <host>                     Test connectivity
+ping -t <host>                  Continuous ping (Ctrl+C to stop)
+tracert <host>                  Trace route / find break point
+nslookup <host>                 Test DNS resolution
+netstat -ano                    Show active connections + owning PID
+netsh winsock reset             Reset network stack (needs restart)
+netsh int ip reset               Reset TCP/IP stack (needs restart)
+
+--- ACTIVE DIRECTORY / DOMAIN ---
+gpupdate /force                  Force Group Policy refresh
+gpresult /r                      Show applied Group Policy summary
+gpresult /h report.html          Export full GP report to HTML
+whoami /groups                   Show current user's AD group memberships
+nltest /dsgetdc:<domain>         Find domain controller
+klist                            Show Kerberos tickets
+
+--- USERS / SESSIONS ---
+whoami                           Current logged-in user
+net user <username>              Local account info
+net user <username> /domain      Domain account info (from domain-joined PC)
+query user                       List logged-in sessions on this machine
+logoff <session-id>               Force logoff a session
+
+--- SYSTEM REPAIR ---
+sfc /scannow                     Scan and repair system files
+DISM /Online /Cleanup-Image /CheckHealth      Quick corruption check
+DISM /Online /Cleanup-Image /ScanHealth       Deeper scan
+DISM /Online /Cleanup-Image /RestoreHealth    Repair Windows image
+chkdsk C: /f                      Fix disk errors (needs restart if C:)
+chkdsk C: /f /r                   Fix errors + scan for bad sectors
+
+--- SHUTDOWN / RESTART ---
+shutdown /r /t 0                  Restart immediately
+shutdown /s /t 0                  Shutdown immediately
+shutdown /r /t 300 /c "Restarting in 5 min for maintenance"   Scheduled restart with message
+shutdown /a                       Abort a pending scheduled shutdown
+
+--- DRIVES / SHARES ---
+net use                           List mapped drives
+net use Z: \\server\share /persistent:yes     Map a network drive
+net share                         List shared folders on this machine
+
+--- MISC ---
+hostname                          Show computer name
+systeminfo                        Full system information dump
+systeminfo | find "Boot"           Show last boot time only
+tasklist                          List running processes
+taskkill /PID <pid> /F             Force-kill a process by PID
+taskkill /IM <name>.exe /F          Force-kill a process by name
+
+---
+Tip: Right-click Start > Terminal (Admin) to open an elevated prompt for
+commands marked as needing admin rights (sfc, DISM, chkdsk, netsh reset, etc).

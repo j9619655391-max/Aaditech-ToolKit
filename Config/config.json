@@ -1,0 +1,158 @@
+{
+  "metadata": {
+    "description": "IT Toolkit Configuration - Customize paths, machines, and script behavior",
+    "lastUpdated": "2026-07-09",
+    "version": "2.0"
+  },
+  "paths": {
+    "logs": "Logs",
+    "scripts": "Scripts",
+    "templates": "Templates",
+    "remote-tools": "Remote-Tools",
+    "documentation": "Documentation",
+    "drivers": "Drivers",
+    "software": "Software"
+  },
+  "machines": [
+    {
+      "name": "Example-Server01",
+      "host": "192.168.1.10",
+      "description": "Primary file server",
+      "os": "Windows Server 2022",
+      "status": "production"
+    },
+    {
+      "name": "Example-Workstation02",
+      "host": "192.168.1.55",
+      "description": "User workstation",
+      "os": "Windows 11",
+      "status": "production"
+    }
+  ],
+  "network": {
+    "dns_primary": "8.8.8.8",
+    "dns_secondary": "1.1.1.1",
+    "gateway": "192.168.1.1",
+    "testHosts": [
+      {
+        "name": "Google",
+        "host": "www.google.com",
+        "port": 443
+      },
+      {
+        "name": "GitHub",
+        "host": "github.com",
+        "port": 22
+      }
+    ]
+  },
+  "remoteAccess": {
+    "allowRDP": true,
+    "rdpPort": 3389,
+    "allowSSH": false,
+    "sshPort": 22,
+    "rdcManEnabled": false
+  },
+  "remoteExecution": {
+    "winrmEnabled": true,
+    "winrmPort": 5985,
+    "winrmSSL": false,
+    "timeoutSeconds": 30,
+    "maxParallelJobs": 5,
+    "credentialVault": "WindowsCredentialManager",
+    "toolkitRoot": "C:\\IT-Toolkit"
+  },
+  "scriptDefaults": {
+    "logFormat": "txt",
+    "reportCompression": false,
+    "autoSave": true,
+    "deleteOldLogsAfterDays": 90,
+    "maxLogSize_MB": 100,
+    "adminRequired": {
+      "PrinterFix": true,
+      "ExportEventLogs": true,
+      "PinQuickAccess": false,
+      "UserInventory": false,
+      "FirewallTest": false
+    }
+  },
+  "alertThresholds": {
+    "diskUsagePercent": 85,
+    "memoryUsagePercent": 80,
+    "cpuUsagePercent": 90,
+    "diskFillDays": 7
+  },
+  "logRetention": {
+    "retentionDays": 90,
+    "maxLogsSizeMB": 500,
+    "autoCleanup": true
+  },
+  "scriptParameters": {
+    "networkDiagnosticTimeoutMs": 2000,
+    "userInventoryMaxApplications": 50,
+    "firewallTestTimeoutMs": 2000
+  },
+  "eventLogSettings": {
+    "exportSources": [
+      "System",
+      "Application",
+      "Security"
+    ],
+    "daysToExport": 7,
+    "maxEventsPerSource": 500
+  },
+  "firewallTest": {
+    "testUDP": true,
+    "testTCP": true,
+    "timeout_ms": 2000,
+    "customPorts": [
+      {
+        "name": "Company VPN",
+        "host": "vpn.company.com",
+        "port": 443,
+        "protocol": "TCP"
+      }
+    ]
+  },
+  "userInventory": {
+    "includeApplications": true,
+    "includeServices": true,
+    "includeNetworkAdapters": true,
+    "includeLoggedInUsers": true,
+    "includeUpdates": true,
+    "includeBiosInfo": true,
+    "maxApplicationsInReport": 50
+  },
+  "security": {
+    "requirePasswordForRDP": true,
+    "logAllActions": true,
+    "sanitizeLogs": true,
+    "encryptSensitiveData": false
+  },
+  "ui": {
+    "coloredOutput": true,
+    "verboseLogging": false,
+    "pauseBeforeExit": true,
+    "defaultEncoding": "UTF-8"
+  },
+  "knowledge_base": {
+    "location": "Templates/Knowledge-Base.xlsx",
+    "categories": [
+      "Connectivity Issues",
+      "Printer Problems",
+      "Software Installation",
+      "Hardware",
+      "User Account & Permissions",
+      "Performance",
+      "Security",
+      "Other"
+    ]
+  },
+  "notes": {
+    "setup": "Edit this file to customize toolkit behavior. All paths are relative to the IT-Toolkit root folder.",
+    "machines": "Add your commonly-supported machines here for quick reference and RDP generation.",
+    "logging": "Old logs are automatically deleted after 90 days. Adjust 'deleteOldLogsAfterDays' to change.",
+    "customization": "This config is read by all scripts - changes apply toolkit-wide.",
+    "backup": "Keep a backup of this file before making changes."
+  }
+}

@@ -1,0 +1,230 @@
+{
+  "path": "/audit/architecture.json",
+  "generated": "2026-08-05T22:35:00",
+  "layers": {
+    "frontend": {
+      "present": false,
+      "note": "CLI/batch launchers (Toolkit-Menu.bat, Setup-Wizard.bat) are the user interface"
+    },
+    "backend": {
+      "present": false,
+      "note": "PowerShell scripts act as the 'backend' execution layer (21 PowerShell files)"
+    },
+    "api": {
+      "present": false,
+      "note": "No REST/gRPC API endpoints exist"
+    },
+    "database": {
+      "present": false,
+      "note": "No database; persistence is flat files in Logs/ (txt/csv/json/html)"
+    },
+    "repository_layer": {
+      "present": false
+    },
+    "service_layer": {
+      "present": true,
+      "note": "Scripts/Modules/*.psm1 provide modular services (Export, Alert, Log, Report, Remote, Credential)"
+    },
+    "kernel": {
+      "present": false
+    },
+    "agents": {
+      "present": false
+    },
+    "ai_modules": {
+      "present": false,
+      "note": "AI-Assistant-Prompts.txt is a static template file, not an AI integration"
+    },
+    "infrastructure": {
+      "present": false
+    },
+    "security": {
+      "present": true,
+      "note": "Scripts/Modules/CredentialManager.psm1 (partial)"
+    },
+    "authentication": {
+      "present": false
+    },
+    "authorization": {
+      "present": false
+    },
+    "observability": {
+      "present": false
+    },
+    "monitoring": {
+      "present": false
+    },
+    "scheduler": {
+      "present": false
+    },
+    "messaging": {
+      "present": false
+    },
+    "storage": {
+      "present": false
+    },
+    "queue": {
+      "present": false
+    },
+    "cli": {
+      "present": true,
+      "note": "Batch menus + PowerShell scripts are the CLI"
+    },
+    "workers": {
+      "present": false
+    },
+    "plugins": {
+      "present": false
+    },
+    "adapters": {
+      "present": false
+    }
+  },
+  "modules": [
+    {
+      "name": "AlertEngine",
+      "file": "AlertEngine.psm1",
+      "phase": "Phase 1",
+      "exports": [
+        "Test-AlertThreshold",
+        "Get-AlertSeverity",
+        "Format-AlertMessage",
+        "Test-MultipleThresholds"
+      ],
+      "imports": []
+    },
+    {
+      "name": "CredentialManager",
+      "file": "CredentialManager.psm1",
+      "phase": "Phase 2",
+      "exports": [
+        "Store-ToolkitCredential",
+        "Get-ToolkitCredential",
+        "Test-CredentialValid"
+      ],
+      "imports": []
+    },
+    {
+      "name": "ExportEngine",
+      "file": "ExportEngine.psm1",
+      "phase": "Phase 1",
+      "exports": [
+        "Export-ToCSV",
+        "Export-ToJSON",
+        "Export-ToExcel"
+      ],
+      "imports": []
+    },
+    {
+      "name": "LogManager",
+      "file": "LogManager.psm1",
+      "phase": "Phase 1",
+      "exports": [
+        "Remove-OldLogs"
+      ],
+      "imports": []
+    },
+    {
+      "name": "RemoteToolkit",
+      "file": "RemoteToolkit.psm1",
+      "phase": "Phase 2",
+      "exports": [
+        "Test-RemoteConnection",
+        "Invoke-RemoteCommand",
+        "Invoke-ParallelRemoteExecution",
+        "Get-RemoteComputerInfo",
+        "Invoke-RemoteNetworkDiagnostic",
+        "Invoke-QuickCheckRemote"
+      ],
+      "imports": []
+    },
+    {
+      "name": "ReportGenerator",
+      "file": "ReportGenerator.psm1",
+      "phase": "Phase 1",
+      "exports": [
+        "Convert-ObjectArrayToHtmlTable",
+        "New-HTMLReport"
+      ],
+      "imports": []
+    }
+  ],
+  "scripts": [
+    {
+      "file": "/Scripts/Firewall-Test.ps1",
+      "imports": [
+        "Import-Module (Join-Path $modulePath 'ExportEngine.psm1') -ErrorAction SilentlyContinue }",
+        "Import-Module (Join-Path $modulePath 'LogManager.psm1') -ErrorAction SilentlyContinue }"
+      ]
+    },
+    {
+      "file": "/Scripts/Export-EventLogs.ps1",
+      "imports": []
+    },
+    {
+      "file": "/Scripts/Printer-Fix.ps1",
+      "imports": []
+    },
+    {
+      "file": "/Scripts/Network-Diagnostic.ps1",
+      "imports": [
+        "Import-Module (Join-Path $modulePath 'ExportEngine.psm1') -ErrorAction SilentlyContinue }",
+        "Import-Module (Join-Path $modulePath 'LogManager.psm1') -ErrorAction SilentlyContinue }"
+      ]
+    },
+    {
+      "file": "/Scripts/User-Inventory.ps1",
+      "imports": [
+        "Import-Module (Join-Path $modulePath 'ExportEngine.psm1') -ErrorAction SilentlyContinue }",
+        "Import-Module (Join-Path $modulePath 'LogManager.psm1') -ErrorAction SilentlyContinue }"
+      ]
+    },
+    {
+      "file": "/Scripts/Pin-QuickAccess-Folders.ps1",
+      "imports": []
+    },
+    {
+      "file": "/Scripts/QuickCheck.ps1",
+      "imports": [
+        "Import-Module (Join-Path $modulePath 'ExportEngine.psm1') -ErrorAction SilentlyContinue",
+        "Import-Module (Join-Path $modulePath 'AlertEngine.psm1') -ErrorAction SilentlyContinue",
+        "Import-Module (Join-Path $modulePath 'ReportGenerator.psm1') -ErrorAction SilentlyContinue",
+        "Import-Module (Join-Path $modulePath 'LogManager.psm1') -ErrorAction SilentlyContinue"
+      ]
+    },
+    {
+      "file": "/Scripts/Tests/Phase1-Regression.Tests.ps1",
+      "imports": [
+        "Import-Module $path -Force -ErrorAction Stop"
+      ]
+    },
+    {
+      "file": "/Scripts/Tests/RemoteToolkit.tests.ps1",
+      "imports": [
+        "Import-Module (Join-Path $PSScriptRoot '..\\Modules\\RemoteToolkit.psm1') -ErrorAction SilentlyContinue"
+      ]
+    },
+    {
+      "file": "/Scripts/Tests/Run-RemoteToolkit-Tests.ps1",
+      "imports": []
+    },
+    {
+      "file": "/Scripts/Remote/BatchScan.ps1",
+      "imports": [
+        "Import-Module (Join-Path $moduleDir 'RemoteToolkit.psm1') -ErrorAction Stop"
+      ]
+    },
+    {
+      "file": "/Scripts/Remote/Invoke-RemoteQuickCheck.ps1",
+      "imports": [
+        "Import-Module (Join-Path $moduleDir 'RemoteToolkit.psm1') -ErrorAction Stop"
+      ]
+    },
+    {
+      "file": "/Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1",
+      "imports": [
+        "Import-Module (Join-Path $moduleDir 'RemoteToolkit.psm1') -ErrorAction Stop"
+      ]
+    }
+  ]
+}

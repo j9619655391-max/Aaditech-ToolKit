@@ -1,0 +1,14 @@
+{
+  "path": "/audit/api.json",
+  "generated": "2026-08-05T22:35:00",
+  "rest_endpoints": [],
+  "middlewares": [],
+  "validation": [],
+  "openapi_docs": [],
+  "authentication": [],
+  "authorization": [],
+  "rate_limiting": [],
+  "request_schemas": [],
+  "response_schemas": [],
+  "summary": "NO HTTP/API layer exists. This is a PowerShell CLI tool. API audit = N/A (NOT MEASURABLE)."
+}
