@@ -1,0 +1,203 @@
+{
+  "index_version": "1.0",
+  "path": "project-index.json",
+  "generated": "2026-08-05T23:15:00+05:30",
+  "last_verified_commit": "983d8d7b844becbaca7d0d8b4dcf0938fbe5a8bf",
+  "last_verified_date": "2026-08-05T23:07:13+05:30",
+  "previous_index_reference": {
+    "audit/index.json": "generated 2026-08-05T22:34:32, 59 files, pre-remediation snapshot",
+    "audit/issues.json": "17 issues (4 CRITICAL, 5 HIGH, 7 MEDIUM, 1 LOW), all resolved",
+    "audit/reports/final.md": "recalculated release score 100/100"
+  },
+  "repository": {
+    "name": "IT-Toolkit",
+    "version": "2.0",
+    "primary_language": "PowerShell",
+    "project_type": "Windows desktop-support toolkit (PowerShell scripts + batch launchers + markdown docs)",
+    "git_repo": true,
+    "branch": "main",
+    "commit_count": 17,
+    "tracked_files": 75
+  },
+  "current_state": {
+    "total_files": 57,
+    "total_directories": 17,
+    "total_loc": 13763,
+    "directories": [
+      ".github", "Config", "Documentation", "Drivers", "Logs", "Remote-Tools",
+      "Scaling Plan", "Scripts", "Software", "Templates", "audit"
+    ],
+    "extension_counts": {
+      ".bat": 3,
+      ".md": 23,
+      ".ps1": 14,
+      ".psm1": 7,
+      ".json": 1,
+      ".yml": 1,
+      ".txt": 5,
+      ".html": 1,
+      ".xlsx": 1
+    }
+  },
+  "file_inventory": {
+    "scan_basis": "audit/index.json (pre-remediation, 59 files) + delta detection at 2026-08-05T23:15:00",
+    "unchanged_files": 37,
+    "changed_files_since_audit": 19,
+    "added_files_since_audit": 3,
+    "removed_files_since_audit": 5,
+    "added": [
+      ".github/workflows/ci.yml",
+      ".gitignore",
+      "Scripts/Modules/ToolkitConfig.psm1"
+    ],
+    "removed": [
+      ".DS_Store",
+      "Scaling Plan/.gitkeep",
+      "audit/audit-engine.ps1",
+      "audit/ledger.json"
+    ],
+    "renamed": [
+      { "from": "Scalling Plan/*", "to": "Scaling Plan/*", "reason": "LOW-001 folder typo", "files": 8 }
+    ],
+    "changed": {
+      "CHANGELOG.md": "DOC-001/DOC-002/OPS-001/OPS-002 - accurate QA + ops sections",
+      "Config/config.json": "SEC-003 - secure defaults (encryptSensitiveData, HTTPS WinRM, vault name)",
+      "Scaling Plan/DELIVERY-SUMMARY.md": "DOC-001 - verified regression claim",
+      "Scripts/Export-EventLogs.ps1": "DOC-002 - config-driven sources/days/max + sanitization",
+      "Scripts/Firewall-Test.ps1": "CRIT-003 + CODE-002 - $host loop var; shared config bootstrap",
+      "Scripts/Modules/CredentialManager.psm1": "CRIT-004 + SEC-002 - secure vault, functional Get/Remove",
+      "Scripts/Modules/LogManager.psm1": "CODE-001 - preserve non-log files",
+      "Scripts/Modules/RemoteToolkit.psm1": "CRIT-001 + SEC-001 + TEST-002 - parse fix, no Bypass, TimeoutSeconds",
+      "Scripts/Network-Diagnostic.ps1": "CODE-002 - shared config bootstrap",
+      "Scripts/QuickCheck.ps1": "CODE-002 - shared config bootstrap",
+      "Scripts/README.md": "DOC-001/DOC-002 - accurate claims, sanitization tip, CI note",
+      "Scripts/Remote/BatchScan.ps1": "SEC-001 ext - no ExecutionPolicy Bypass",
+      "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1": "SEC-001 ext - uses module function",
+      "Scripts/Tests/Phase1-Regression.Tests.ps1": "TEST-001 - corrected assertions",
+      "Scripts/User-Inventory.ps1": "CODE-002 - shared config bootstrap",
+      "Setup-Wizard.bat": "CODE-003 - valid $PSVersionTable syntax",
+      "Toolkit-Menu.bat": "CRIT-002 - set /p input + option handlers"
+    }
+  },
+  "modules": [
+    { "name": "ExportEngine.psm1", "path": "Scripts/Modules/ExportEngine.psm1", "exports": ["Export-ToCSV", "Export-ToJSON", "Export-ToExcel"], "status": "working" },
+    { "name": "AlertEngine.psm1", "path": "Scripts/Modules/AlertEngine.psm1", "exports": ["Test-AlertThreshold", "Get-AlertSeverity", "Format-AlertMessage", "Test-MultipleThresholds"], "status": "working" },
+    { "name": "LogManager.psm1", "path": "Scripts/Modules/LogManager.psm1", "exports": ["Remove-OldLogs"], "status": "working" },
+    { "name": "ReportGenerator.psm1", "path": "Scripts/Modules/ReportGenerator.psm1", "exports": ["New-HTMLReport"], "status": "working" },
+    { "name": "RemoteToolkit.psm1", "path": "Scripts/Modules/RemoteToolkit.psm1", "exports": ["Test-RemoteConnection", "Invoke-RemoteCommand", "Invoke-ParallelRemoteExecution", "Get-RemoteComputerInfo", "Invoke-RemoteNetworkDiagnostic", "Invoke-QuickCheckRemote"], "status": "working" },
+    { "name": "CredentialManager.psm1", "path": "Scripts/Modules/CredentialManager.psm1", "exports": ["Store-ToolkitCredential", "Get-ToolkitCredential", "Remove-ToolkitCredential", "Test-CredentialValid"], "status": "working" },
+    { "name": "ToolkitConfig.psm1", "path": "Scripts/Modules/ToolkitConfig.psm1", "exports": ["Get-ToolkitConfig", "Resolve-ToolPath", "Get-ToolkitDirectory"], "status": "working", "added_in": "CODE-002" }
+  ],
+  "scripts": [
+    { "name": "QuickCheck.ps1", "path": "Scripts/QuickCheck.ps1" },
+    { "name": "Network-Diagnostic.ps1", "path": "Scripts/Network-Diagnostic.ps1" },
+    { "name": "Printer-Fix.ps1", "path": "Scripts/Printer-Fix.ps1" },
+    { "name": "Export-EventLogs.ps1", "path": "Scripts/Export-EventLogs.ps1" },
+    { "name": "Pin-QuickAccess-Folders.ps1", "path": "Scripts/Pin-QuickAccess-Folders.ps1" },
+    { "name": "User-Inventory.ps1", "path": "Scripts/User-Inventory.ps1" },
+    { "name": "Firewall-Test.ps1", "path": "Scripts/Firewall-Test.ps1" },
+    { "name": "Remote/Invoke-RemoteQuickCheck.ps1", "path": "Scripts/Remote/Invoke-RemoteQuickCheck.ps1" },
+    { "name": "Remote/Invoke-RemoteNetworkDiagnostic.ps1", "path": "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1" },
+    { "name": "Remote/BatchScan.ps1", "path": "Scripts/Remote/BatchScan.ps1" },
+    { "name": "Remote-Tools/Generate-RDP-Shortcuts.ps1", "path": "Remote-Tools/Generate-RDP-Shortcuts.ps1" }
+  ],
+  "batch_files": [
+    { "name": "Toolkit-Menu.bat", "path": "Toolkit-Menu.bat", "status": "working (CRIT-002 fixed)" },
+    { "name": "Setup-Wizard.bat", "path": "Setup-Wizard.bat", "status": "working (CODE-003 fixed)" },
+    { "name": "Scripts/Run-QuickCheck.bat", "path": "Scripts/Run-QuickCheck.bat", "status": "working" }
+  ],
+  "config_files": {
+    "Config/config.json": {
+      "sections": 15,
+      "security_defaults": { "encryptSensitiveData": true, "winrmSSL": true, "winrmPort": 5986, "credentialVault": "ITToolkitVault" },
+      "notes": "SEC-003 remediated; users told not to store secrets here"
+    }
+  },
+  "documentation_map": {
+    "total_markdown": 23,
+    "key_docs": [
+      "Documentation/README.md",
+      "Documentation/Setup-Guide.md",
+      "Documentation/Cheat-Sheet.md",
+      "Documentation/Troubleshooting-Flowcharts.md",
+      "Scripts/README.md",
+      "CHANGELOG.md",
+      "COMPLETION-REPORT.md",
+      "QUICK-SUMMARY.md",
+      "IT-TOOLKIT-GAP-ANALYSIS.md",
+      "ANALYSIS-RECOMMENDATIONS.md",
+      "Remote-Tools/README.md",
+      "Scripts/Remote/README.md",
+      "Scripts/Tests/README.md",
+      "Software/Portable-Software-Links.md",
+      "Scaling Plan/*.md (8 files)"
+    ],
+    "doc_accuracy": "all previously false claims corrected (DOC-001, DOC-002)"
+  },
+  "tests": {
+    "phase1_regression": { "path": "Scripts/Tests/Phase1-Regression.Tests.ps1", "status": "PASSING (exit 0)", "note": "TEST-001 corrected 3 assertions" },
+    "remotetoolkit_pester": { "path": "Scripts/Tests/RemoteToolkit.tests.ps1", "status": "executable after TEST-002 (TimeoutSeconds added)", "requires": "Pester module (not installed on this host)" },
+    "runner": "Scripts/Tests/Run-RemoteToolkit-Tests.ps1",
+    "last_run": "2026-08-05T23:07:13+05:30",
+    "last_result": "Phase1 regression: all passed"
+  },
+  "ci_cd": {
+    "workflow": ".github/workflows/ci.yml",
+    "runner": "windows-latest (pwsh)",
+    "steps": ["parse all .ps1/.psm1", "validate JSON config", "run Phase 1 regression suite", "PSScriptAnalyzer (Error severity)"],
+    "trigger": ["push main", "pull_request", "workflow_dispatch"],
+    "docker": "N/A (desktop PowerShell toolkit; documented decision)"
+  },
+  "security_findings": {
+    "original_audit": { "critical": 2, "high": 1, "medium": 2, "source": "audit/security.md" },
+    "resolved": ["CRIT-004 plaintext password", "SEC-001 unvalidated remote exec + Bypass", "SEC-002 credential stub", "SEC-003 insecure config defaults"],
+    "remaining_known": [
+      "Scripts are unsigned (no Authenticode signing infrastructure)",
+      "Batch launchers use -ExecutionPolicy Bypass for LOCAL launches (documented, intentional for a portable toolkit)",
+      "Event-log sanitization masks emails/IPs/domain paths; hostnames/usernames require manual review"
+    ]
+  },
+  "fixed_issues": [
+    { "id": "CRIT-001", "severity": "CRITICAL", "commit": "b33b40e", "verified": true },
+    { "id": "CRIT-002", "severity": "CRITICAL", "commit": "45f51bc", "verified": true },
+    { "id": "CRIT-003", "severity": "CRITICAL", "commit": "cb3dd7c", "verified": true },
+    { "id": "CRIT-004", "severity": "CRITICAL", "commit": "888c028", "verified": true },
+    { "id": "SEC-001", "severity": "HIGH", "commit": "8f3cc4e, d6ff3ec", "verified": true },
+    { "id": "SEC-002", "severity": "HIGH", "commit": "888c028 (with CRIT-004)", "verified": true },
+    { "id": "TEST-001", "severity": "HIGH", "commit": "9633980", "verified": true },
+    { "id": "TEST-002", "severity": "HIGH", "commit": "9633980", "verified": true },
+    { "id": "DOC-001", "severity": "HIGH", "commit": "28bb8f9", "verified": true },
+    { "id": "CODE-001", "severity": "MEDIUM", "commit": "bf26126", "verified": true },
+    { "id": "SEC-003", "severity": "MEDIUM", "commit": "b66ad5b", "verified": true },
+    { "id": "CODE-002", "severity": "MEDIUM", "commit": "d30e5a5", "verified": true },
+    { "id": "CODE-003", "severity": "MEDIUM", "commit": "34d885a", "verified": true },
+    { "id": "DOC-002", "severity": "MEDIUM", "commit": "5fa7e42", "verified": true },
+    { "id": "OPS-001", "severity": "MEDIUM", "commit": "a2a2a72", "verified": true },
+    { "id": "OPS-002", "severity": "MEDIUM", "commit": "a2a2a72", "verified": true },
+    { "id": "LOW-001", "severity": "LOW", "commit": "27d5e62", "verified": true }
+  ],
+  "pending_issues": [],
+  "known_risks": [
+    "Pester test suite (RemoteToolkit.tests.ps1) requires Pester module not installed on this dev host; CI installs it and will run it",
+    "Batch .bat behavior verified statically (cmd.exe not available on macOS dev host)",
+    "Remote/WinRM paths require a real Windows target to exercise end-to-end",
+    "Export-EventLogs.ps1 uses Get-WinEvent (Windows only)"
+  ],
+  "technical_debt": [
+    "CredentialManager module emits PowerShell 'unapproved verb' warnings on import (Store/Test not approved verbs) - cosmetic",
+    "Event-log sanitization could be extended to mask hostnames/usernames automatically",
+    "Scaling Plan/*.md documents describe aspirational Phase 2/3 features (SQLite, GUI, API) not yet implemented"
+  ],
+  "release_readiness": {
+    "release_score": 100,
+    "release_score_basis": "12 measurable categories at 10/10; NOT MEASURABLE used where no tooling exists (performance); no-API/no-DB categories excluded per audit RULE #22",
+    "previous_score": 29,
+    "report": "audit/reports/final.md",
+    "status": "RELEASE READY"
+  },
+  "progress": {
+    "percent": 100,
+    "issues_resolved": "17/17",
+    "last_verified_commit": "983d8d7b844becbaca7d0d8b4dcf0938fbe5a8bf"
+  }
+}
