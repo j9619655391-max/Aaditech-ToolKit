@@ -60,11 +60,14 @@
 - ✓ Deduplicated config bootstrap into shared `Scripts/Modules/ToolkitConfig.psm1`
 - ✓ Secure config defaults (encryption on, HTTPS WinRM) and credential-vault guidance
 
-### 🤖 AUTO-INDEX (added 2026-08-06)
+### 🤖 AUTO-INDEX (added 2026-08-06, verified 2026-08-06)
 - ✓ `Scripts/Index/Update-ProjectIndex.ps1` — incremental auto-indexer maintaining `project-index.json`, `project-state.json`, `project-progress.json`
 - ✓ Detects added/removed/changed files via SHA-256 snapshot deltas; preserves issue/resolution/risk history
+- ✓ Idempotent regeneration: only records a delta when the tree actually changes, so repeated runs are byte-stable
+- ✓ `-Check` mode for CI: regenerates and compares meaningful content against HEAD (ignoring timestamps + git identity), restores files when fresh
 - ✓ `Scripts/Index/Install-GitHook.ps1` — installs the pre-commit hook (`.githooks/pre-commit`) so every commit refreshes the index
-- ✓ CI now verifies the project index is up to date (`Verify project index is up to date` step)
+- ✓ CI now verifies the project index is up to date (`Verify project index is up to date` step via `-Check`)
+- ✓ Verified end-to-end: add scenario (`added: 1`), remove scenario (`removed: 1`), and change scenario all captured in delta history
 
 ### ✅ QUALITY ASSURANCE (verified 2026-08-05)
 - ✓ Phase 1 regression suite passes (CSV/JSON/HTML export, alert thresholds, log cleanup)
