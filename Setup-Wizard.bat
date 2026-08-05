@@ -266,7 +266,7 @@ echo.
 echo Testing PowerShell availability and execution...
 echo.
 
-powershell -NoProfile -Command "Write-Host '✓ PowerShell v' + ([PSVersionTable].PSVersion.Major) + '.' + ([PSVersionTable].PSVersion.Minor)" 2>nul
+powershell -NoProfile -Command "Write-Host ('PowerShell version: ' + $PSVersionTable.PSVersion.ToString())" 2>nul
 if %errorlevel% equ 0 (
     echo ✓ PowerShell is working correctly
 ) else (
@@ -275,7 +275,7 @@ if %errorlevel% equ 0 (
 
 echo.
 echo Testing Execution Policy...
-powershell -NoProfile -Command "Get-ExecutionPolicy -Scope CurrentUser | Select-Object -ExpandProperty value" 2>nul
+powershell -NoProfile -Command "(Get-ExecutionPolicy -Scope CurrentUser).ToString()" 2>nul
 
 echo.
 echo If you see "RemoteSigned" above, everything is configured correctly.
