@@ -55,11 +55,11 @@
   },
   "remoteExecution": {
     "winrmEnabled": true,
-    "winrmPort": 5985,
-    "winrmSSL": false,
+    "winrmPort": 5986,
+    "winrmSSL": true,
     "timeoutSeconds": 30,
     "maxParallelJobs": 5,
-    "credentialVault": "WindowsCredentialManager",
+    "credentialVault": "ITToolkitVault",
     "toolkitRoot": "C:\\IT-Toolkit"
   },
   "scriptDefaults": {
@@ -127,7 +127,7 @@
     "requirePasswordForRDP": true,
     "logAllActions": true,
     "sanitizeLogs": true,
-    "encryptSensitiveData": false
+    "encryptSensitiveData": true
   },
   "ui": {
     "coloredOutput": true,
@@ -153,6 +153,7 @@
     "machines": "Add your commonly-supported machines here for quick reference and RDP generation.",
     "logging": "Old logs are automatically deleted after 90 days. Adjust 'deleteOldLogsAfterDays' to change.",
     "customization": "This config is read by all scripts - changes apply toolkit-wide.",
-    "backup": "Keep a backup of this file before making changes."
+    "backup": "Keep a backup of this file before making changes.",
+    "security": "NEVER store passwords or secrets in this file. Use Store-ToolkitCredential (CredentialManager) for credentials. This file is plaintext by design and may be committed to version control."
   }
 }
