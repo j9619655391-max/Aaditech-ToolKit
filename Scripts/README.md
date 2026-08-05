@@ -431,6 +431,7 @@ All scripts are designed to be modified:
 - **Troubleshooting:** Documentation/Troubleshooting-Flowcharts.md
 - **Configuration:** Config/config.json (well-commented)
 - **AI Prompts:** Templates/AI-Assistant-Prompts.txt (33+ ready-to-use prompts)
+- **Continuous Integration:** `.github/workflows/ci.yml` — parses all PowerShell files, validates JSON config, runs the Phase 1 regression suite, and runs PSScriptAnalyzer on push/PR (Windows runner)
 
 ---
 

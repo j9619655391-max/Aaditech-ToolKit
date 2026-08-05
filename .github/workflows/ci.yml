@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  powershell-validation:
+    name: PowerShell validation
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        run: Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+
+      - name: Parse all PowerShell files
+        run: |
+          $errors = 0
+          Get-ChildItem -Recurse -Include *.ps1,*.psm1 | ForEach-Object {
+            $tokens = $null; $errs = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errs) | Out-Null
+            if ($errs.Count -gt 0) {
+              $errors++
+              Write-Host "PARSE FAIL: $($_.Name)"
+              $errs | ForEach-Object { Write-Host "  $($_.Message) @ line $($_.Extent.StartLineNumber)" }
+            }
+          }
+          if ($errors -gt 0) { throw "$errors file(s) failed to parse" }
+          Write-Host "All PowerShell files parse cleanly."
+
+      - name: Validate JSON config
+        run: |
+          Get-ChildItem -Recurse -Include *.json | Where-Object { $_.FullName -notmatch 'node_modules' } | ForEach-Object {
+            try {
+              Get-Content $_.FullName -Raw | ConvertFrom-Json | Out-Null
+              Write-Host "JSON OK: $($_.Name)"
+            } catch {
+              throw "Invalid JSON in $($_.Name): $_"
+            }
+          }
+
+      - name: Run Phase 1 regression suite
+        run: pwsh -NoProfile -File ./Scripts/Tests/Phase1-Regression.Tests.ps1
+
+      - name: PSScriptAnalyzer (errors)
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path ./Scripts -Recurse -Severity Error -ErrorAction SilentlyContinue
+          if ($results) {
+            $results | Format-Table -AutoSize
+            throw "$($results.Count) analyzer error(s) found"
+          }
+          Write-Host "No PSScriptAnalyzer errors."

@@ -53,6 +53,13 @@
   - View documentation
   - Interactive menu (not command-line)
 
+### ⚙️ OPERATIONS (verified 2026-08-05)
+- ✓ Git repository initialized with clean commit history
+- ✓ `.gitignore` added (`.DS_Store`, logs, temp files) — `.DS_Store` removed from tracking
+- ✓ CI pipeline added: `.github/workflows/ci.yml` (PowerShell parse, JSON validation, regression suite, PSScriptAnalyzer on Windows)
+- ✓ Deduplicated config bootstrap into shared `Scripts/Modules/ToolkitConfig.psm1`
+- ✓ Secure config defaults (encryption on, HTTPS WinRM) and credential-vault guidance
+
 ### ✅ QUALITY ASSURANCE (verified 2026-08-05)
 - ✓ Phase 1 regression suite passes (CSV/JSON/HTML export, alert thresholds, log cleanup)
 - ✓ RemoteToolkit.psm1 imports and exports all 6 functions
