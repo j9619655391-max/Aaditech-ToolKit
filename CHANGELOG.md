@@ -97,3 +97,5 @@ Added everything missing from v1:
 - Folder structure, QuickCheck.ps1 menu script, Network-Diagnostic.ps1
 - Knowledge-Base.xlsx (3 tabs), Ticket-Reply-Templates.txt
 - Setup-Guide.md, Cheat-Sheet.md, Troubleshooting-Flowcharts.md
+
+- Auto-index verified working
