@@ -324,7 +324,7 @@ if ($Check) {
             $clone = [ordered]@{}
             $names = @($obj.PSObject.Properties.Name | Sort-Object)
             foreach ($n in $names) {
-                if ($n -in @('generated', 'last_verified_date', 'detected_at', 'last_modified', 'latest_delta', 'last_verified_commit', 'commit_count', 'working_tree_clean')) { continue }
+                if ($n -in @('generated', 'last_verified_date', 'detected_at', 'last_modified', 'latest_delta', 'last_verified_commit', 'commit_count', 'working_tree_clean', 'head', 'clean_working_tree')) { continue }
                 $clone[$n] = Remove-Volatile $obj.$n
             }
             return [PSCustomObject]$clone
