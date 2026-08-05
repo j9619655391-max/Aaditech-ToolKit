@@ -48,6 +48,24 @@ jobs:
       - name: Run Phase 1 regression suite
         run: pwsh -NoProfile -File ./Scripts/Tests/Phase1-Regression.Tests.ps1
 
+      - name: Run Pester suites (RemoteToolkit, BatchLauncher, Phase2 modules)
+        run: |
+          if (-not (Get-Module -ListAvailable -Name Pester | Where-Object { $_.Version.Major -ge 6 })) {
+            Install-Module Pester -Force -Scope CurrentUser -SkipPublisherCheck
+          }
+          Import-Module Pester
+          $all = @(
+            (Invoke-Pester -Path ./Scripts/Tests/RemoteToolkit.tests.ps1 -Output Normal -PassThru),
+            (Invoke-Pester -Path ./Scripts/Tests/BatchLauncher.Tests.ps1 -Output Normal -PassThru),
+            (Invoke-Pester -Path ./Scripts/Tests/Phase2-Modules.Tests.ps1 -Output Normal -PassThru)
+          )
+          $failed = 0
+          foreach ($r in $all) {
+            if ($null -ne $r) { $failed += $r.FailedCount }
+          }
+          if ($failed -gt 0) { throw "$failed Pester test(s) failed across the suites" }
+          Write-Host 'All Pester suites passed.'
+
       - name: PSScriptAnalyzer (errors)
         run: |
           $results = Invoke-ScriptAnalyzer -Path ./Scripts -Recurse -Severity Error -ErrorAction SilentlyContinue

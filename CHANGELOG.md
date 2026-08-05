@@ -77,8 +77,18 @@
 - ✓ CredentialManager stores/retrieves credentials without exposing plaintext passwords
 - ✓ Remote script execution no longer uses `-ExecutionPolicy Bypass`
 - ✓ No duplicate files or entries
-- ✓ No menu mapping conflicts
 - ✓ Configuration consistency verified
+
+### 🧪 PHASE 2 — HARDENING + NEW SURFACES (added & verified 2026-08-06)
+- **SanitizeEngine.psm1** — PII redaction (emails, IPs, accounts, hostnames); wired into `Export-EventLogs.ps1`; config-driven toggles in `config.json`
+- **ToolkitData.psm1** — cross-platform SQLite persistence via `sqlite3` CLI (inventory / diagnostics / schema); `Data/DATABASE-GUIDE.md`, `Data/README.txt`
+- **TaskScheduler.psm1** — cron-style recurrence builder + `schtasks.exe` wrapper with Windows-only guard; `SCHEDULE-GUIDE.md`
+- **CredentialManager** — canonical `Save-ToolkitCredential` (alias `Store-ToolkitCredential` retained); import is unapproved-verb clean
+- **GUI dashboard** — `Scripts/GUI/Toolkit-GUI.ps1` WinForms launcher (Windows-only, guarded exit 2 on macOS); `DASHBOARD-GUIDE.md`
+- **Docs** — `Config/CONFIG-GUIDE.md`, `VERSION.md` (v1.0.0 release reference)
+- **Tests** — NEW `BatchLauncher.Tests.ps1` (batch control-flow 9/9), `Phase2-Modules.Tests.ps1` (11/11) — all green locally
+- **CI** — Pester suites (RemoteToolkit, BatchLauncher, Phase2 modules) added to `ci.yml`
+- **Release** — annotated tag `v1.0.0` created (local repo, no remote configured)
 
 ---
 
