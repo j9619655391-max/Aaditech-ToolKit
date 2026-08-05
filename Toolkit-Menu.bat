@@ -1,5 +1,6 @@
 @echo off
 title IT Toolkit - Master Menu
+setlocal enabledelayedexpansion
 :menu
 cls
 echo =================================================
@@ -24,25 +25,108 @@ echo 14. Open Troubleshooting Flowcharts
 echo 15. Remote QuickCheck
 echo 16. Batch Remote Scan
 echo 17. Remote Network Diagnostic
+echo  0. Exit
+echo =================================================
+set "choice="
+set /p choice="Select an option (0-17): "
 
-if "%choice%"=="1" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\QuickCheck.ps1"
-if "%choice%"=="2" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Network-Diagnostic.ps1"
-if "%choice%"=="3" powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"%~dp0Scripts\Printer-Fix.ps1\"'"
-if "%choice%"=="4" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Export-EventLogs.ps1"
-if "%choice%"=="5" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Pin-QuickAccess-Folders.ps1"
-if "%choice%"=="6" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Remote-Tools\Generate-RDP-Shortcuts.ps1"
-if "%choice%"=="7" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\User-Inventory.ps1"
-if "%choice%"=="8" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Firewall-Test.ps1"
-if "%choice%"=="9" start "" "%~dp0Templates\Knowledge-Base.xlsx"
-if "%choice%"=="10" start "" "%~dp0Templates\Ticket-Reply-Templates.txt"
-if "%choice%"=="11" start "" "%~dp0Templates\CMD-Commands-Reference.txt"
-if "%choice%"=="12" start "" "%~dp0Templates\AI-Assistant-Prompts.txt"
-if "%choice%"=="13" start "" "%~dp0Documentation\Cheat-Sheet.md"
-if "%choice%"=="14" start "" "%~dp0Documentation\Troubleshooting-Flowcharts.md"
-if "%choice%"=="15" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Remote\Invoke-RemoteQuickCheck.ps1"
-if "%choice%"=="16" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Remote\BatchScan.ps1"
-if "%choice%"=="17" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Remote\Invoke-RemoteNetworkDiagnostic.ps1"
-if "%choice%"=="0" exit
-if "%choice%"=="0" exit
+if "%choice%"=="0" goto end
+if "%choice%"=="1" goto run_quickcheck
+if "%choice%"=="2" goto run_network
+if "%choice%"=="3" goto run_printer
+if "%choice%"=="4" goto run_eventlogs
+if "%choice%"=="5" goto run_pinquickaccess
+if "%choice%"=="6" goto run_rdpshortcuts
+if "%choice%"=="7" goto run_userinventory
+if "%choice%"=="8" goto run_firewalltest
+if "%choice%"=="9" goto open_knowledgebase
+if "%choice%"=="10" goto open_ticketreplies
+if "%choice%"=="11" goto open_cmdreference
+if "%choice%"=="12" goto open_aiprompts
+if "%choice%"=="13" goto open_cheatsheet
+if "%choice%"=="14" goto open_flowcharts
+if "%choice%"=="15" goto run_remotequickcheck
+if "%choice%"=="16" goto run_batchscan
+if "%choice%"=="17" goto run_remotenetwork
+goto invalid
 
+:run_quickcheck
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\QuickCheck.ps1"
 goto menu
+
+:run_network
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Network-Diagnostic.ps1"
+goto menu
+
+:run_printer
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"%~dp0Scripts\Printer-Fix.ps1\"'"
+goto menu
+
+:run_eventlogs
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Export-EventLogs.ps1"
+goto menu
+
+:run_pinquickaccess
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Pin-QuickAccess-Folders.ps1"
+goto menu
+
+:run_rdpshortcuts
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Remote-Tools\Generate-RDP-Shortcuts.ps1"
+goto menu
+
+:run_userinventory
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\User-Inventory.ps1"
+goto menu
+
+:run_firewalltest
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Firewall-Test.ps1"
+goto menu
+
+:open_knowledgebase
+start "" "%~dp0Templates\Knowledge-Base.xlsx"
+goto menu
+
+:open_ticketreplies
+start "" "%~dp0Templates\Ticket-Reply-Templates.txt"
+goto menu
+
+:open_cmdreference
+start "" "%~dp0Templates\CMD-Commands-Reference.txt"
+goto menu
+
+:open_aiprompts
+start "" "%~dp0Templates\AI-Assistant-Prompts.txt"
+goto menu
+
+:open_cheatsheet
+start "" "%~dp0Documentation\Cheat-Sheet.md"
+goto menu
+
+:open_flowcharts
+start "" "%~dp0Documentation\Troubleshooting-Flowcharts.md"
+goto menu
+
+:run_remotequickcheck
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Remote\Invoke-RemoteQuickCheck.ps1"
+goto menu
+
+:run_batchscan
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Remote\BatchScan.ps1"
+goto menu
+
+:run_remotenetwork
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Scripts\Remote\Invoke-RemoteNetworkDiagnostic.ps1"
+goto menu
+
+:invalid
+echo.
+echo Invalid option: "%choice%"
+echo Please enter a number between 0 and 17.
+echo.
+pause
+goto menu
+
+:end
+echo.
+echo Goodbye!
+exit /b 0
