@@ -31,13 +31,20 @@ function Remove-OldLogs {
 
     .PARAMETER RetentionDays
         Number of days to keep logs. Files older than this will be deleted.
+
+    .PARAMETER FileExtensions
+        Only files with these extensions are eligible for deletion. Documentation
+        and other non-log files are always preserved.
     #>
     param(
         [Parameter(Mandatory=$false)]
         [string]$LogsPath,
 
         [Parameter(Mandatory=$false)]
-        [int]$RetentionDays = 90
+        [int]$RetentionDays = 90,
+
+        [Parameter(Mandatory=$false)]
+        [string[]]$FileExtensions = @('.log', '.txt', '.csv', '.json', '.html')
     )
 
     try {
@@ -53,10 +60,17 @@ function Remove-OldLogs {
         $cutoff = (Get-Date).AddDays(-$RetentionDays)
         $deletedFiles = @()
 
-        Get-ChildItem -Path $LogsPath -File -ErrorAction Stop | Where-Object { $_.LastWriteTime -lt $cutoff } | ForEach-Object {
-            Remove-Item -Path $_.FullName -Force -ErrorAction Stop
-            $deletedFiles += $_.FullName
-        }
+        Get-ChildItem -Path $LogsPath -File -ErrorAction Stop |
+            Where-Object {
+                $_.Name -notlike 'README*' -and
+                $_.Name -notlike '*.md' -and
+                $_.Extension -in $FileExtensions -and
+                $_.LastWriteTime -lt $cutoff
+            } |
+            ForEach-Object {
+                Remove-Item -Path $_.FullName -Force -ErrorAction Stop
+                $deletedFiles += $_.FullName
+            }
 
         if ($deletedFiles.Count -gt 0) {
             Write-Host "Removed $($deletedFiles.Count) old log file(s) from $LogsPath." -ForegroundColor Green
