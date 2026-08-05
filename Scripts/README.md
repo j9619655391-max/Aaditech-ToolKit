@@ -143,10 +143,9 @@ Toolkit-Menu.bat → Choose 4
 
 **Admin required:** No (but elevated for detailed Security logs)
 
-**Output:** Saved to Logs folder as EventLog_[timestamp].txt
+**Output:** Saved to Logs folder as EventExport_[timestamp].txt
 
-**Tip:** SANITIZE before sending to external parties - remove/replace:
-- Hostnames, usernames, IP addresses, domain names
+**Tip:** Emails, IPs, and domain paths in event messages are auto-masked ([REDACTED-*]); still review for hostnames/usernames before external sharing:
 
 ---
 
