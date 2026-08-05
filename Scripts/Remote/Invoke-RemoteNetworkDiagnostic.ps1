@@ -46,12 +46,4 @@ if (Get-Command Get-ToolkitCredential -ErrorAction SilentlyContinue) {
     $credentials = Get-ToolkitCredential -TargetName 'ITToolkitRemote'
 }
 
-Invoke-RemoteCommand -ComputerName $ComputerName -ScriptBlock {
-    param($remoteRoot)
-    $networkScript = Join-Path $remoteRoot 'Scripts\Network-Diagnostic.ps1'
-    if (Test-Path $networkScript) {
-        & powershell -ExecutionPolicy Bypass -File $networkScript
-    } else {
-        Write-Error "Network-Diagnostic script not found at $networkScript"
-    }
-} -Credential $credentials -UseSSL:$UseSSL -ArgumentList $ToolkitRoot
+Invoke-RemoteNetworkDiagnostic -ComputerName $ComputerName -ToolkitRoot $ToolkitRoot -Credential $credentials -UseSSL:$UseSSL

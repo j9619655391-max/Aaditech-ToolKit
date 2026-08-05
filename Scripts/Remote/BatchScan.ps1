@@ -59,10 +59,19 @@ if (Get-Command Get-ToolkitCredential -ErrorAction SilentlyContinue) {
 
 Invoke-ParallelRemoteExecution -ComputerNames $ComputerNames -ScriptBlock {
     param($remoteRoot)
-    $quickCheckScript = Join-Path $remoteRoot 'Scripts\QuickCheck.ps1'
-    if (Test-Path $quickCheckScript) {
-        & powershell -ExecutionPolicy Bypass -File $quickCheckScript
-    } else {
-        Write-Error "QuickCheck script not found at $quickCheckScript"
+    if (-not $remoteRoot -or $remoteRoot.Trim() -eq '') {
+        throw 'ToolkitRoot must not be empty.'
     }
+    $resolvedRoot = [System.IO.Path]::GetFullPath($remoteRoot)
+    $quickCheckPath = Join-Path $resolvedRoot 'Scripts/QuickCheck.ps1'
+    $fullPath = [System.IO.Path]::GetFullPath($quickCheckPath)
+    $scriptsDir = [System.IO.Path]::GetFullPath((Join-Path $resolvedRoot 'Scripts'))
+    $isInside = $fullPath -eq $scriptsDir -or $fullPath.StartsWith($scriptsDir + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+    if (-not $isInside) {
+        throw "Refusing to execute script outside toolkit Scripts directory: $fullPath"
+    }
+    if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+        throw "QuickCheck script not found at $fullPath"
+    }
+    & $fullPath
 } -Credential $credential -MaxParallel $MaxParallel -ArgumentList $ToolkitRoot
