@@ -27,20 +27,40 @@ function Test-RemoteConnection {
         Optional port to test; defaults to 5985.
     .PARAMETER UseSSL
         Use HTTPS for WinRM.
+    .PARAMETER TimeoutSeconds
+        Maximum seconds to wait for the connection attempt.
     #>
     param(
         [Parameter(Mandatory=$true)][string]$ComputerName,
         [Parameter(Mandatory=$false)][int]$Port = 5985,
-        [Parameter(Mandatory=$false)][switch]$UseSSL
+        [Parameter(Mandatory=$false)][switch]$UseSSL,
+        [Parameter(Mandatory=$false)][int]$TimeoutSeconds = 10
     )
 
     try {
         $uri = if ($UseSSL) { "https://${ComputerName}:$Port/wsman" } else { "http://${ComputerName}:$Port/wsman" }
-        $session = New-PSSession -ConnectionUri $uri -ErrorAction Stop
-        if ($session) {
-            Remove-PSSession -Session $session -ErrorAction SilentlyContinue
-            return $true
+        $job = Start-Job -ScriptBlock {
+            param($u, $t)
+            $session = $null
+            try {
+                $session = New-PSSession -ConnectionUri $u -ErrorAction Stop
+                if ($session) {
+                    Remove-PSSession -Session $session -ErrorAction SilentlyContinue
+                    return $true
+                }
+                return $false
+            } catch {
+                return $false
+            }
+        } -ArgumentList $uri, $TimeoutSeconds
+
+        $completed = Wait-Job -Job $job -Timeout $TimeoutSeconds
+        $result = $false
+        if ($completed) {
+            $result = @(Receive-Job -Job $job -ErrorAction SilentlyContinue)[0] -eq $true
         }
+        Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+        return $result
     } catch {
         return $false
     }

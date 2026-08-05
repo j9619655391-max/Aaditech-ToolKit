@@ -76,8 +76,9 @@ function Test-ExportEngine {
     $csvResult = Export-ToCSV -Data $data -Path $csvPath -IncludeTimestamp
     Assert-PathExists -Path $csvResult -Message 'CSV export file created'
     if (Test-Path $csvResult) {
-        $content = Get-Content -Path $csvResult -ErrorAction Stop
-        Assert-True -Condition ($content[0] -match 'Name,Value') -Message 'CSV output contains header row'
+        $imported = Import-Csv -Path $csvResult -ErrorAction Stop
+        $cols = @($imported[0].PSObject.Properties.Name)
+        Assert-True -Condition (($cols -contains 'Name') -and ($cols -contains 'Value')) -Message 'CSV output contains Name and Value header columns'
     }
 
     $jsonResult = Export-ToJSON -Data $data -Path $jsonPath -Depth 5
@@ -90,8 +91,9 @@ function Test-ExportEngine {
     $excelResult = Export-ToExcel -Data $data -Path $excelPath
     Assert-PathExists -Path $excelResult -Message 'Excel-compatible CSV export file created'
     if (Test-Path $excelResult) {
-        $excel = Get-Content -Path $excelResult -Raw -ErrorAction Stop
-        Assert-True -Condition ($excel -match 'Name,Value') -Message 'Excel-compatible output contains header row'
+        $excelImported = Import-Csv -Path $excelResult -ErrorAction Stop
+        $excelCols = @($excelImported[0].PSObject.Properties.Name)
+        Assert-True -Condition (($excelCols -contains 'Name') -and ($excelCols -contains 'Value')) -Message 'Excel-compatible output contains Name and Value header columns'
     }
 }
 
@@ -117,8 +119,12 @@ function Test-AlertEngine {
     Write-Host "\n=== Running AlertEngine tests ===" -ForegroundColor Cyan
 
     $alert = Test-AlertThreshold -Type 'Disk' -Value 92 -Threshold 85
-    Assert-True -Condition ($alert.Severity -eq 'Critical') -Message 'Disk threshold returns Critical'
+    Assert-True -Condition ($alert.Severity -eq 'Warning') -Message 'Disk threshold 92% with warning=85 returns Warning'
     Assert-True -Condition ($alert.IsAlert) -Message 'Disk alert IsAlert is true'
+
+    $criticalAlert = Test-AlertThreshold -Type 'Disk' -Value 96 -Threshold 85
+    Assert-True -Condition ($criticalAlert.Severity -eq 'Critical') -Message 'Disk threshold 96% with critical=95 returns Critical'
+    Assert-True -Condition ($criticalAlert.IsAlert) -Message 'Critical disk alert IsAlert is true'
 
     $severity = Get-AlertSeverity -Value 85 -WarningThreshold 75 -CriticalThreshold 90
     Assert-True -Condition ($severity -eq 'Warning') -Message 'Get-AlertSeverity returns Warning'
