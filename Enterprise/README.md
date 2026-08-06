@@ -14,20 +14,26 @@ Windows clients                        Server (Docker, one host)
 └─────────────────────┘                └────────────────────────────────┘
 ```
 
-## Quick start (server)
+## Quick start (server) — intranet / LAN first
 
 ```bash
 cd Enterprise/deploy
-./deploy.sh
+./deploy.sh          # default = LAN mode (no internet needed)
+./deploy.sh --regen  # new machine / network: regenerate .env with fresh IP
 ```
 
 That one command:
-- detects this machine's **IP** (public → LAN),
+- detects this machine's **LAN IP** (macOS + Linux, prefers en0/en1/eth0 so
+  VPN interfaces don't win) — clients on the same intranet use this address,
 - generates `.env` with random secrets,
-- **writes `agent/agent-config.json` with the endpoint + token baked in**
+- **writes `agent/agent-config.json` with the LAN endpoint + token baked in**
   (this is what flows into the exe/msi),
 - starts `db + api + caddy` via `docker compose`,
 - prints the portal URL + token.
+
+Public-IP deployment (internet clients): `./deploy.sh --public`, or pin a
+fixed address/domain in `.env` (`SERVER_HOST=192.168.1.50` or `SERVER_HOST=it.example.com`).
+Moving the server to a different machine later = just re-run `./deploy.sh --regen`.
 
 ## Quick start (agent + MSI) — run on Windows or a CI runner
 

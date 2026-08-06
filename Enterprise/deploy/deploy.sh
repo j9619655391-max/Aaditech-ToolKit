@@ -1,14 +1,24 @@
 #!/usr/bin/env bash
-# deploy.sh - one-command IT-Toolkit Enterprise server bring-up.
+# deploy.sh - one-command IT-Toolkit Enterprise server bring-up (intranet-first).
+#
+# Default mode is LAN / intranet: the server advertises its LOCAL network IP
+# (e.g. http://192.168.1.50) so clients on the same network can reach it —
+# exactly right for office deployments. No internet access is required.
 #
 # What it does:
-#   1. Detects this machine's IP (public if reachable, else LAN) — or uses
-#      SERVER_HOST from .env to pin a domain/FQDN.
+#   1. Detects this machine's LAN IP (macOS + Linux) — or pins SERVER_HOST in
+#      .env to a fixed IP/FQDN.
 #   2. Generates .env (secrets) if missing.
-#   3. Generates Enterprise/agent/agent-config.json with the endpoint + token
-#      baked in — this is what flows into the .exe/.msi (auto-IP requirement).
+#   3. Generates Enterprise/agent/agent-config.json with the LAN endpoint +
+#      token baked in — this is what flows into the .exe/.msi (auto-IP).
 #   4. docker compose up -d --build
 #   5. Prints next steps (agent build + MSI).
+#
+# Flags / env:
+#   --public          advertise the public IP instead (internet clients)
+#   --regen           delete .env and regenerate with a freshly detected IP
+#                     (use when moving the server to a new machine/network)
+#   DEPLOY_MODE=public  same as --public (env form)
 #
 # Idempotent: re-running only recreates changed containers; DB persists.
 
@@ -23,29 +33,67 @@ compose() { docker compose -f "$HERE/docker-compose.yml" "$@"; }
 log()  { printf '\033[1;34m[deploy]\033[0m %s\n' "$*"; }
 die()  { printf '\033[1;31m[deploy][ERROR]\033[0m %s\n' "$*" >&2; exit 1; }
 
+# ---------------------------------------------------------------- args / mode
+
+MODE="lan"
+REGEN=0
+for arg in "$@"; do
+    case "$arg" in
+        --public) MODE="public" ;;
+        --regen)  REGEN=1 ;;
+        *) die "Unknown argument: $arg (supported: --public, --regen)" ;;
+    esac
+done
+[ "${DEPLOY_MODE:-lan}" = "public" ] && MODE="public"
+
 # ---------------------------------------------------------------- IP detection
 
-detect_ip() {
-    # prefer public IP when the host is reachable; fall back to LAN
+detect_lan_ip() {
+    # prefer physical interfaces (en0/en1/eth0/eth1) so VPNs don't win
+    local ip=""
+    ip="$(ifconfig 2>/dev/null | awk '/^((en[0-9])|(eth[0-9])):/ {f=1} f && /inet / && $2 !~ /^127\./ && $2 !~ /^169\.254\./ { print $2; exit }')"
+    if [ -z "$ip" ]; then
+        # Linux alternative (hostname -I) and any-interface fallback
+        ip="$(hostname -I 2>/dev/null | awk '{ for(i=1;i<=NF;i++) if ($i !~ /^127\./) { print $i; exit } }')"
+    fi
+    if [ -z "$ip" ]; then
+        ip="$(ifconfig 2>/dev/null | awk '/inet / && $2 !~ /^127\./ && $2 !~ /^169\.254\./ { print $2; exit }')"
+    fi
+    [ -n "$ip" ] && { echo "$ip"; return 0; }
+    return 1
+}
+
+detect_public_ip() {
     for src in "https://api.ipify.org" "https://ifconfig.me"; do
+        local PUB
         if PUB="$(curl -fsS --max-time 5 "$src" 2>/dev/null)"; then
             if [[ "$PUB" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
-                echo "$PUB"; return
+                echo "$PUB"; return 0
             fi
         fi
     done
-    # LAN IP
-    ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}' \
-        || ip -4 addr show scope global 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n1 \
-        || die "Cannot auto-detect IP. Set SERVER_HOST=<your-ip-or-domain> in .env"
+    return 1
+}
+
+detect_ip() {
+    if [ "$MODE" = "public" ]; then
+        detect_public_ip || detect_lan_ip || die "Cannot detect IP. Set SERVER_HOST in .env."
+    else
+        detect_lan_ip || die "Cannot detect LAN IP. Set SERVER_HOST in .env."
+    fi
 }
 
 # ---------------------------------------------------------------- .env
 
 generate_secret() { openssl rand -hex 24 2>/dev/null || date +%s | shasum | cut -d' ' -f1; }
 
+if [ "$REGEN" = "1" ] && [ -f "$ENV_FILE" ]; then
+    log "--regen: removing existing .env to regenerate"
+    rm -f "$ENV_FILE"
+fi
+
 if [ ! -f "$ENV_FILE" ]; then
-    log "Creating .env with generated secrets"
+    log "Creating .env with generated secrets (mode: $MODE)"
     SERVER_IP="$(detect_ip)"
     log "Detected server IP: $SERVER_IP"
     {
@@ -53,14 +101,14 @@ if [ ! -f "$ENV_FILE" ]; then
         echo "POSTGRES_USER=ittoolkit"
         echo "POSTGRES_PASSWORD=$(generate_secret)"
         echo "API_TOKEN=$(generate_secret)"
-        echo "SERVER_HOST=$SERVER_IP"
+        echo "SERVER_HOST=auto"
         echo "CADDY_HOST="
     } > "$ENV_FILE"
     if compose volume ls --format '{{.Name}}' 2>/dev/null | grep -q 'pgdata'; then
-        die "A pgdata volume from a previous deploy already exists, but secrets were regenerated.\n   Reset it (destructive) and re-run:  docker compose -f $HERE/docker-compose.yml down -v && $0"
+        die "A pgdata volume from a previous deploy already exists, but secrets were regenerated.\n   Reset it (destructive) and re-run:  docker compose -f $HERE/docker-compose.yml down -v && $0 --regen"
     fi
 else
-    log ".env exists — keeping it (remove it to regenerate with a new IP)"
+    log ".env exists — keeping it (SERVER_HOST=$([ -f "$ENV_FILE" ] && grep '^SERVER_HOST=' "$ENV_FILE" | cut -d= -f2))"
 fi
 
 # shellcheck disable=SC1090
@@ -68,21 +116,20 @@ set -a; source "$ENV_FILE"; set +a
 
 # ---------------------------------------------------------------- agent config
 
+# SERVER_HOST=auto → re-detect current machine's IP every run (easy migration:
+# same repo, new server, just re-run deploy.sh).
 if [ -n "${SERVER_HOST:-}" ] && [ "$SERVER_HOST" != "auto" ]; then
     HOST="$SERVER_HOST"
-    # domain → let Caddy do real HTTPS; bare IP → plain HTTP
     if [[ "$HOST" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
-        SCHEME="http"
-        CADDY_HOST=":80"
+        SCHEME="http"; CADDY_HOST=":80"
     else
-        SCHEME="https"
-        CADDY_HOST="$HOST"
+        SCHEME="https"; CADDY_HOST="$HOST"
     fi
-    log "Serving on $SCHEME://$HOST"
+    log "Serving on $SCHEME://$HOST (pinned via SERVER_HOST)"
 else
-    IP="$(detect_ip)"
-    SCHEME="http"; HOST="$IP"; CADDY_HOST=":80"
-    log "Auto-detected IP: $HOST (over http; set SERVER_HOST to a domain for TLS)"
+    HOST="$(detect_ip)"
+    SCHEME="http"; CADDY_HOST=":80"
+    log "Serving on http://$HOST  (intranet; set SERVER_HOST=<domain> in .env for TLS)"
 fi
 
 # persist resolved CADDY_HOST back into .env (idempotent)

@@ -138,16 +138,28 @@ API origin, CORS is a non-issue and it's trivially redeployable.
 ## 5. Deployment (the "easy setup" story)
 
 ```bash
-# on any Linux box with Docker:
+# on any machine with Docker (macOS dev, then the intranet server):
 cd Enterprise/deploy
-./deploy.sh                 # detects IP, generates .env + secrets, compose up
-./build-agent.ps1           # (run on a Windows build host or a GitHub Actions
-                            #   windows-latest job) → produces Agent.exe + Agent.msi
-# push the MSI to Intune/GPO/SCCM; endpoint is already baked in.
+./deploy.sh                 # LAN/intranet mode (default) — auto-detects LAN IP
+./deploy.sh --regen         # new machine/network → regenerate .env with fresh IP
+./deploy.sh --public        # internet clients (public IP) instead of LAN
+# then build agent on Windows (or CI):
+./Enterprise/agent/build/build-agent.ps1    # → .exe
+./Enterprise/agent/wix/build-msi.ps1        # → .msi
+# push the MSI to Intune/GPO/SCCM; the LAN endpoint is already baked in.
 ```
 
-`deploy.sh` idempotent: re-running after a change only recreates changed
-containers; data volume persists.
+**Intranet-first:** the server advertises its **local network IP**
+(e.g. `http://192.168.1.50`), which is exactly what LAN clients reach. No
+public exposure, no DNS, no internet required. `SERVER_HOST` in `.env` can pin
+a fixed address/domain instead. Moving to a real server later = re-run
+`deploy.sh --regen` — the whole stack (incl. the baked agent endpoint)
+re-points automatically.
+
+`deploy.sh` is idempotent: re-running after a change only recreates changed
+containers; the data volume persists. If secrets are regenerated while an old
+`pgdata` volume still exists, it aborts with a clear reset command instead of
+silently breaking the DB.
 
 ---
 
