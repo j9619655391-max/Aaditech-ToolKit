@@ -38,10 +38,16 @@ function Get-GitInfo {
 function Get-FileSnapshot {
     param([string]$Root)
     $files = @()
+    # Only hash git-tracked files: gitignored/untracked files (e.g. .env,
+    # generated agent-config.json, __pycache__) exist only in local working
+    # trees, never in a fresh clone or CI, so including them makes the
+    # freshness check non-deterministic (index drift -> CI failure).
+    $tracked = @(& git -C $Root ls-files 2>$null)
     Get-ChildItem $Root -Recurse -File -Force | ForEach-Object {
         $rel = ($_.FullName.Substring($Root.Length).Replace('\', '/').TrimStart('/'))
         if ($rel -match '(^|/)\.git(/|$)' -or $rel -match '(^|/)audit(/|$)') { return }
         if ($rel -in @('project-index.json', 'project-state.json', 'project-progress.json')) { return }
+        if ($tracked -notcontains $rel) { return }
         # Hash normalized (LF) content so snapshots are byte-identical regardless
         # of OS checkout line endings (Windows CI applies CRLF to .bat/.cmd).
         $raw = [System.IO.File]::ReadAllBytes($_.FullName)
