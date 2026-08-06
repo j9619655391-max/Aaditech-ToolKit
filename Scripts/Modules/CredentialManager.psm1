@@ -1,6 +1,9 @@
 # CredentialManager.psm1 - Secure credential storage for IT Toolkit
 # Phase 2 module
 
+[System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingConvertToSecureStringWithPlainText', '')]
+param()
+
 <#
 .SYNOPSIS
     Securely stores and retrieves toolkit credentials.

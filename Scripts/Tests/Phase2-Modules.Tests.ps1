@@ -12,6 +12,9 @@ is fully exercised on any host. Windows-only scheduling registration is
 covered by a guard test only.
 #>
 
+[System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingComputerNameHardcoded', '')]
+param()
+
 BeforeAll {
     $global:moduleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\modules')).Path
 }

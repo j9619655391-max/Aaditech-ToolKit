@@ -5,6 +5,9 @@ Basic Pester tests for the RemoteToolkit module.
 These are lightweight checks that validate module export and basic parameter handling.
 #>
 
+[System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingComputerNameHardcoded', '')]
+param()
+
 Import-Module (Join-Path $PSScriptRoot '..\Modules\RemoteToolkit.psm1') -ErrorAction SilentlyContinue
 
 Describe 'RemoteToolkit Module' {

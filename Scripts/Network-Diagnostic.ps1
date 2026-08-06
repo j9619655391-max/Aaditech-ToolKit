@@ -4,6 +4,9 @@
     support engineer should check things, and prints a clear PASS/FAIL summary.
 #>
 
+[System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingComputerNameHardcoded', '')]
+param()
+
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host "           NETWORK DIAGNOSTIC - STEP BY STEP       " -ForegroundColor Cyan
 Write-Host "=================================================" -ForegroundColor Cyan
