@@ -1,0 +1,46 @@
+{
+  "features": [
+    {
+      "name": "quickcheck",
+      "label": "System Quick Check",
+      "script": "Scripts/QuickCheck.ps1",
+      "description": "Quick system health and inventory snapshot.",
+      "default_enabled": true
+    },
+    {
+      "name": "eventlogs",
+      "label": "Windows Event Logs",
+      "script": "Scripts/Export-EventLogs.ps1",
+      "description": "Exports System/Application/Security event logs (sanitized).",
+      "default_enabled": true
+    },
+    {
+      "name": "network",
+      "label": "Network Diagnostics",
+      "script": "Scripts/Network-Diagnostic.ps1",
+      "description": "IP config, DNS, ping and connectivity checks.",
+      "default_enabled": true
+    },
+    {
+      "name": "firewall",
+      "label": "Firewall Audit",
+      "script": "Scripts/Firewall-Test.ps1",
+      "description": "Validates Windows firewall status and rules.",
+      "default_enabled": true
+    },
+    {
+      "name": "users",
+      "label": "User Inventory",
+      "script": "Scripts/User-Inventory.ps1",
+      "description": "Enumerates local users and groups.",
+      "default_enabled": false
+    },
+    {
+      "name": "printers",
+      "label": "Printer Diagnostics",
+      "script": "Scripts/Printer-Fix.ps1",
+      "description": "Detects and repairs common printer issues.",
+      "default_enabled": false
+    }
+  ]
+}

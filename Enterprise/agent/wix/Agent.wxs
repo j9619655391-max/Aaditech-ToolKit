@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- IT-Toolkit-Agent MSI
+     Build: build-msi.ps1 stages files into wix\stage\, then runs:
+       wix build Agent.wxs -o out.msi
+     Silent install: msiexec /i IT-Toolkit-Agent.msi /qn
+     Auto-deploy: push via Intune / GPO / SCCM. Endpoint + token are baked
+     into agent.json (staged from build/out by deploy.sh), so no input needed.
+
+     Install layout:
+       C:\Program Files\IT-Toolkit\
+         ├─ IT-Toolkit-Agent.exe      (ps2exe-packaged worker)
+         ├─ agent.json                (endpoint + token; also copied to ProgramData)
+         ├─ Scripts\*.ps1             (the feature scripts the agent wraps)
+         ├─ Scripts\Modules\*.psm1    (SanitizeEngine/ToolkitData/etc. — reused as-is)
+         └─ Config\config.json
+       C:\ProgramData\ITToolkit-Agent\agent.json  (runtime config, GPO-overridable)
+       HKLM\SOFTWARE\ITToolkit\Agent\...          (registry override knob)
+       Scheduled task "ITToolkitAgent" every 30 min as SYSTEM. -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Package Name="IT-Toolkit Agent"
+           Manufacturer="IT Toolkit"
+           Version="1.0.0.0"
+           UpgradeCode="B8C4F1E3-6A2D-4F9B-9E5C-1D2A3B4C5D6E"
+           Scope="perMachine"
+           Compressed="yes">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of IT-Toolkit Agent is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- ==================== Program Files\IT-Toolkit ==================== -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="IT-Toolkit">
+
+        <Component Id="AgentExe" Guid="A1B2C3D4-1111-2222-3333-444455556666">
+          <File Id="AgentExeFile" Name="IT-Toolkit-Agent.exe" Source="stage\IT-Toolkit-Agent.exe" KeyPath="yes" />
+        </Component>
+
+        <Component Id="AgentJsonLocal" Guid="A1B2C3D4-9999-8888-7777-666655554444">
+          <File Id="AgentJsonLocalFile" Name="agent.json" Source="stage\agent.json" KeyPath="yes" />
+        </Component>
+
+        <Directory Id="SCRIPTS_DIR" Name="Scripts">
+          <Component Id="ScriptQuickCheck" Guid="B2C3D4E5-1111-1111-1111-111111111111">
+            <File Id="QuickCheck" Name="QuickCheck.ps1" Source="stage\Scripts\QuickCheck.ps1" KeyPath="yes" />
+          </Component>
+          <Component Id="ScriptEventLogs" Guid="B2C3D4E5-2222-2222-2222-222222222222">
+            <File Id="EventLogs" Name="Export-EventLogs.ps1" Source="stage\Scripts\Export-EventLogs.ps1" KeyPath="yes" />
+          </Component>
+          <Component Id="ScriptNetwork" Guid="B2C3D4E5-3333-3333-3333-333333333333">
+            <File Id="Network" Name="Network-Diagnostic.ps1" Source="stage\Scripts\Network-Diagnostic.ps1" KeyPath="yes" />
+          </Component>
+          <Component Id="ScriptFirewall" Guid="B2C3D4E5-4444-4444-4444-444444444444">
+            <File Id="Firewall" Name="Firewall-Test.ps1" Source="stage\Scripts\Firewall-Test.ps1" KeyPath="yes" />
+          </Component>
+          <Component Id="ScriptUsers" Guid="B2C3D4E5-5555-5555-5555-555555555555">
+            <File Id="Users" Name="User-Inventory.ps1" Source="stage\Scripts\User-Inventory.ps1" KeyPath="yes" />
+          </Component>
+          <Component Id="ScriptPrinters" Guid="B2C3D4E5-6666-6666-6666-666666666666">
+            <File Id="Printers" Name="Printer-Fix.ps1" Source="stage\Scripts\Printer-Fix.ps1" KeyPath="yes" />
+          </Component>
+
+          <Directory Id="MODULES_DIR" Name="Modules">
+            <Component Id="ModSanitize" Guid="C3D4E5F6-1111-1111-1111-111111111111">
+              <File Id="SanitizeEngine" Name="SanitizeEngine.psm1" Source="stage\Scripts\Modules\SanitizeEngine.psm1" KeyPath="yes" />
+            </Component>
+            <Component Id="ModToolkitData" Guid="C3D4E5F6-2222-2222-2222-222222222222">
+              <File Id="ToolkitData" Name="ToolkitData.psm1" Source="stage\Scripts\Modules\ToolkitData.psm1" KeyPath="yes" />
+            </Component>
+            <Component Id="ModCredential" Guid="C3D4E5F6-3333-3333-3333-333333333333">
+              <File Id="CredentialManager" Name="CredentialManager.psm1" Source="stage\Scripts\Modules\CredentialManager.psm1" KeyPath="yes" />
+            </Component>
+            <Component Id="ModToolkitConfig" Guid="C3D4E5F6-4444-4444-4444-444444444444">
+              <File Id="ToolkitConfig" Name="ToolkitConfig.psm1" Source="stage\Scripts\Modules\ToolkitConfig.psm1" KeyPath="yes" />
+            </Component>
+          </Directory>
+        </Directory>
+
+        <Directory Id="CONFIG_DIR" Name="Config">
+          <Component Id="ConfigFile" Guid="D4E5F6A7-1111-1111-1111-111111111111">
+            <File Id="ConfigJson" Name="config.json" Source="stage\Config\config.json" KeyPath="yes" />
+          </Component>
+        </Directory>
+
+      </Directory>
+    </StandardDirectory>
+
+    <!-- ==================== ProgramData runtime config ==================== -->
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="ITTK_AGENT_DIR" Name="ITToolkit-Agent">
+        <Component Id="AgentConfig" Guid="A1B2C3D4-5555-6666-7777-888899990000">
+          <File Id="AgentConfigFile" Name="agent.json" Source="stage\agent.json" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- ==================== registry override knob ==================== -->
+    <Component Id="RegistryConfig" Guid="A1B2C3D4-AAAA-BBBB-CCCC-DDDDEEEEFFFF" Directory="INSTALLFOLDER">
+      <RegistryKey Root="HKLM" Key="SOFTWARE\ITToolkit\Agent">
+        <RegistryValue Name="EndpointUrl" Type="string" Value="!agent.endpoint" KeyPath="yes" />
+        <RegistryValue Name="ApiToken" Type="string" Value="!agent.token" />
+      </RegistryKey>
+    </Component>
+
+    <!-- ==================== scheduled task (runs agent as SYSTEM) ==================== -->
+    <CustomAction Id="CreateSchedTask"
+                  Return="check"
+                  Impersonate="no"
+                  Execute="deferred"
+                  ExeCommand="&quot;[SystemFolder]schtasks.exe&quot; /create /tn ITToolkitAgent /sc minute /mo 30 /ru SYSTEM /f /tr &quot;\&quot;[INSTALLFOLDER]IT-Toolkit-Agent.exe\&quot; -LoopMinutes 30&quot;" />
+
+    <CustomAction Id="RemoveSchedTask"
+                  Return="ignore"
+                  Impersonate="no"
+                  Execute="deferred"
+                  ExeCommand="&quot;[SystemFolder]schtasks.exe&quot; /delete /tn ITToolkitAgent /f" />
+
+    <InstallExecuteSequence>
+      <Custom Action="RemoveSchedTask" After="InstallInitialize">REMOVE~="ALL"</Custom>
+      <Custom Action="CreateSchedTask" After="InstallFinalize">NOT Installed AND NOT REMOVE</Custom>
+    </InstallExecuteSequence>
+
+    <!-- ==================== feature ==================== -->
+    <Feature Id="Main" Title="IT-Toolkit Agent" Level="1">
+      <ComponentRef Id="AgentExe" />
+      <ComponentRef Id="AgentJsonLocal" />
+      <ComponentRef Id="ScriptQuickCheck" />
+      <ComponentRef Id="ScriptEventLogs" />
+      <ComponentRef Id="ScriptNetwork" />
+      <ComponentRef Id="ScriptFirewall" />
+      <ComponentRef Id="ScriptUsers" />
+      <ComponentRef Id="ScriptPrinters" />
+      <ComponentRef Id="ModSanitize" />
+      <ComponentRef Id="ModToolkitData" />
+      <ComponentRef Id="ModCredential" />
+      <ComponentRef Id="ModToolkitConfig" />
+      <ComponentRef Id="ConfigFile" />
+      <ComponentRef Id="AgentConfig" />
+      <ComponentRef Id="RegistryConfig" />
+    </Feature>
+
+  </Package>
+</Wix>

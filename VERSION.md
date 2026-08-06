@@ -48,6 +48,17 @@ and this file.
 | Batch control-flow | `Scripts/Tests/BatchLauncher.Tests.ps1` | PASS 9/9 |
 | Phase 2 modules | `Scripts/Tests/Phase2-Modules.Tests.ps1` | PASS 11/11 |
 
+## Enterprise stack (Phase 3, new)
+See `Enterprise/README.md` and `Enterprise/ARCHITECTURE.md`. Additive, zero
+changes to the local toolkit.
+
+- **Server (Docker):** FastAPI (`/ingest`, `/api/*`) + PostgreSQL 16 + Caddy TLS, one shared DB.
+- **Agent:** `Enterprise/agent/Agent-Collect.ps1` → packaged `.exe` (ps2exe) + `.msi` (WiX). Runs existing scripts, sanitizes (reuses `SanitizeEngine`), queues offline (reuses `ToolkitData`), posts HTTPS.
+- **Portal:** single-page admin UI (Agents / Events / Feature config editor).
+- **Deploy:** `Enterprise/deploy/deploy.sh` auto-detects server IP, bakes endpoint+token into the agent config, brings up Docker.
+- **CI:** new `agent-build` job (windows-latest) builds `.exe` + `.msi` artifacts.
+- **Verified locally:** full Docker stack + agent→server round-trip with PII `[REDACTED-*]` sanitization (macOS smoke).
+
 CI (`ci.yml`) runs on `windows-latest` and is **green**: PowerShell parse
 (30 files), JSON validation, Phase 1 regression, Pester suites (RemoteToolkit,
 BatchLauncher, Phase2 modules), PSScriptAnalyzer (0 errors), and project-index

@@ -1,5 +1,16 @@
 # Changelog
 
+## v3.0 UPDATES — Enterprise client-server stack (Phase 3)
+
+- **NEW: `Enterprise/`** — fully additive scale-out layer, **zero changes** to existing scripts/modules/docs:
+  - **Agent** (`Enterprise/agent/`): `Agent-Collect.ps1` wraps existing `Scripts/*.ps1`, sanitizes output via the existing `SanitizeEngine`, queues offline via SQLite, and ships sanitized JSON to the server. Packaged as `.exe` (ps2exe) + `.msi` (WiX) with the endpoint/token baked in at build time.
+  - **Server** (`Enterprise/api/`, `docker-compose.yml`): FastAPI with `POST /ingest`, `/api/agents`, `/api/events`, `/api/features` (config editor) + PostgreSQL 16, behind Caddy reverse proxy. One shared DB for both the ingest API and the portal.
+  - **Portal** (`Enterprise/portal/`): single-page admin UI — Agents, Events, Feature toggles/config editor.
+  - **Deploy** (`Enterprise/deploy/deploy.sh`): one-command bring-up that auto-detects the server IP, generates `.env` secrets, bakes the endpoint into `agent-config.json`, and starts Docker.
+  - **CI**: new `agent-build` job (windows-latest) produces the `.exe` + `.msi` artifacts from repo secrets.
+- **Verified locally:** full stack smoke-tested in Docker — ingest (idempotent dedupe), auth 401, agents/events queries, feature enable/disable, portal, and a real agent→server round-trip with PII `[REDACTED-*]` sanitization.
+- See `Enterprise/README.md` + `Enterprise/ARCHITECTURE.md` for the blueprint.
+
 ## v2.0 UPDATES — Enhanced with comprehensive fixes & features
 
 ### 🔧 FIXES & IMPROVEMENTS

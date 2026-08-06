@@ -1,0 +1,20 @@
+{$CADDY_HOST} {
+    encode gzip
+
+    @ingest path /ingest
+    reverse_proxy @ingest api:8000
+
+    @api path /api/*
+    reverse_proxy @api api:8000
+
+    @health path /healthz
+    reverse_proxy @health api:8000
+
+    reverse_proxy /api-docs* api:8000
+    reverse_proxy /openapi.json api:8000
+    reverse_proxy /docs api:8000
+
+    handle {
+        reverse_proxy api:8000
+    }
+}

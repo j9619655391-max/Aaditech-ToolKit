@@ -1,0 +1,14 @@
+{
+  "endpoint": "https://CHANGE-ME/server/ingest",
+  "token": "CHANGE-ME",
+  "agent_version": "1.0.0",
+  "interval_minutes": 30,
+  "features": [
+    { "name": "quickcheck", "script": "Scripts/QuickCheck.ps1", "enabled": true },
+    { "name": "eventlogs", "script": "Scripts/Export-EventLogs.ps1", "enabled": true },
+    { "name": "network", "script": "Scripts/Network-Diagnostic.ps1", "enabled": true },
+    { "name": "firewall", "script": "Scripts/Firewall-Test.ps1", "enabled": true },
+    { "name": "users", "script": "Scripts/User-Inventory.ps1", "enabled": false },
+    { "name": "printers", "script": "Scripts/Printer-Fix.ps1", "enabled": false }
+  ]
+}

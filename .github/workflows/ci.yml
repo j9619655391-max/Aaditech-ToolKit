@@ -78,3 +78,59 @@ jobs:
       - name: Verify project index is up to date
         run: |
           pwsh -NoProfile -File ./Scripts/Index/Update-ProjectIndex.ps1 -Check
+
+  agent-build:
+    name: Build agent exe + MSI
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'agent')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage agent config (endpoint + token from repo secrets)
+        shell: pwsh
+        env:
+          SERVER_ENDPOINT: ${{ secrets.SERVER_ENDPOINT }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+        run: |
+          $endpoint = if ($env:SERVER_ENDPOINT) { $env:SERVER_ENDPOINT } else { 'http://CHANGE-ME/ingest' }
+          $token = if ($env:API_TOKEN) { $env:API_TOKEN } else { 'CHANGE-ME' }
+          @{
+            endpoint = $endpoint
+            token = $token
+            agent_version = '1.0.0'
+            interval_minutes = 30
+            features = @(
+              @{ name = 'quickcheck'; script = 'Scripts/QuickCheck.ps1'; enabled = $true },
+              @{ name = 'eventlogs';  script = 'Scripts/Export-EventLogs.ps1'; enabled = $true },
+              @{ name = 'network';    script = 'Scripts/Network-Diagnostic.ps1'; enabled = $true },
+              @{ name = 'firewall';   script = 'Scripts/Firewall-Test.ps1'; enabled = $true },
+              @{ name = 'users';      script = 'Scripts/User-Inventory.ps1'; enabled = $false },
+              @{ name = 'printers';   script = 'Scripts/Printer-Fix.ps1'; enabled = $false }
+            )
+          } | ConvertTo-Json -Depth 5 | Set-Content ./Enterprise/agent/agent-config.json
+
+      - name: Install ps2exe
+        run: Install-Module ps2exe -Force -Scope CurrentUser
+
+      - name: Build agent exe
+        run: ./Enterprise/agent/build/build-agent.ps1
+
+      - name: Install WiX toolset
+        run: dotnet tool install --global wix
+
+      - name: Build MSI
+        run: |
+          $env:Path = "$env:USERPROFILE\.dotnet\tools;$env:Path"
+          ./Enterprise/agent/wix/build-msi.ps1
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: it-toolkit-agent
+          path: |
+            Enterprise/agent/build/out/*.exe
+            Enterprise/agent/build/out/*.msi
+            Enterprise/agent/build/out/agent-config.json

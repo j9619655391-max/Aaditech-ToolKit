@@ -6,3 +6,15 @@ Scalling Plan/.gitkeep
 *.tmp
 *.log
 Data/*.sqlite3*
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Enterprise server (secrets + build artifacts)
+Enterprise/.env
+Enterprise/agent/agent-config.json
+Enterprise/agent/build/out/
+Enterprise/agent/wix/IT-Toolkit-Agent.exe
+Enterprise/agent/wix/agent-config.json
+Enterprise/agent/wix/*.msi
