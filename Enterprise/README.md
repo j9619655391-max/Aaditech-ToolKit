@@ -89,8 +89,9 @@ docker compose cp IT-Toolkit-Agent.msi api:/artifacts/
 | `ROADMAP.md` | **Next-steps plan**: CI agent delivery, first-time setup wizard, support-engineer features |
 | `docker-compose.yml` | One-host stack: `db` (Postgres) + `api` + `caddy` (+ `agent_artifacts` volume for the MSI) |
 | `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), agent bundle (`/api/agent-bundle`, downloads), `/healthz`; serves portal |
-| `portal/` | Setup wizard + login + single-page admin UI (Agents / Events / Feature toggles / Users / Agent Setup) |
-| `agent/` | `Agent-Collect.ps1` (worker), ps2exe + WiX MSI packaging |
+| `portal/` | Setup wizard + login + single-page admin UI (Agents / Fleet / Events / Feature toggles / Users / Agent Setup) |
+| `agent/` | `Agent-Collect.ps1` (worker, parses structured collector JSON), ps2exe + WiX MSI packaging |
+| `agent/collectors/` | 7 support-engineer collectors (hardware, software, diskhealth, health, bitlocker, updatecompliance, licenses) |
 | `deploy/deploy.sh` | One-command bring-up with auto-IP detection |
 | `.env.example` | Template — copy to `.env` (never committed) |
 
@@ -104,11 +105,12 @@ end-to-end (exit 0) and regenerates the baked agent config on IP change.
 ## Honest boundaries
 
 - Portal sessions + RBAC (admin / operation / monitoring) are live; the
-  support-engineer features that the roles will govern (commands, alerts,
-  reports) land in P5/P6.
+  role-governed **commands** and **alerts/reports** land in P5/P6.
 - The **MSI download is wired but empty** until the generic engine from P0 is
   built on CI and copied into the `agent_artifacts` volume (`docker compose cp`).
 - MSI/exe build must run on **Windows** — a GitHub Actions job is provided
   (`.github/workflows/ci.yml`).
 - Agent exe is signed manually (Authenticode) — same boundary as the existing
   smoke-run doc.
+- Collectors were verified for **syntax + JSON output** locally (pwsh); full
+  Windows-only data (CIM/SMART/BitLocker/WU) needs the Windows smoke run.

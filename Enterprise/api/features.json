@@ -41,6 +41,55 @@
       "script": "Scripts/Printer-Fix.ps1",
       "description": "Detects and repairs common printer issues.",
       "default_enabled": false
+    },
+    {
+      "name": "hardware",
+      "label": "Hardware Inventory",
+      "script": "Enterprise/agent/collectors/Get-HardwareInventory.ps1",
+      "description": "CPU, RAM, disks, GPU, BIOS, serial and battery wear %.",
+      "default_enabled": true
+    },
+    {
+      "name": "software",
+      "label": "Software Inventory",
+      "script": "Enterprise/agent/collectors/Get-SoftwareInventory.ps1",
+      "description": "Installed applications with versions.",
+      "default_enabled": true
+    },
+    {
+      "name": "diskhealth",
+      "label": "Disk Health (SMART)",
+      "script": "Enterprise/agent/collectors/Get-DiskHealth.ps1",
+      "description": "Physical disk health and SMART failure prediction.",
+      "default_enabled": true
+    },
+    {
+      "name": "health",
+      "label": "System Health",
+      "script": "Enterprise/agent/collectors/Get-SystemHealth.ps1",
+      "description": "Uptime, CPU/memory load, reboot-pending and critical services.",
+      "default_enabled": true
+    },
+    {
+      "name": "bitlocker",
+      "label": "BitLocker Status",
+      "script": "Enterprise/agent/collectors/Get-BitLockerStatus.ps1",
+      "description": "Volume encryption state.",
+      "default_enabled": false
+    },
+    {
+      "name": "updatecompliance",
+      "label": "Windows Update Compliance",
+      "script": "Enterprise/agent/collectors/Get-WindowsUpdateStatus.ps1",
+      "description": "Last successful update activity (best-effort without WU API).",
+      "default_enabled": true
+    },
+    {
+      "name": "licenses",
+      "label": "License Info",
+      "script": "Enterprise/agent/collectors/Get-LicenseInfo.ps1",
+      "description": "Windows/Office keys (last 5 only, sanitized, admin-only in portal).",
+      "default_enabled": false
     }
   ]
 }

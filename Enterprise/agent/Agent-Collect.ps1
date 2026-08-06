@@ -73,6 +73,16 @@ CREATE TABLE IF NOT EXISTS outbox (
     Invoke-SQLite -Query $schema -DatabasePath $QueueDb | Out-Null
 }
 
+function ConvertFrom-CollectorOutput {
+    # Collectors (Enterprise/agent/collectors/*) emit one JSON object so the
+    # server can build fleet panels. Anything that doesn't parse as JSON is
+    # treated as plain text and wrapped in { text = ... } as before.
+    param([string]$Raw)
+    if ([string]::IsNullOrWhiteSpace($Raw)) { return $null }
+    try { return ($Raw | ConvertFrom-Json) }
+    catch { return $Raw }
+}
+
 function ConvertTo-JsonPayload {
     param([object]$Result)
     if ($null -eq $Result) { return (@{} | ConvertTo-Json -Compress) }
@@ -103,7 +113,8 @@ function Invoke-AgentCollection {
         try {
             Write-AgentLog "Running $($feature.name) ($scriptPath)"
             $output = & $scriptPath 2>&1 | Out-String
-            $payload = ConvertTo-JsonPayload -Result $output
+            $structured = ConvertFrom-CollectorOutput -Raw $output
+            $payload = ConvertTo-JsonPayload -Result $structured
             Invoke-SQLite -Query "INSERT INTO outbox (kind, payload, sanitized) VALUES ('$($feature.name)', '$($payload.Replace("'","''"))', 1);" -DatabasePath $QueueDb | Out-Null
             $results += $feature.name
         }

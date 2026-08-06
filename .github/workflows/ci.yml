@@ -97,19 +97,16 @@ jobs:
         run: |
           $endpoint = if ($env:SERVER_ENDPOINT) { $env:SERVER_ENDPOINT } else { 'http://CHANGE-ME/ingest' }
           $token = if ($env:API_TOKEN) { $env:API_TOKEN } else { 'CHANGE-ME' }
+          $manifest = (Get-Content ./Enterprise/api/features.json -Raw | ConvertFrom-Json).features
+          $features = @($manifest | ForEach-Object {
+            @{ name = $_.name; script = $_.script; enabled = [bool]$_.default_enabled }
+          })
           @{
             endpoint = $endpoint
             token = $token
             agent_version = '1.0.0'
             interval_minutes = 30
-            features = @(
-              @{ name = 'quickcheck'; script = 'Scripts/QuickCheck.ps1'; enabled = $true },
-              @{ name = 'eventlogs';  script = 'Scripts/Export-EventLogs.ps1'; enabled = $true },
-              @{ name = 'network';    script = 'Scripts/Network-Diagnostic.ps1'; enabled = $true },
-              @{ name = 'firewall';   script = 'Scripts/Firewall-Test.ps1'; enabled = $true },
-              @{ name = 'users';      script = 'Scripts/User-Inventory.ps1'; enabled = $false },
-              @{ name = 'printers';   script = 'Scripts/Printer-Fix.ps1'; enabled = $false }
-            )
+            features = $features
           } | ConvertTo-Json -Depth 5 | Set-Content ./Enterprise/agent/agent-config.json
 
       - name: Install ps2exe

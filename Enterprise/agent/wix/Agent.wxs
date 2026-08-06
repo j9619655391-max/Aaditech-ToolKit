@@ -82,6 +82,35 @@
           </Component>
         </Directory>
 
+        <!-- Enterprise\agent\collectors = support-engineer collectors (P4) -->
+        <Directory Id="ENTERPRISE_DIR" Name="Enterprise">
+          <Directory Id="ENT_AGENT_DIR" Name="agent">
+            <Directory Id="COLLECTORS_DIR" Name="collectors">
+              <Component Id="ColHardware" Guid="E5F6A7B8-0001-0001-0001-000000000001">
+                <File Id="HardwareCollector" Name="Get-HardwareInventory.ps1" Source="stage\Enterprise\agent\collectors\Get-HardwareInventory.ps1" KeyPath="yes" />
+              </Component>
+              <Component Id="ColSoftware" Guid="E5F6A7B8-0001-0001-0001-000000000002">
+                <File Id="SoftwareCollector" Name="Get-SoftwareInventory.ps1" Source="stage\Enterprise\agent\collectors\Get-SoftwareInventory.ps1" KeyPath="yes" />
+              </Component>
+              <Component Id="ColDiskHealth" Guid="E5F6A7B8-0001-0001-0001-000000000003">
+                <File Id="DiskHealthCollector" Name="Get-DiskHealth.ps1" Source="stage\Enterprise\agent\collectors\Get-DiskHealth.ps1" KeyPath="yes" />
+              </Component>
+              <Component Id="ColSystemHealth" Guid="E5F6A7B8-0001-0001-0001-000000000004">
+                <File Id="SystemHealthCollector" Name="Get-SystemHealth.ps1" Source="stage\Enterprise\agent\collectors\Get-SystemHealth.ps1" KeyPath="yes" />
+              </Component>
+              <Component Id="ColBitLocker" Guid="E5F6A7B8-0001-0001-0001-000000000005">
+                <File Id="BitLockerCollector" Name="Get-BitLockerStatus.ps1" Source="stage\Enterprise\agent\collectors\Get-BitLockerStatus.ps1" KeyPath="yes" />
+              </Component>
+              <Component Id="ColUpdates" Guid="E5F6A7B8-0001-0001-0001-000000000006">
+                <File Id="UpdatesCollector" Name="Get-WindowsUpdateStatus.ps1" Source="stage\Enterprise\agent\collectors\Get-WindowsUpdateStatus.ps1" KeyPath="yes" />
+              </Component>
+              <Component Id="ColLicenses" Guid="E5F6A7B8-0001-0001-0001-000000000007">
+                <File Id="LicensesCollector" Name="Get-LicenseInfo.ps1" Source="stage\Enterprise\agent\collectors\Get-LicenseInfo.ps1" KeyPath="yes" />
+              </Component>
+            </Directory>
+          </Directory>
+        </Directory>
+
       </Directory>
     </StandardDirectory>
 
@@ -137,6 +166,13 @@
       <ComponentRef Id="ConfigFile" />
       <ComponentRef Id="AgentConfig" />
       <ComponentRef Id="RegistryConfig" />
+      <ComponentRef Id="ColHardware" />
+      <ComponentRef Id="ColSoftware" />
+      <ComponentRef Id="ColDiskHealth" />
+      <ComponentRef Id="ColSystemHealth" />
+      <ComponentRef Id="ColBitLocker" />
+      <ComponentRef Id="ColUpdates" />
+      <ComponentRef Id="ColLicenses" />
     </Feature>
 
   </Package>

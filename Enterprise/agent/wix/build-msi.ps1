@@ -35,6 +35,15 @@ Copy-Item (Join-Path $BuildOut 'agent-config.json') (Join-Path $Stage 'agent.jso
 Copy-Item (Join-Path $RepoRoot 'Scripts') (Join-Path $Stage 'Scripts') -Recurse -Force
 Copy-Item (Join-Path $RepoRoot 'Config')  (Join-Path $Stage 'Config')  -Recurse -Force
 
+# bundle the support-engineer collectors (installed as <root>\Enterprise\agent\collectors\,
+# same relative path the agent.json feature scripts use in the repo)
+$collectors = Join-Path $RepoRoot 'Enterprise\agent\collectors'
+if (Test-Path $collectors) {
+    $stageCollectors = Join-Path $Stage 'Enterprise\agent\collectors'
+    New-Item -ItemType Directory -Path $stageCollectors -Force | Out-Null
+    Copy-Item (Join-Path $collectors '*.ps1') $stageCollectors -Force
+}
+
 $wix = Get-Command wix -ErrorAction SilentlyContinue
 if (-not $wix) { throw "WiX toolset not found. Install: dotnet tool install --global wix" }
 

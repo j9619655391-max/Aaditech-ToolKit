@@ -1,38 +1,43 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-07T03:26:53+05:30",
+  "generated": "2026-08-07T03:40:55+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "5a7bca5cfd9a029e9bc49410ed0105dd407fb588",
-  "last_verified_date": "2026-08-07T03:21:10+05:30",
+  "last_verified_commit": "507c9b2d84e248ffe02acc02fe8dddd9ff13ed01",
+  "last_verified_date": "2026-08-07T03:26:52+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 47,
+    "commit_count": 48,
     "clean_working_tree": false,
-    "head": "5a7bca5cfd9a029e9bc49410ed0105dd407fb588"
+    "head": "507c9b2d84e248ffe02acc02fe8dddd9ff13ed01"
   },
   "latest_delta": {
-    "detected_at": "2026-08-07T03:26:53+05:30",
+    "detected_at": "2026-08-07T03:40:55+05:30",
     "added": [
-      "Enterprise/api/app/__pycache__/bundle.cpython-314.pyc",
-      "Enterprise/api/app/bundle.py"
+      "Enterprise/agent/collectors/Get-DiskHealth.ps1",
+      "Enterprise/agent/collectors/Get-BitLockerStatus.ps1",
+      "Enterprise/agent/collectors/Get-SoftwareInventory.ps1",
+      "Enterprise/agent/collectors/Get-SystemHealth.ps1",
+      "Enterprise/agent/collectors/Get-WindowsUpdateStatus.ps1",
+      "Enterprise/agent/collectors/Get-HardwareInventory.ps1",
+      "Enterprise/agent/collectors/Get-LicenseInfo.ps1"
     ],
     "removed": [],
     "changed": [
-      "Enterprise/api/app/__pycache__/main.cpython-314.pyc",
-      "Enterprise/portal/index.html",
-      "Enterprise/docker-compose.yml",
-      "Enterprise/api/app/config.py",
-      "Enterprise/README.md",
-      "Enterprise/ARCHITECTURE.md",
+      ".github/workflows/ci.yml",
       "Enterprise/deploy/deploy.sh",
-      "CHANGELOG.md",
       "VERSION.md",
-      "Enterprise/api/app/main.py",
+      "Enterprise/api/features.json",
+      "Enterprise/agent/wix/Agent.wxs",
+      "Enterprise/README.md",
+      "Enterprise/agent/wix/build-msi.ps1",
+      "CHANGELOG.md",
+      "Enterprise/agent/agent-config.json",
+      "Enterprise/portal/index.html",
       "Enterprise/ROADMAP.md",
-      "Enterprise/api/app/__pycache__/config.cpython-314.pyc"
+      "Enterprise/agent/Agent-Collect.ps1"
     ],
-    "unchanged_count": 92
+    "unchanged_count": 94
   },
   "module_state": {
     "working": [

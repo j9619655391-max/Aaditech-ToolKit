@@ -45,6 +45,8 @@ are all derived from the setup answers.
 - **P3 done & verified live** (see §5): company agent bundle (agent.json +
   ca.crt + install-agent.cmd) + download endpoints; MSI serving from the
   `agent_artifacts` volume (waits on P0 CI build for a real binary).
+- **P4 done & verified live** (see §6): 7 support-engineer collectors +
+  structured-JSON agent output + fleet panels (offline/disk/battery/updates/health).
 - CI: `agent-build` job scaffolded (generic binary path, **not yet run end-to-end**).
 
 ---
@@ -160,7 +162,18 @@ Runs only after P1 so the package contains the setup answers:
 
 ---
 
-## 6. P4 — Support-engineer collectors (all requested, kept)
+## 6. P4 — Support-engineer collectors (all requested, kept) ✅ DONE (2026-08-07)
+
+> **Implemented & verified live:** 7 collectors in `Enterprise/agent/collectors/`
+> (hardware incl. battery wear %, software, diskhealth/SMART, system health,
+> bitlocker, update compliance, licenses — partial keys only, default off).
+> Each emits one JSON object; `Agent-Collect.ps1` now auto-parses structured
+> output (falling back to text) so the server stores real `jsonb` dicts for
+> fleet panels. Manifest (`features.json`) drives both the portal toggles and
+> the company agent bundle; deploy.sh derives its feature list from the same
+> file. MSI bundles collectors at `<root>\Enterprise\agent\collectors\`.
+> Portal **Fleet** view: offline, disk health/SMART, battery wear, update
+> compliance, system health — licenses admin-only.
 
 New collectors live in **`Enterprise/agent/collectors/`** (bundled by the MSI
 build; the existing `Scripts/` tree stays byte-identical). The existing agent
@@ -177,7 +190,7 @@ wrapper already runs + sanitizes + ships them — zero core change.
 | `Get-LicenseInfo.ps1` | `licenses` | product keys (sensitive — sanitized, admin-only) |
 
 Portal: `/api/events` already stores arbitrary `kind` + JSONB → no API change;
-new kind-specific fleet panels (disk health, battery, update compliance, offline).
+new kind-specific fleet panels (disk health, battery, update compliance, offline). ✅
 
 ---
 
@@ -213,7 +226,7 @@ new kind-specific fleet panels (disk health, battery, update compliance, offline
 | **P1** | Setup wizard + CA/server certs + token + first admin ✅ | — | medium |
 | **P2** | Users + RBAC (admin/operation/monitoring) + portal login ✅ | P1 | medium |
 | **P3** | Agent bundle (config+CA) + download page + install-agent.cmd ✅ | P0, P1 | small |
-| **P4** | Collectors + fleet panels | P3 | medium |
+| **P4** | Collectors + fleet panels ✅ | P3 | medium |
 | **P5** | Command channel (poll/execute/UI) | P2 | large |
 | **P6** | Alerts + reporting | P4 | medium |
 

@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-07T03:26:53+05:30",
-  "last_verified_commit": "5a7bca5cfd9a029e9bc49410ed0105dd407fb588",
-  "last_verified_date": "2026-08-07T03:21:10+05:30",
+  "generated": "2026-08-07T03:40:55+05:30",
+  "last_verified_commit": "507c9b2d84e248ffe02acc02fe8dddd9ff13ed01",
+  "last_verified_date": "2026-08-07T03:26:52+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -12,24 +12,12 @@
     "percent": 100.0
   },
   "latest_delta": {
-    "added": 2,
+    "added": 7,
     "removed": 0,
     "changed": 12,
-    "unchanged": 92
+    "unchanged": 94
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-06T04:22:19+05:30",
-      "added": [
-        "Documentation/Windows-Smoke-Run.md"
-      ],
-      "removed": [],
-      "changed": [
-        "Documentation/README.md",
-        "VERSION.md"
-      ],
-      "unchanged_count": 70
-    },
     {
       "detected_at": "2026-08-06T20:20:53+05:30",
       "added": [],
@@ -309,6 +297,34 @@
         "Enterprise/api/app/__pycache__/config.cpython-314.pyc"
       ],
       "unchanged_count": 92
+    },
+    {
+      "detected_at": "2026-08-07T03:40:55+05:30",
+      "added": [
+        "Enterprise/agent/collectors/Get-DiskHealth.ps1",
+        "Enterprise/agent/collectors/Get-BitLockerStatus.ps1",
+        "Enterprise/agent/collectors/Get-SoftwareInventory.ps1",
+        "Enterprise/agent/collectors/Get-SystemHealth.ps1",
+        "Enterprise/agent/collectors/Get-WindowsUpdateStatus.ps1",
+        "Enterprise/agent/collectors/Get-HardwareInventory.ps1",
+        "Enterprise/agent/collectors/Get-LicenseInfo.ps1"
+      ],
+      "removed": [],
+      "changed": [
+        ".github/workflows/ci.yml",
+        "Enterprise/deploy/deploy.sh",
+        "VERSION.md",
+        "Enterprise/api/features.json",
+        "Enterprise/agent/wix/Agent.wxs",
+        "Enterprise/README.md",
+        "Enterprise/agent/wix/build-msi.ps1",
+        "CHANGELOG.md",
+        "Enterprise/agent/agent-config.json",
+        "Enterprise/portal/index.html",
+        "Enterprise/ROADMAP.md",
+        "Enterprise/agent/Agent-Collect.ps1"
+      ],
+      "unchanged_count": 94
     }
   ],
   "next_recommended_tasks": [

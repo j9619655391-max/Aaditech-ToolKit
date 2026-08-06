@@ -41,6 +41,7 @@
   <h1><span id="company"></span> <span class="sub" id="subtitle">IT-Toolkit Enterprise</span></h1>
   <nav>
     <button data-view="agents" class="active">Agents</button>
+    <button data-view="fleet">Fleet</button>
     <button data-view="events">Events</button>
     <button data-view="features">Features</button>
     <button data-view="users">Users</button>
@@ -184,10 +185,104 @@ document.querySelectorAll('nav button').forEach(b => b.addEventListener('click',
 
 async function render() {
   if (view === 'agents') return renderAgents();
+  if (view === 'fleet') return renderFleet();
   if (view === 'events') return renderEvents();
   if (view === 'features') return renderFeatures();
   if (view === 'users') return renderUsers();
   renderAgentSetup();
+}
+
+// ---------------------------------------------------------------- fleet panels
+
+function latestByHost(events) {
+  const m = {};
+  for (const e of events || []) {
+    const t = new Date(e.captured_at).getTime();
+    if (!m[e.hostname] || t > m[e.hostname].t) m[e.hostname] = { e, t };
+  }
+  return Object.values(m).map(x => x.e);
+}
+
+async function renderFleet() {
+  const agents  = await api('/api/agents');
+  if (!agents) return;
+  const disks   = latestByHost(await api('/api/events?kind=diskhealth&limit=100'));
+  const hw      = latestByHost(await api('/api/events?kind=hardware&limit=100'));
+  const updates = latestByHost(await api('/api/events?kind=updatecompliance&limit=100'));
+  const health  = latestByHost(await api('/api/events?kind=health&limit=100'));
+
+  const isAdmin = window.user && window.user.role === 'admin';
+  const now = Date.now();
+  const offline = (agents || []).filter(a => now - new Date(a.last_seen).getTime() > 10 * 60 * 1000);
+
+  const offlineBlock = `
+    <div class="card"><h3>Offline agents (last seen &gt; 10 min) <span class="badge ${offline.length ? 'off' : 'on'}">${offline.length}</span></h3>
+      ${offline.length
+        ? `<table><thead><tr><th>Hostname</th><th>IP</th><th>Last seen</th></tr></thead><tbody>
+             ${offline.map(a => `<tr><td>${esc(a.hostname)}</td><td>${esc(a.ip)}</td><td>${esc(new Date(a.last_seen).toLocaleString())}</td></tr>`).join('')}
+           </tbody></table>`
+        : '<p class="muted">All agents have checked in recently.</p>'}
+    </div>`;
+
+  const diskRows = disks.map(e => {
+    const p = e.payload || {};
+    const failing = p.predicted_failure || (p.smart_failures && p.smart_failures.length);
+    return `<tr>
+      <td>${esc(e.hostname)}</td>
+      <td>${(p.disks || []).map(d => `${esc(d.Name)} ${d.SizeGB}GB <span class="badge ${d.HealthStatus === 'Healthy' ? 'on' : 'off'}">${esc(d.HealthStatus || '?')}</span>`).join('<br>') || '-'}</td>
+      <td>${failing ? `<span class="badge off">${(p.smart_failures || []).length} SMART failure(s)</span>` : '<span class="badge on">OK</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  const batRows = hw.filter(e => e.payload && e.payload.battery && e.payload.battery.wear_percent != null)
+    .sort((a, b) => b.payload.battery.wear_percent - a.payload.battery.wear_percent)
+    .map(e => {
+      const w = e.payload.battery.wear_percent;
+      return `<tr><td>${esc(e.hostname)}</td><td>${esc(e.payload.model || '')}</td>
+        <td><span class="badge ${w > 30 ? 'off' : 'on'}">${w}%</span></td>
+        <td>${w > 30 ? 'Degraded' : 'OK'}</td></tr>`;
+    }).join('');
+
+  const updRows = updates.map(e => {
+    const p = e.payload || {};
+    return `<tr><td>${esc(e.hostname)}</td><td>${esc(p.last_install_date || 'unknown')}</td><td>${esc(p.last_session_result ?? '')}</td></tr>`;
+  }).join('');
+
+  const healthRows = health.map(e => {
+    const p = e.payload || {};
+    const pend = p.reboot_pending ? '<span class="badge off">reboot pending</span>' : '<span class="badge on">ok</span>';
+    return `<tr><td>${esc(e.hostname)}</td><td>${esc(p.uptime_hours)}h</td><td>${esc(p.cpu_percent ?? '?')}%</td><td>${esc(p.memory_percent ?? '?')}%</td><td>${pend}</td></tr>`;
+  }).join('');
+
+  let licenseBlock = '';
+  if (isAdmin) {
+    const lic = latestByHost(await api('/api/events?kind=licenses&limit=100'));
+    licenseBlock = `<div class="card"><h3>License info (admin only)</h3>
+      <table><thead><tr><th>Hostname</th><th>Windows key (last 5)</th><th>Office keys (last 5)</th></tr></thead>
+      <tbody>${lic.map(e => {
+        const p = e.payload || {};
+        return `<tr><td>${esc(e.hostname)}</td><td>${esc(p.windows_key_last5 || '-')}</td><td>${(p.office_keys_last5 || []).map(esc).join(', ') || '-'}</td></tr>`;
+      }).join('') || '<tr><td colspan="3" class="muted">No license reports yet (feature is off by default).</td></tr>'}</tbody></table>
+    </div>`;
+  }
+
+  app.innerHTML = offlineBlock + `
+    <div class="card"><h3>Disk health (SMART)</h3>
+      <table><thead><tr><th>Hostname</th><th>Disks</th><th>SMART</th></tr></thead>
+      <tbody>${diskRows || '<tr><td colspan="3" class="muted">No disk health reports yet.</td></tr>'}</tbody></table>
+    </div>
+    <div class="card"><h3>Battery wear</h3>
+      <table><thead><tr><th>Hostname</th><th>Model</th><th>Wear</th><th>Status</th></tr></thead>
+      <tbody>${batRows || '<tr><td colspan="4" class="muted">No battery reports yet (desktop machines have none).</td></tr>'}</tbody></table>
+    </div>
+    <div class="card"><h3>Update compliance</h3>
+      <table><thead><tr><th>Hostname</th><th>Last install</th><th>Last session result</th></tr></thead>
+      <tbody>${updRows || '<tr><td colspan="3" class="muted">No update reports yet.</td></tr>'}</tbody></table>
+    </div>
+    <div class="card"><h3>System health</h3>
+      <table><thead><tr><th>Hostname</th><th>Uptime</th><th>CPU</th><th>RAM</th><th>Reboot</th></tr></thead>
+      <tbody>${healthRows || '<tr><td colspan="5" class="muted">No health reports yet.</td></tr>'}</tbody></table>
+    </div>` + licenseBlock;
 }
 
 async function renderAgents() {

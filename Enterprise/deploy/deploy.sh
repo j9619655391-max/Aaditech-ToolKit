@@ -160,20 +160,30 @@ if ! grep -q "^CADDY_HOST=" "$ENV_FILE"; then
     echo "CADDY_HOST=$CADDY_HOST" >> "$ENV_FILE"
 fi
 
+# Feature list comes from api/features.json (single source of truth) so the
+# deploy-time agent-config.json never drifts from the portal manifest.
+FEATURES_JSON="$(python3 - "$HERE/api/features.json" <<'PY'
+import json, sys
+with open(sys.argv[1]) as fh:
+    manifest = json.load(fh)["features"]
+out = []
+for f in manifest:
+    out.append({
+        "name": f["name"],
+        "script": f["script"],
+        "enabled": f.get("default_enabled", True),
+    })
+print(json.dumps(out))
+PY
+)"
+
 cat > "$CONFIG_OUT" <<EOF
 {
   "endpoint": "$SCHEME://$HOST/ingest",
   "token": "$API_TOKEN",
   "agent_version": "1.0.0",
   "interval_minutes": 30,
-  "features": [
-    { "name": "quickcheck", "script": "Scripts/QuickCheck.ps1", "enabled": true },
-    { "name": "eventlogs",  "script": "Scripts/Export-EventLogs.ps1", "enabled": true },
-    { "name": "network",    "script": "Scripts/Network-Diagnostic.ps1", "enabled": true },
-    { "name": "firewall",   "script": "Scripts/Firewall-Test.ps1", "enabled": true },
-    { "name": "users",      "script": "Scripts/User-Inventory.ps1", "enabled": false },
-    { "name": "printers",   "script": "Scripts/Printer-Fix.ps1", "enabled": false }
-  ]
+  "features": $FEATURES_JSON
 }
 EOF
 log "Agent config written: $CONFIG_OUT (endpoint baked: $SCHEME://$HOST/ingest)"

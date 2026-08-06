@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.4 UPDATES — Support-engineer collectors + fleet panels (P4)
+
+- **NEW: 7 collectors** in `Enterprise/agent/collectors/` (each emits one JSON
+  object): `hardware` (CPU/RAM/disks/GPU/BIOS/serial + **battery wear %**),
+  `software`, `diskhealth` (SMART + predicted failure), `health` (uptime/load/
+  reboot-pending/critical services), `bitlocker`, `updatecompliance`,
+  `licenses` (**last-5 keys only**, sanitized, default off).
+- **Agent:** `Agent-Collect.ps1` gains `ConvertFrom-CollectorOutput` — parses
+  structured JSON from collectors, falls back to text for the legacy scripts;
+  server stores real `jsonb` dicts for fleet panels.
+- **Manifest single-source:** `features.json` now lists all 13 features; the
+  portal toggles, the company `agent.json`, and deploy.sh's `agent-config.json`
+  all derive from it (deploy.sh generates via python3 — no drift).
+- **MSI:** WiX + build-msi.ps1 bundle collectors at
+  `<root>\Enterprise\agent\collectors\` (same relative path as agent.json).
+- **Portal:** new **Fleet** view — offline agents, disk health/SMART, battery
+  wear, update compliance, system health; **licenses admin-only**.
+- **Verified live** on `10.73.77.26`: manifest + bundle reflect all 13
+  features; structured diskhealth/hardware ingests stored as dicts with
+  predicted_failure flags; all collectors parse-checked and emit valid JSON
+  (pwsh); test data reset for first-run setup.
+
 ## v3.3 UPDATES — Company agent bundle + downloads (P3)
 
 - **NEW: server-side company bundle** — `bundle.py` assembles `agent.json`

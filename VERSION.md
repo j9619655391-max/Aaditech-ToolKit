@@ -53,7 +53,8 @@ See `Enterprise/README.md` and `Enterprise/ARCHITECTURE.md`. Additive, zero
 changes to the local toolkit.
 
 - **Server (Docker):** FastAPI (`/ingest`, `/api/*`) + PostgreSQL 16 + Caddy TLS, one shared DB.
-- **Agent:** `Enterprise/agent/Agent-Collect.ps1` → packaged `.exe` (ps2exe) + `.msi` (WiX). Runs existing scripts, sanitizes (reuses `SanitizeEngine`), queues offline (reuses `ToolkitData`), posts HTTPS.
+- **Agent:** `Enterprise/agent/Agent-Collect.ps1` → packaged `.exe` (ps2exe) + `.msi` (WiX). Runs existing scripts + P4 collectors, sanitizes (reuses `SanitizeEngine`), queues offline (reuses `ToolkitData`), posts HTTPS; auto-parses structured collector JSON.
+- **Collectors (P4):** `Enterprise/agent/collectors/` — hardware (battery wear %), software, diskhealth (SMART), system health, BitLocker, update compliance, licenses (last-5 only, default off). Bundle served via `/api/agent-bundle`; portal Fleet panels (offline / disk / battery / updates / health).
 - **Portal:** first-time **setup wizard** (company / server / admin / branding → local CA + server certs + token) + branded login + admin UI (Agents / Events / Feature config editor / Users with RBAC roles / Agent Setup with company bundle downloads).
 - **Deploy:** `Enterprise/deploy/deploy.sh` — **intranet/LAN-first** (auto-detects LAN IP on macOS + Linux), `--regen` to re-point on a new machine, `--public` for internet clients; bakes endpoint+token into the agent config, brings up Docker. **Secrets auto-generated** (API token + Postgres password); API self-generates/persists a token if `API_TOKEN` is empty.
 - **Agent bundle (P3):** `GET /api/agent-bundle` assembles company `agent.json` + `ca.crt` + live `install-agent.cmd`; downloads at `/api/agent/agent.json`, `/api/agent/install.cmd`, `/api/ca.crt`, `/api/agent-msi` (MSI served from the `agent_artifacts` volume; 404 until the CI generic build is uploaded).
