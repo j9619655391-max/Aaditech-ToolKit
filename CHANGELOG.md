@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.5 UPDATES — Command channel / remote ops (P5)
+
+- **NEW: `commands` table** (schema.sql + idempotent runtime migration) —
+  id, agent_id, kind, payload(jsonb), status (pending/picked_up/completed/
+  failed), result(jsonb), created_by, timestamps.
+- **NEW: API** — `POST /api/commands` (admin/operation; monitoring → 403) issues
+  reboot / wake / run-script; `GET /api/commands` audit list (all roles); agent
+  `GET /api/commands/poll?hostname=...` (bearer token) marks `picked_up` and
+  re-delivers within a 5-minute window; `POST /api/commands/{id}/result`
+  (bearer) completes/fails the command with output + exit code.
+- **NEW: run-script gating** — `COMMANDS_RUN_SCRIPT_ALLOWED=false` by default
+  (403); when enabled, scripts must be in `RUN_SCRIPT_ALLOWLIST` (comma-separated
+  paths), else 403.
+- **Agent:** polls commands each cycle, executes (reboot via `shutdown.exe`/
+  `Restart-Computer`, WOL magic packet via UDP broadcast, allowlisted scripts)
+  and posts the result — verified with the full poll→execute→result flow.
+- **Portal:** **Commands** page — issue form with per-kind fields + history with
+  payload/result viewer; hidden for monitoring.
+- **Verified live** on `10.73.77.26`: issue (reboot/wake), run-script 403 when
+  disabled and allowlist 200/403 when enabled, poll/re-delivery/result, 404 on
+  unknown command, 401 unauth, RBAC 403 for monitoring; test data reset.
+
 ## v3.4 UPDATES — Support-engineer collectors + fleet panels (P4)
 
 - **NEW: 7 collectors** in `Enterprise/agent/collectors/` (each emits one JSON

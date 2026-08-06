@@ -58,6 +58,7 @@ changes to the local toolkit.
 - **Portal:** first-time **setup wizard** (company / server / admin / branding → local CA + server certs + token) + branded login + admin UI (Agents / Events / Feature config editor / Users with RBAC roles / Agent Setup with company bundle downloads).
 - **Deploy:** `Enterprise/deploy/deploy.sh` — **intranet/LAN-first** (auto-detects LAN IP on macOS + Linux), `--regen` to re-point on a new machine, `--public` for internet clients; bakes endpoint+token into the agent config, brings up Docker. **Secrets auto-generated** (API token + Postgres password); API self-generates/persists a token if `API_TOKEN` is empty.
 - **Agent bundle (P3):** `GET /api/agent-bundle` assembles company `agent.json` + `ca.crt` + live `install-agent.cmd`; downloads at `/api/agent/agent.json`, `/api/agent/install.cmd`, `/api/ca.crt`, `/api/agent-msi` (MSI served from the `agent_artifacts` volume; 404 until the CI generic build is uploaded).
+- **Commands (P5):** `commands` table; `POST /api/commands` (admin/operation), `GET /api/commands` (all roles), agent `GET /api/commands/poll` + `POST /api/commands/{id}/result` (bearer token). Kinds: reboot (delay), wake (WOL), run-script (allowlist + flag). Portal Commands page with history/audit.
 - **CI:** new `agent-build` job (windows-latest) builds `.exe` + `.msi` artifacts.
 - **Verified locally:** full Docker stack + agent→server round-trip with PII `[REDACTED-*]` sanitization (macOS smoke).
 

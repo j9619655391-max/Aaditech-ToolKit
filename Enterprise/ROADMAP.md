@@ -47,6 +47,8 @@ are all derived from the setup answers.
   `agent_artifacts` volume (waits on P0 CI build for a real binary).
 - **P4 done & verified live** (see §6): 7 support-engineer collectors +
   structured-JSON agent output + fleet panels (offline/disk/battery/updates/health).
+- **P5 done & verified live** (see §7): command channel — issue/poll/execute/
+  result for reboot, wake, run-script (allowlisted + flag-gated); RBAC enforced.
 - CI: `agent-build` job scaffolded (generic binary path, **not yet run end-to-end**).
 
 ---
@@ -194,14 +196,24 @@ new kind-specific fleet panels (disk health, battery, update compliance, offline
 
 ---
 
-## 7. P5 — Command channel (remote ops)
+## 7. P5 — Command channel (remote ops) ✅ DONE (2026-08-07)
+
+> **Implemented & verified live:** `commands` table (schema.sql + runtime
+> migration). Issue: `POST /api/commands` (admin/operation; `monitoring` 403;
+> unauthenticated 401). Agent polls `GET /api/commands/poll?hostname=...`
+> (bearer token) → marks `picked_up` (re-delivered within a 5-min window in
+> case results are lost) → executes → posts `POST /api/commands/{id}/result`.
+> Kinds: `reboot` (optional delay), `wake` (WOL magic packet), `run-script`
+> (flag `COMMANDS_RUN_SCRIPT_ALLOWED` + `RUN_SCRIPT_ALLOWLIST`, 403 otherwise).
+> Portal **Commands** page: issue form (per-kind fields) + history with
+> payload/result viewer; issue hidden for monitoring.
 
 - Table `commands` (id, agent_id, kind, payload, status, created_at, completed_at).
-  Kinds: `reboot`, `wake` (L2), `run-script` (allowlisted, flag-gated).
+  Kinds: `reboot`, `wake` (L2), `run-script` (allowlisted, flag-gated). ✅
 - Agent polls `GET /api/commands/poll?agent=<id>` every cycle → executes → posts
-  result (reuses `/ingest` or `POST /api/commands/{id}/result`).
-- Portal: Commands page — pick agent, issue, watch status/result. Audited.
-- **RBAC:** `admin`/`operation` only; `monitoring` read-only.
+  result (reuses `/ingest` or `POST /api/commands/{id}/result`). ✅
+- Portal: Commands page — pick agent, issue, watch status/result. Audited. ✅
+- **RBAC:** `admin`/`operation` only; `monitoring` read-only. ✅
 
 ---
 
@@ -227,7 +239,7 @@ new kind-specific fleet panels (disk health, battery, update compliance, offline
 | **P2** | Users + RBAC (admin/operation/monitoring) + portal login ✅ | P1 | medium |
 | **P3** | Agent bundle (config+CA) + download page + install-agent.cmd ✅ | P0, P1 | small |
 | **P4** | Collectors + fleet panels ✅ | P3 | medium |
-| **P5** | Command channel (poll/execute/UI) | P2 | large |
+| **P5** | Command channel (poll/execute/UI) ✅ | P2 | large |
 | **P6** | Alerts + reporting | P4 | medium |
 
 Each phase lands green on CI and keeps the existing toolkit untouched.
@@ -249,17 +261,16 @@ Each phase lands green on CI and keeps the existing toolkit untouched.
 ---
 
 ## 11. Open decisions (confirm before each phase)
-1. **mTLS now or bearer-token first?** (Recommended: bearer token first; mTLS
-   client certs as a P3 flag — cert infra is already built in P1.)
+1. **mTLS now or bearer-token first?** ✅ **Decided:** bearer token first (live);
+   mTLS client certs remain a P3 flag — cert infra already built.
 2. **Alerts channel:** portal-first, SMTP email later? (Recommended: yes.)
-3. **Remote command scope:** reboot + Wake-on-LAN first; `run-script` allowlist
-   behind a flag? (Recommended: yes.)
+3. **Remote command scope:** ✅ **Decided:** reboot + Wake-on-LAN + `run-script`
+   allowlist behind a flag — implemented in P5.
 4. **Exe signing:** manual Authenticode, or add a code-signing cert to CI?
    (Requires purchasing a cert.)
-5. **License info:** include but off by default (optional per company)?
-   (Recommended: yes, off by default.)
-6. **Roles to ship:** exactly admin / operation / monitoring, or also a
-   read-only "viewer"? (Recommended: the three above.)
+5. **License info:** ✅ **Decided:** include but off by default — implemented in P4
+   (last-5 keys only, admin-only portal panel).
+6. **Roles to ship:** ✅ **Decided:** admin / operation / monitoring — implemented in P2.
 
 ---
 

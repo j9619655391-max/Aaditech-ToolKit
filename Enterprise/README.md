@@ -89,9 +89,20 @@ docker compose cp IT-Toolkit-Agent.msi api:/artifacts/
 | `ROADMAP.md` | **Next-steps plan**: CI agent delivery, first-time setup wizard, support-engineer features |
 | `docker-compose.yml` | One-host stack: `db` (Postgres) + `api` + `caddy` (+ `agent_artifacts` volume for the MSI) |
 | `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), agent bundle (`/api/agent-bundle`, downloads), `/healthz`; serves portal |
-| `portal/` | Setup wizard + login + single-page admin UI (Agents / Fleet / Events / Feature toggles / Users / Agent Setup) |
-| `agent/` | `Agent-Collect.ps1` (worker, parses structured collector JSON), ps2exe + WiX MSI packaging |
+| `portal/` | Setup wizard + login + single-page admin UI (Agents / Fleet / Events / Commands / Feature toggles / Users / Agent Setup) |
+| `agent/` | `Agent-Collect.ps1` (worker — collects, parses structured JSON, flushes, polls + executes commands), ps2exe + WiX MSI packaging |
 | `agent/collectors/` | 7 support-engineer collectors (hardware, software, diskhealth, health, bitlocker, updatecompliance, licenses) |
+
+## Remote commands (P5)
+
+Admins/operators issue commands from the **Commands** page; agents poll each
+cycle and post results back (audited history):
+
+- `reboot` — optional delay in seconds.
+- `wake` — Wake-on-LAN magic packet (MAC + optional target IP).
+- `run-script` — only when `COMMANDS_RUN_SCRIPT_ALLOWED=true` in `.env` and the
+  script path is in `RUN_SCRIPT_ALLOWLIST=Scripts/A.ps1,Scripts/B.ps1`.
+- `monitoring` role can view history but not issue.
 | `deploy/deploy.sh` | One-command bring-up with auto-IP detection |
 | `.env.example` | Template — copy to `.env` (never committed) |
 
@@ -104,8 +115,11 @@ end-to-end (exit 0) and regenerates the baked agent config on IP change.
 
 ## Honest boundaries
 
-- Portal sessions + RBAC (admin / operation / monitoring) are live; the
-  role-governed **commands** and **alerts/reports** land in P5/P6.
+- Portal sessions + RBAC (admin / operation / monitoring) are live; **alerts +
+  reports** land in P6.
+- `wake` sends the WOL magic packet from the target's own network via the agent
+  (works when the machine has a peer online); for true remote power-on you still
+  need the BIOS/WoL setting enabled on the target.
 - The **MSI download is wired but empty** until the generic engine from P0 is
   built on CI and copied into the `agent_artifacts` volume (`docker compose cp`).
 - MSI/exe build must run on **Windows** — a GitHub Actions job is provided

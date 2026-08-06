@@ -43,6 +43,7 @@
     <button data-view="agents" class="active">Agents</button>
     <button data-view="fleet">Fleet</button>
     <button data-view="events">Events</button>
+    <button data-view="commands">Commands</button>
     <button data-view="features">Features</button>
     <button data-view="users">Users</button>
     <button data-view="agent">Agent Setup</button>
@@ -187,6 +188,7 @@ async function render() {
   if (view === 'agents') return renderAgents();
   if (view === 'fleet') return renderFleet();
   if (view === 'events') return renderEvents();
+  if (view === 'commands') return renderCommands();
   if (view === 'features') return renderFeatures();
   if (view === 'users') return renderUsers();
   renderAgentSetup();
@@ -326,6 +328,83 @@ async function renderEvents() {
 function toggleJson(id) {
   const row = document.getElementById('json-' + id);
   row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+
+// ---------------------------------------------------------------- commands (P5)
+
+function cmdKind() {
+  const k = document.getElementById('cmd_kind').value;
+  const f = document.getElementById('cmd_fields');
+  if (k === 'reboot') {
+    f.innerHTML = '<label>Delay (seconds)</label><input id="cmd_delay" type="number" value="0" min="0" />';
+  } else if (k === 'wake') {
+    f.innerHTML = '<label>MAC</label><input id="cmd_mac" placeholder="AA:BB:CC:DD:EE:FF" /><label>IP (optional)</label><input id="cmd_ip" placeholder="255.255.255.255" />';
+  } else {
+    f.innerHTML = '<label>Script (path relative to install root)</label><input id="cmd_script" placeholder="Scripts/QuickCheck.ps1" />';
+  }
+}
+
+async function issueCmd() {
+  const err = document.getElementById('cmd_err');
+  const k = document.getElementById('cmd_kind').value;
+  const payload = {};
+  if (k === 'reboot') payload.delay_seconds = parseInt(document.getElementById('cmd_delay').value || '0', 10);
+  else if (k === 'wake') {
+    payload.mac = document.getElementById('cmd_mac').value.trim();
+    payload.ip = document.getElementById('cmd_ip').value.trim();
+  } else {
+    payload.script = document.getElementById('cmd_script').value.trim();
+  }
+  const body = {
+    agent_id: parseInt(document.getElementById('cmd_agent').value, 10),
+    kind: k,
+    payload,
+  };
+  const res = await api('/api/commands', { method: 'POST', body: JSON.stringify(body) });
+  if (res) renderCommands();
+}
+
+function toggleCmd(id) {
+  const row = document.getElementById('cmd-' + id);
+  row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+
+async function renderCommands() {
+  const [agents, cmds] = await Promise.all([api('/api/agents'), api('/api/commands')]);
+  if (!cmds) return;
+  const canIssue = window.user && (window.user.role === 'admin' || window.user.role === 'operation');
+  const rows = cmds.map(c => `
+    <tr>
+      <td>${esc(c.hostname)}</td>
+      <td>${esc(c.kind)}</td>
+      <td><span class="badge ${c.status === 'completed' ? 'on' : c.status === 'failed' ? 'off' : ''}">${esc(c.status)}</span></td>
+      <td>${esc(new Date(c.created_at).toLocaleString())}</td>
+      <td><button class="action" onclick="toggleCmd(${c.id})">view</button></td>
+    </tr>
+    <tr id="cmd-${c.id}" style="display:none"><td colspan="5">
+      <pre>payload: ${esc(JSON.stringify(c.payload, null, 2))}
+${c.result ? 'result: ' + esc(JSON.stringify(c.result, null, 2)) : ''}</pre>
+    </td></tr>`).join('');
+
+  const form = canIssue ? `
+    <div class="card"><h3>Issue command</h3>
+      <div class="row" style="align-items:flex-end;flex-wrap:wrap">
+        <div style="flex:2;min-width:180px"><label>Agent</label>
+          <select id="cmd_agent">${(agents || []).map(a => `<option value="${a.id}">${esc(a.hostname)}</option>`).join('') || '<option>—</option>'}</select></div>
+        <div style="flex:1;min-width:140px"><label>Kind</label>
+          <select id="cmd_kind" onchange="cmdKind()"><option value="reboot">reboot</option><option value="wake">wake</option><option value="run-script">run-script</option></select></div>
+        <div style="flex:2;min-width:180px" id="cmd_fields"></div>
+        <div style="min-width:80px"><button class="action" onclick="issueCmd()">Send</button></div>
+      </div>
+      <div class="error" id="cmd_err"></div>
+    </div>` : '<p class="muted">Your role is read-only for commands.</p>';
+
+  app.innerHTML = form + `
+    <div class="card"><h3>Command history</h3>
+      <table><thead><tr><th>Agent</th><th>Kind</th><th>Status</th><th>Issued</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" class="muted">No commands issued yet.</td></tr>'}</tbody></table>
+    </div>`;
+  cmdKind();
 }
 
 async function renderFeatures() {

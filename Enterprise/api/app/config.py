@@ -9,6 +9,17 @@ FEATURES_FILE = os.environ.get("FEATURES_FILE", "/app/features.json")
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/data"))
 ARTIFACTS_DIR = Path(os.environ.get("ARTIFACTS_DIR", "/artifacts"))
 
+# ---------------------------------------------------------------- command channel (P5)
+
+ALLOW_RUN_SCRIPT = os.environ.get("COMMANDS_RUN_SCRIPT_ALLOWED", "false").lower() in (
+    "1", "true", "yes",
+)
+RUN_SCRIPT_ALLOWLIST = [
+    s.strip()
+    for s in os.environ.get("RUN_SCRIPT_ALLOWLIST", "").split(",")
+    if s.strip()
+]
+
 # ---------------------------------------------------------------- API token
 
 _PLACEHOLDERS = {"", "change-me", "change-me-random-token", "changeme"}

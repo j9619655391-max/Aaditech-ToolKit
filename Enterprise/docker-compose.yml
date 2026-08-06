@@ -30,6 +30,8 @@ services:
       SESSION_SECRET: ${SESSION_SECRET:-}
       DATA_DIR: /data
       ARTIFACTS_DIR: /artifacts
+      COMMANDS_RUN_SCRIPT_ALLOWED: ${COMMANDS_RUN_SCRIPT_ALLOWED:-false}
+      RUN_SCRIPT_ALLOWLIST: ${RUN_SCRIPT_ALLOWLIST:-}
     volumes:
       - ./portal:/app/portal:ro
       - ./api/features.json:/app/features.json:ro

@@ -1,43 +1,37 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-07T03:40:55+05:30",
+  "generated": "2026-08-07T03:51:10+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "507c9b2d84e248ffe02acc02fe8dddd9ff13ed01",
-  "last_verified_date": "2026-08-07T03:26:52+05:30",
+  "last_verified_commit": "e60f2db6026a94179c5c41708f75ee44e2153c90",
+  "last_verified_date": "2026-08-07T03:40:54+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 48,
+    "commit_count": 49,
     "clean_working_tree": false,
-    "head": "507c9b2d84e248ffe02acc02fe8dddd9ff13ed01"
+    "head": "e60f2db6026a94179c5c41708f75ee44e2153c90"
   },
   "latest_delta": {
-    "detected_at": "2026-08-07T03:40:55+05:30",
-    "added": [
-      "Enterprise/agent/collectors/Get-DiskHealth.ps1",
-      "Enterprise/agent/collectors/Get-BitLockerStatus.ps1",
-      "Enterprise/agent/collectors/Get-SoftwareInventory.ps1",
-      "Enterprise/agent/collectors/Get-SystemHealth.ps1",
-      "Enterprise/agent/collectors/Get-WindowsUpdateStatus.ps1",
-      "Enterprise/agent/collectors/Get-HardwareInventory.ps1",
-      "Enterprise/agent/collectors/Get-LicenseInfo.ps1"
-    ],
+    "detected_at": "2026-08-07T03:51:10+05:30",
+    "added": [],
     "removed": [],
     "changed": [
-      ".github/workflows/ci.yml",
-      "Enterprise/deploy/deploy.sh",
-      "VERSION.md",
-      "Enterprise/api/features.json",
-      "Enterprise/agent/wix/Agent.wxs",
-      "Enterprise/README.md",
-      "Enterprise/agent/wix/build-msi.ps1",
+      "Enterprise/api/app/config.py",
+      "Enterprise/api/app/__pycache__/main.cpython-314.pyc",
+      "Enterprise/docker-compose.yml",
       "CHANGELOG.md",
-      "Enterprise/agent/agent-config.json",
-      "Enterprise/portal/index.html",
+      "Enterprise/api/app/main.py",
       "Enterprise/ROADMAP.md",
-      "Enterprise/agent/Agent-Collect.ps1"
+      "VERSION.md",
+      "Enterprise/agent/Agent-Collect.ps1",
+      "Enterprise/api/schema.sql",
+      "Enterprise/portal/index.html",
+      "Enterprise/README.md",
+      "Enterprise/api/app/__pycache__/config.cpython-314.pyc",
+      "Enterprise/api/app/__pycache__/db.cpython-314.pyc",
+      "Enterprise/api/app/db.py"
     ],
-    "unchanged_count": 94
+    "unchanged_count": 99
   },
   "module_state": {
     "working": [

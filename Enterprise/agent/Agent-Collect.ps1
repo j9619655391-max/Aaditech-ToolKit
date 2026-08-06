@@ -210,6 +210,101 @@ function Send-AgentBatch {
     }
 }
 
+# ------------------------------------------------------------------ commands (P5)
+
+function Get-CommandsApiRoot {
+    # same origin as the ingest endpoint, minus the /ingest suffix
+    return ($Config.endpoint -replace '/ingest\s*$', '')
+}
+
+function Get-PendingCommands {
+    param($Config)
+    $hn = [uri]::EscapeDataString((Get-AgentHostname))
+    $uri = "$(Get-CommandsApiRoot)/api/commands/poll?hostname=$hn"
+    try {
+        $resp = Invoke-RestMethod -Uri $uri -Method Get -Headers @{ Authorization = "Bearer $($Config.token)" }
+        return @($resp)
+    }
+    catch {
+        Write-AgentLog "Command poll failed: $($_.Exception.Message)"
+        return @()
+    }
+}
+
+function Send-WakeOnLan {
+    param([string]$Mac, [string]$TargetIp)
+    $bytes = [byte[]]@(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF)
+    $parts = $Mac -split '[:-]'
+    if ($parts.Count -ne 6) { throw "Invalid MAC address: $Mac" }
+    $macBytes = @($parts | ForEach-Object { [Convert]::ToByte($_, 16) })
+    for ($i = 0; $i -lt 16; $i++) { $bytes += $macBytes }
+    $client = New-Object System.Net.Sockets.UdpClient
+    try {
+        if ($TargetIp) { $client.Send($bytes, $bytes.Length, $TargetIp, 9) | Out-Null }
+        else { $client.Send($bytes, $bytes.Length, '255.255.255.255', 9) | Out-Null }
+    }
+    finally { $client.Close() }
+}
+
+function Invoke-RemoteCommand {
+    param($Config, $Cmd)
+    $kind = $Cmd.kind
+    $payload = $Cmd.payload
+    switch ($kind) {
+        'reboot' {
+            $delay = [int]$payload.delay_seconds
+            if ($delay -gt 0) {
+                & shutdown.exe /r /t $delay /f 2>&1 | Out-Null
+            }
+            else {
+                Restart-Computer -Force -ErrorAction Stop
+            }
+            return @{ status = 'completed'; output = "Reboot issued (delay $delay s)"; exit_code = 0 }
+        }
+        'wake' {
+            try {
+                Send-WakeOnLan -Mac $payload.mac -TargetIp $payload.ip
+                return @{ status = 'completed'; output = "Wake-on-LAN sent to $($payload.mac)"; exit_code = 0 }
+            }
+            catch {
+                return @{ status = 'failed'; output = $_.Exception.Message; exit_code = 1 }
+            }
+        }
+        'run-script' {
+            $script = $payload.script
+            if (-not $script) { return @{ status = 'failed'; output = 'No script specified'; exit_code = 1 } }
+            $path = Join-Path $script:RepoRoot $script
+            if (-not (Test-Path $path)) { return @{ status = 'failed'; output = "Script not found: $script"; exit_code = 1 } }
+            try {
+                $out = (& $path 2>&1 | Out-String)
+                return @{ status = 'completed'; output = $out; exit_code = $LASTEXITCODE }
+            }
+            catch {
+                return @{ status = 'failed'; output = $_.Exception.Message; exit_code = 1 }
+            }
+        }
+        default { return @{ status = 'failed'; output = "Unknown command kind: $kind"; exit_code = 1 } }
+    }
+}
+
+function Send-CommandResult {
+    param($Config, $CmdId, $Result)
+    $uri = "$(Get-CommandsApiRoot)/api/commands/$CmdId/result"
+    $body = @{
+        hostname  = (Get-AgentHostname)
+        status    = $Result.status
+        output    = $Result.output
+        exit_code = $Result.exit_code
+    } | ConvertTo-Json -Compress
+    try {
+        Invoke-RestMethod -Uri $uri -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body | Out-Null
+        Write-AgentLog "Posted result for command $CmdId : $($Result.status)"
+    }
+    catch {
+        Write-AgentLog "Result post failed for command $CmdId : $($_.Exception.Message)"
+    }
+}
+
 # ------------------------------------------------------------------ main
 
 Import-ToolkitModules
@@ -227,6 +322,16 @@ do {
     if (-not $CollectOnly) {
         $sent = Send-AgentBatch -Config $Config
         Write-AgentLog "Sent: $sent events"
+    }
+
+    if (-not $FlushOnly -and -not $CollectOnly) {
+        $cmds = Get-PendingCommands -Config $Config
+        foreach ($cmd in $cmds) {
+            Write-AgentLog "Executing command $($cmd.id) kind=$($cmd.kind)"
+            $result = Invoke-RemoteCommand -Config $Config -Cmd $cmd
+            Send-CommandResult -Config $Config -CmdId $cmd.id -Result $result
+        }
+        if (@($cmds).Count -gt 0) { Write-AgentLog "Executed $($cmds.Count) command(s)" }
     }
 
     Write-AgentLog "Agent cycle complete"

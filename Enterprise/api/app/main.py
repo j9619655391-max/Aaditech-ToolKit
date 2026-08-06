@@ -117,6 +117,19 @@ class UserUpdate(BaseModel):
     password: str | None = None
 
 
+class CommandCreate(BaseModel):
+    agent_id: int
+    kind: str = Field(pattern="^(reboot|wake|run-script)$")
+    payload: dict = Field(default_factory=dict)
+
+
+class CommandResult(BaseModel):
+    hostname: str
+    status: str = Field(pattern="^(completed|failed)$")
+    output: str = ""
+    exit_code: int | None = None
+
+
 # ---------------------------------------------------------------- lifecycle
 
 @app.on_event("startup")
@@ -369,6 +382,84 @@ async def download_msi(_: dict = Depends(require_role("admin", "operation"))):
     if not path.exists():
         raise HTTPException(status_code=404, detail="MSI not uploaded yet — CI publishes the generic engine build (P0).")
     return FileResponse(path, media_type="application/octet-stream", filename=bundle.MSI_FILENAME)
+
+
+# ---------------------------------------------------------------- command channel (P5)
+
+@app.get("/api/commands", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def list_commands(limit: int = 100):
+    pool = await db.connect()
+    rows = await pool.fetch(
+        "SELECT c.id, a.hostname, c.kind, c.payload, c.status, c.result, "
+        "       c.created_at, c.picked_up_at, c.completed_at "
+        "FROM commands c JOIN agents a ON a.id = c.agent_id "
+        "ORDER BY c.id DESC LIMIT $1",
+        limit,
+    )
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/commands", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def create_command(payload: CommandCreate, user: dict = Depends(require_role("admin", "operation"))):
+    if payload.kind == "run-script" and not config.ALLOW_RUN_SCRIPT:
+        raise HTTPException(status_code=403, detail="run-script is disabled (COMMANDS_RUN_SCRIPT_ALLOWED=false)")
+    if payload.kind == "run-script":
+        script = (payload.payload.get("script") or "").strip()
+        if script not in config.RUN_SCRIPT_ALLOWLIST:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Script '{script}' is not in the allowlist ({', '.join(config.RUN_SCRIPT_ALLOWLIST) or 'empty'})",
+            )
+    pool = await db.connect()
+    agent = await pool.fetchrow("SELECT id FROM agents WHERE id = $1", payload.agent_id)
+    if agent is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    row = await pool.fetchrow(
+        "INSERT INTO commands (agent_id, kind, payload, created_by) "
+        "VALUES ($1, $2, $3, $4) RETURNING id, agent_id, kind, payload, status, created_at",
+        payload.agent_id, payload.kind, payload.payload, user["id"],
+    )
+    return dict(row)
+
+
+@app.get("/api/commands/poll", dependencies=[Depends(require_token)])
+async def poll_commands(hostname: str, request: Request):
+    """Agent-facing: return pending commands for this host (bearer token auth).
+    Marks them picked_up so the portal shows they were delivered."""
+    pool = await db.connect()
+    agent = await pool.fetchrow("SELECT id FROM agents WHERE hostname = $1", hostname)
+    if agent is None:
+        return []
+    rows = await pool.fetch(
+        "SELECT id, kind, payload FROM commands "
+        "WHERE agent_id = $1 AND status IN ('pending', 'picked_up') "
+        "  AND (picked_up_at IS NULL OR picked_up_at > now() - interval '5 minutes') "
+        "ORDER BY id ASC LIMIT 10",
+        agent["id"],
+    )
+    for r in rows:
+        await pool.execute(
+            "UPDATE commands SET status = 'picked_up', picked_up_at = now() WHERE id = $1",
+            r["id"],
+        )
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/commands/{command_id}/result", dependencies=[Depends(require_token)])
+async def command_result(command_id: int, result: CommandResult):
+    pool = await db.connect()
+    agent = await pool.fetchrow("SELECT id FROM agents WHERE hostname = $1", result.hostname)
+    if agent is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    updated = await pool.execute(
+        "UPDATE commands SET status = $2, result = $3, completed_at = now() "
+        "WHERE id = $1 AND agent_id = $4",
+        command_id, result.status,
+        {"output": result.output, "exit_code": result.exit_code}, agent["id"],
+    )
+    if updated == "UPDATE 0":
+        raise HTTPException(status_code=404, detail="Command not found for this agent")
+    return {"ok": True, "id": command_id, "status": result.status}
 
 
 # ---------------------------------------------------------------- ingest

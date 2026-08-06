@@ -23,6 +23,23 @@ _SCHEMA_MIGRATIONS = [
         created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
     )
     """,
+    """
+    CREATE TABLE IF NOT EXISTS commands (
+        id           SERIAL PRIMARY KEY,
+        agent_id     INTEGER NOT NULL REFERENCES agents(id),
+        kind         TEXT NOT NULL,
+        payload      jsonb NOT NULL DEFAULT '{}',
+        status       TEXT NOT NULL DEFAULT 'pending',
+        result       jsonb,
+        created_by   INTEGER,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+        picked_up_at TIMESTAMPTZ,
+        completed_at TIMESTAMPTZ
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_commands_agent_pending ON commands(agent_id, status)
+    """,
 ]
 
 
