@@ -35,9 +35,9 @@ function New-AuditIndex {
             "path" = "/audit/index.json"
             "module" = "audit-index"
             "purpose" = "Machine-readable repository map"
-            "exports" = ["index"]
-            "imports" = []
-            "used_by" = []
+            "exports" = @("index")
+            "imports" = @()
+            "used_by" = @()
             "status" = "✅ complete"
             "tested" = true
             "documented" = true
