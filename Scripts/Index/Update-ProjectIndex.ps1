@@ -59,7 +59,7 @@ function Get-FileSnapshot {
             sha256_short = $hash
         }
     }
-    return @($files)
+    return @($files | Sort-Object -Property path)
 }
 
 function Get-ExtensionCounts {
@@ -100,7 +100,7 @@ function Get-ModulesAndScripts {
     Get-ChildItem (Join-Path $Root 'Remote-Tools') -Filter *.ps1 -File -ErrorAction SilentlyContinue | ForEach-Object {
         $scripts += [PSCustomObject]@{ name = 'Remote-Tools/' + $_.Name; path = 'Remote-Tools/' + $_.Name }
     }
-    return @{ modules = $modules; scripts = @($scripts) }
+    return @{ modules = @($modules | Sort-Object -Property path); scripts = @($scripts | Sort-Object -Property path) }
 }
 
 # ---------- Load previous index (if any) ----------
