@@ -37,7 +37,9 @@ are all derived from the setup answers.
 - Server: FastAPI + PostgreSQL + Caddy in Docker (one host, one DB) — verified live.
 - Agent: PowerShell wrapper (sanitize → local queue → HTTPS ingest) — verified end-to-end.
 - Deploy: `deploy.sh` LAN-first, `--regen`/`--public`, auto-generated secrets.
-- Portal: single-page UI (Agents / Events / Feature toggles) — one shared token.
+- Portal: single-page UI (Agents / Events / Feature toggles / Agent Setup) — **session login, no shared token input**.
+- **P1 done & verified live** (see §3): first-time setup wizard, local CA + server
+  certs, first admin account, login/logout/me/bootstrap, CA download, agent template.
 - CI: `agent-build` job scaffolded (generic binary path, **not yet run end-to-end**).
 
 ---
@@ -59,9 +61,19 @@ setup** by the server (P3), never inside CI.
 
 ---
 
-## 3. P1 — First-time setup wizard + local certificates (agent waits for this)
+## 3. P1 — First-time setup wizard + local certificates ✅ DONE (2026-08-07)
 
-### 3.1 Setup form (`/setup` — only when `settings.setup_complete != true`)
+> **Implemented & verified live** on the current machine (`10.73.77.26`):
+> `POST /api/setup` guarded to one-shot (409 after), `settings` + `users` tables
+> (schema.sql + idempotent runtime migration), `certs.py` (local CA + server cert
+> persisted under `api_data:/data/certs`, `ca.key` never leaves the volume),
+> `auth.py` (PBKDF2-SHA256 hashing, HMAC-signed session cookies, `SESSION_SECRET`
+> persisted), session-based admin API, `GET /api/ca.crt` download, `GET
+> /api/agent-template`, and a setup wizard + login + branded header in the portal.
+> E2E: setup → login → me → bootstrap → agent-template → CA → agents/events →
+> `/ingest` (bearer) all pass; re-setup returns 409.
+
+### 3.1 Setup form (`/api/setup/status` → `/` shows wizard when `settings.setup_complete != true`)
 | Field | Required | Notes |
 | --- | --- | --- |
 | Company name | ✅ | Used in branding + agent config |
@@ -192,8 +204,10 @@ Each phase lands green on CI and keeps the existing toolkit untouched.
   optional per-agent client certs (mTLS) — auth is certificate-backed, not
   just a shared secret. `ca.key` stays server-only.
 - **RBAC:** admin / operation / monitoring enforced in API + portal.
-- Passwords hashed (argon2/bcrypt); commands audited; `run-script` allowlisted
-  by default; `licenses` kind admin-only + sanitized.
+- Passwords hashed (PBKDF2-SHA256 with per-user salt + 120k iterations; swap-in
+  for argon2 later); sessions are HMAC-signed cookies with a persisted
+  `SESSION_SECRET`; commands audited; `run-script` allowlisted by default;
+  `licenses` kind admin-only + sanitized.
 - Multi-tenant later: `companies` field on users/agents is schema-ready from P1.
 - Moving servers stays `deploy.sh --regen`; state is only in the data volumes.
 

@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.1 UPDATES — First-time setup wizard + local certificates (P1)
+
+- **NEW: setup wizard** (`Enterprise/portal/`): first visit shows company name /
+  server address / first admin account / brand color; server generates everything
+  locally — **local CA + server certificate** (`api_data:/data/certs`, `ca.key`
+  server-only), auth token, and a **company agent template** (endpoint + token +
+  CA trust). Guarded: `POST /api/setup` is one-shot (409 after), re-run is
+  login-only and never touches agents/events data.
+- **NEW: session auth** — `users` table + `settings` table (schema.sql + idempotent
+  runtime migration in `db.py` so existing volumes upgrade without `down -v`);
+  `auth.py` PBKDF2-SHA256 password hashing (120k iterations), HMAC-signed session
+  cookies with a persisted `SESSION_SECRET`; admin API moved from the shared
+  bearer token to session-based; `POST /api/login|logout`, `/api/me`,
+  `/api/bootstrap`, `GET /api/ca.crt`, `GET /api/agent-template`.
+- **NEW: `cryptography` dependency** added to `api/requirements.txt`.
+- **Portal:** setup wizard → branded login → dashboard; header shows company
+  branding; no shared-token input box anymore; new **Agent Setup** tab.
+- **Verified live** on `10.73.77.26`: setup → login → me → bootstrap →
+  agent-template → CA download → agents/events (session) → `/ingest` (bearer)
+  all pass; logout invalidates session; re-setup → 409; test data reset so the
+  wizard is ready for the real first-run setup.
+
 ## v3.0 UPDATES — Enterprise client-server stack (Phase 3)
 
 - **NEW: `Enterprise/`** — fully additive scale-out layer, **zero changes** to existing scripts/modules/docs:

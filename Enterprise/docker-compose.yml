@@ -27,6 +27,8 @@ services:
       API_TOKEN: ${API_TOKEN:-}
       API_TOKEN_FILE: /data/api_token
       SERVER_HOST: ${SERVER_HOST:?set in .env}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      DATA_DIR: /data
     volumes:
       - ./portal:/app/portal:ro
       - ./api/features.json:/app/features.json:ro

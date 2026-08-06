@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IT-Toolkit Enterprise — Portal</title>
+<title>IT-Toolkit Enterprise</title>
 <style>
   :root { --bg:#0f172a; --panel:#1e293b; --line:#334155; --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --good:#4ade80; --bad:#f87171; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
-  header { padding:16px 24px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px; }
-  header h1 { font-size:18px; margin:0; }
+  header { padding:14px 24px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px; }
+  header h1 { font-size:17px; margin:0; }
+  header .sub { color:var(--muted); font-size:12px; margin-left:4px; }
   nav button { background:none; border:1px solid var(--line); color:var(--text); padding:6px 14px; border-radius:6px; cursor:pointer; }
   nav button.active { background:var(--accent); border-color:var(--accent); color:#0f172a; font-weight:600; }
-  #tokwrap { margin-left:auto; display:flex; align-items:center; gap:8px; }
-  #token { background:var(--bg); border:1px solid var(--line); color:var(--text); padding:6px 10px; border-radius:6px; width:200px; }
+  #authwrap { margin-left:auto; display:flex; align-items:center; gap:10px; }
   main { padding:24px; max-width:1100px; margin:0 auto; }
   table { width:100%; border-collapse:collapse; margin-top:12px; }
   th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:top; }
@@ -22,33 +22,152 @@
   .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; }
   .on { background:rgba(74,222,128,.15); color:var(--good); }
   .off { background:rgba(248,113,113,.15); color:var(--bad); }
-  button.action { background:var(--accent); border:none; color:#0f172a; padding:4px 10px; border-radius:6px; cursor:pointer; font-weight:600; }
+  button.action { background:var(--accent); border:none; color:#0f172a; padding:5px 12px; border-radius:6px; cursor:pointer; font-weight:600; }
+  button.ghost { background:none; border:1px solid var(--line); color:var(--text); padding:5px 12px; border-radius:6px; cursor:pointer; }
   pre { background:#0b1120; padding:12px; border-radius:8px; overflow:auto; max-height:320px; font-size:12px; }
   .muted { color:var(--muted); font-size:12px; }
-  textarea { width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px; font-family:monospace; font-size:12px; }
+  input, textarea { width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px; font-size:13px; }
+  textarea { font-family:monospace; font-size:12px; }
+  label { display:block; font-size:12px; color:var(--muted); margin:12px 0 4px; }
+  .center { max-width:420px; margin:8vh auto 0; }
+  .center h2 { margin:0 0 4px; }
+  .row { display:flex; gap:10px; align-items:center; }
+  .error { color:var(--bad); font-size:13px; margin-top:10px; }
+  .code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; background:#0b1120; padding:10px; border-radius:8px; overflow:auto; white-space:pre-wrap; word-break:break-all; }
 </style>
 </head>
 <body>
-<header>
-  <h1>🛠 IT-Toolkit Enterprise</h1>
+<header id="header" style="display:none">
+  <h1><span id="company"></span> <span class="sub" id="subtitle">IT-Toolkit Enterprise</span></h1>
   <nav>
     <button data-view="agents" class="active">Agents</button>
     <button data-view="events">Events</button>
     <button data-view="features">Features</button>
-    <button data-view="help">Setup Help</button>
+    <button data-view="agent">Agent Setup</button>
   </nav>
-  <div id="tokwrap">
-    <input id="token" type="password" placeholder="API token" />
+  <div id="authwrap">
+    <span class="muted" id="who"></span>
+    <button class="ghost" onclick="logout()">Log out</button>
   </div>
 </header>
 <main id="app"></main>
+
 <script>
-const tokenInput = document.getElementById('token');
 const app = document.getElementById('app');
 let view = 'agents';
-const stored = localStorage.getItem('ittk_token');
-if (stored) tokenInput.value = stored;
-tokenInput.addEventListener('change', () => localStorage.setItem('ittk_token', tokenInput.value.trim()));
+
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  const res = await fetch(path, { ...opts, headers });
+  if (res.status === 401) { startAuthFlow(); return null; }
+  if (!res.ok) { app.innerHTML = `<p class="muted">Error ${res.status}: ${esc((await res.json()).detail ?? '')}</p>`; return null; }
+  return res.json();
+}
+
+function applyBranding(b) {
+  if (b && b.color) document.documentElement.style.setProperty('--accent', b.color);
+  const c = document.getElementById('company');
+  c.textContent = b && b.logo_text ? b.logo_text : (b && b.company) || 'IT-Toolkit';
+  document.title = (b && b.logo_text) ? b.logo_text + ' — IT-Toolkit' : 'IT-Toolkit Enterprise';
+}
+
+// ---------------------------------------------------------------- flow
+
+async function start() {
+  const status = await fetch('/api/setup/status').then(r => r.json()).catch(() => ({ setup_complete: false }));
+  if (!status.setup_complete) return renderSetup();
+  try {
+    const me = await fetch('/api/me').then(r => r.json());
+    if (!me || !me.username) return renderLogin();
+  } catch { return renderLogin(); }
+  applyBranding(status);
+  document.getElementById('header').style.display = 'flex';
+  document.getElementById('who').textContent = '';
+  await loadMe();
+  render();
+}
+
+async function loadMe() {
+  const me = await fetch('/api/me').then(r => r.json()).catch(() => null);
+  if (me) document.getElementById('who').textContent = me.username + ' · ' + me.role;
+}
+
+// ---------------------------------------------------------------- setup wizard
+
+function renderSetup() {
+  const host = window.location.hostname || 'localhost';
+  app.innerHTML = `
+    <div class="center card">
+      <h2>IT-Toolkit Enterprise setup</h2>
+      <p class="muted">First-time configuration — done once on the server. Certs and secrets are generated here and kept on this machine.</p>
+      <label>Company name</label><input id="company_name" placeholder="Acme Inc." />
+      <label>Server address (used for agent connections)</label><input id="server_host" value="${esc(host)}" />
+      <div class="row">
+        <div style="flex:1"><label>Admin username</label><input id="admin_username" value="admin" /></div>
+        <div style="flex:1"><label>Brand color</label><input id="branding_color" type="color" value="#38bdf8" style="padding:2px;height:38px" /></div>
+      </div>
+      <label>Admin password (min 8 chars)</label><input id="admin_password" type="password" />
+      <label>Repeat password</label><input id="admin_password2" type="password" />
+      <div class="error" id="setup_err"></div>
+      <div style="margin-top:18px"><button class="action" style="width:100%" onclick="doSetup()">Finish setup</button></div>
+    </div>`;
+}
+
+async function doSetup() {
+  const err = document.getElementById('setup_err');
+  const p1 = document.getElementById('admin_password').value;
+  const p2 = document.getElementById('admin_password2').value;
+  if (p1.length < 8) { err.textContent = 'Password must be at least 8 characters.'; return; }
+  if (p1 !== p2) { err.textContent = 'Passwords do not match.'; return; }
+  const body = {
+    company_name: document.getElementById('company_name').value.trim(),
+    server_host: document.getElementById('server_host').value.trim(),
+    admin_username: document.getElementById('admin_username').value.trim(),
+    admin_password: p1,
+    branding: { color: document.getElementById('branding_color').value, logo_text: document.getElementById('company_name').value.trim() },
+  };
+  const res = await fetch('/api/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) { err.textContent = (await res.json()).detail || 'Setup failed'; return; }
+  start();
+}
+
+// ---------------------------------------------------------------- login
+
+function renderLogin() {
+  app.innerHTML = `
+    <div class="center card">
+      <h2>Sign in</h2>
+      <p class="muted">Use your IT-Toolkit account.</p>
+      <label>Username</label><input id="login_user" />
+      <label>Password</label><input id="login_pass" type="password" />
+      <div class="error" id="login_err"></div>
+      <div style="margin-top:18px"><button class="action" style="width:100%" onclick="doLogin()">Sign in</button></div>
+    </div>`;
+}
+
+async function doLogin() {
+  const err = document.getElementById('login_err');
+  const res = await fetch('/api/login', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: document.getElementById('login_user').value.trim(), password: document.getElementById('login_pass').value }),
+  });
+  if (!res.ok) { err.textContent = 'Invalid username or password.'; return; }
+  start();
+}
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' });
+  startAuthFlow();
+}
+
+function startAuthFlow() {
+  document.getElementById('header').style.display = 'none';
+  start();
+}
+
+// ---------------------------------------------------------------- nav
 
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
   view = b.dataset.view;
@@ -56,23 +175,11 @@ document.querySelectorAll('nav button').forEach(b => b.addEventListener('click',
   render();
 }));
 
-async function api(path, opts = {}) {
-  const headers = { 'Authorization': 'Bearer ' + tokenInput.value.trim(), 'Content-Type': 'application/json' };
-  const res = await fetch(path, { ...opts, headers });
-  if (res.status === 401) { app.innerHTML = '<p class="muted">Enter the API token (top-right) — from your server .env.</p>'; return null; }
-  if (!res.ok) { app.innerHTML = `<p class="muted">Error ${res.status}</p>`; return null; }
-  return res.json();
-}
-
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
-}
-
 async function render() {
   if (view === 'agents') return renderAgents();
   if (view === 'events') return renderEvents();
   if (view === 'features') return renderFeatures();
-  renderHelp();
+  renderAgentSetup();
 }
 
 async function renderAgents() {
@@ -89,7 +196,7 @@ async function renderAgents() {
   app.innerHTML = `
     <div class="card"><h3>Registered Agents (${data.length})</h3>
       <table><thead><tr><th>Hostname</th><th>OS</th><th>IP</th><th>Agent</th><th>Last seen</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="5" class="muted">No agents yet — install the MSI on a client.</td></tr>'}</tbody></table>
+      <tbody>${rows || '<tr><td colspan="5" class="muted">No agents yet — see the Agent Setup tab.</td></tr>'}</tbody></table>
     </div>`;
 }
 
@@ -152,20 +259,24 @@ async function saveConfig(name) {
   if (r) render();
 }
 
-function renderHelp() {
+// ---------------------------------------------------------------- agent setup
+
+async function renderAgentSetup() {
+  const data = await api('/api/agent-template');
+  if (!data) return;
+  const caLink = data.ca_cert ? `<a href="/api/ca.crt" class="action" style="text-decoration:none;display:inline-block">Download CA certificate</a>` : '';
   app.innerHTML = `
-    <div class="card"><h3>Deployment / Quick start</h3>
-      <ol>
-        <li><b>Server:</b> <code>cd Enterprise/deploy && ./deploy.sh</code> — detects IP, creates secrets, starts Docker.</li>
-        <li><b>Agent build:</b> on Windows (or CI): <code>.\Enterprise\agent\build\build-agent.ps1</code> → <code>IT-Toolkit-Agent.exe</code> + <code>IT-Toolkit-Agent.msi</code> with the server IP baked in.</li>
-        <li><b>Client install:</b> push the MSI via Intune / GPO / SCCM — <code>msiexec /i IT-Toolkit-Agent.msi /qn</code>.</li>
-        <li><b>Verify:</b> this page shows Agents + Events after the first heartbeat.</li>
-      </ol>
-      <p class="muted">API token lives in <code>Enterprise/.env</code> (<code>API_TOKEN</code>).</p>
+    <div class="card"><h3>Server info</h3>
+      <p class="muted">Company</p><div class="code">${esc(data.company)}</div>
+      <p class="muted">Server host</p><div class="code">${esc(data.server_host)}</div>
+      <p class="muted">Agent token (admin only)</p><div class="code">${esc(data.agent_token)}</div>
+      <p class="muted">CA certificate — agents must trust this to reach the server over TLS.</p>
+      <div>${caLink}</div>
+      <p class="muted">Bake these three values into <code>agent-config.json</code> before building the company MSI (build-agent.ps1). Agents will enroll on first run.</p>
     </div>`;
 }
 
-render();
+start();
 </script>
 </body>
 </html>

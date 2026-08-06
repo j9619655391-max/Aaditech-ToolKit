@@ -203,8 +203,9 @@ silently breaking the DB.
 ---
 
 ## 9. Honest gaps (not code yet)
-- **Portal is functional-but-minimal** (no user accounts; single shared token).
-  Role-based login is a follow-up.
+- **Team accounts are not yet managed in the portal** — the first admin is
+  created by the setup wizard and sessions work, but creating operation /
+  monitoring users (RBAC) is a P2 follow-up.
 - **MSI build must run on Windows/CI** — a `windows-latest` GitHub Actions job
   is scaffolded but not yet verified end-to-end.
 - **ps2exe** is a community tool; Authenticode signing of the exe is still a

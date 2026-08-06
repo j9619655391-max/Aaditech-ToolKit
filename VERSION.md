@@ -54,7 +54,7 @@ changes to the local toolkit.
 
 - **Server (Docker):** FastAPI (`/ingest`, `/api/*`) + PostgreSQL 16 + Caddy TLS, one shared DB.
 - **Agent:** `Enterprise/agent/Agent-Collect.ps1` → packaged `.exe` (ps2exe) + `.msi` (WiX). Runs existing scripts, sanitizes (reuses `SanitizeEngine`), queues offline (reuses `ToolkitData`), posts HTTPS.
-- **Portal:** single-page admin UI (Agents / Events / Feature config editor).
+- **Portal:** first-time **setup wizard** (company / server / admin / branding → local CA + server certs + token) + branded login + admin UI (Agents / Events / Feature config editor / Agent Setup).
 - **Deploy:** `Enterprise/deploy/deploy.sh` — **intranet/LAN-first** (auto-detects LAN IP on macOS + Linux), `--regen` to re-point on a new machine, `--public` for internet clients; bakes endpoint+token into the agent config, brings up Docker. **Secrets auto-generated** (API token + Postgres password); API self-generates/persists a token if `API_TOKEN` is empty.
 - **CI:** new `agent-build` job (windows-latest) builds `.exe` + `.msi` artifacts.
 - **Verified locally:** full Docker stack + agent→server round-trip with PII `[REDACTED-*]` sanitization (macOS smoke).

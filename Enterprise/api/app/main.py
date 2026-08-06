@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import secrets
 import uuid
 from pathlib import Path
 
@@ -9,17 +10,40 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import config, db
+from . import auth, certs, config, db
 
 app = FastAPI(title="IT-Toolkit Enterprise", version="1.0.0")
 
 
-# ---------------------------------------------------------------- auth
+# ---------------------------------------------------------------- deps
 
 def require_token(authorization: str = Header(default="")) -> None:
+    """Agent bearer token (used by /ingest)."""
     expected = f"Bearer {config.API_TOKEN}"
     if not hmac.compare_digest(authorization.strip(), expected):
         raise HTTPException(status_code=401, detail="Invalid or missing token")
+
+
+async def require_setup_done() -> None:
+    pool = await db.connect()
+    done = await pool.fetchval("SELECT value FROM settings WHERE key = 'setup_complete'")
+    if not done:
+        raise HTTPException(status_code=428, detail="Setup required")
+
+
+async def require_session(request: Request) -> dict:
+    token = request.cookies.get(auth.SESSION_COOKIE, "")
+    user_id = auth.verify_session(token)
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    pool = await db.connect()
+    user = await pool.fetchrow(
+        "SELECT id, username, role, active FROM users WHERE id = $1 AND active = TRUE",
+        user_id,
+    )
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    return dict(user)
 
 
 async def get_agent_id(pool, hostname: str) -> int:
@@ -54,6 +78,19 @@ class FeatureUpdate(BaseModel):
     config: dict | None = None
 
 
+class SetupRequest(BaseModel):
+    company_name: str = Field(min_length=1, max_length=100)
+    server_host: str = Field(min_length=1, max_length=255)
+    admin_username: str = Field(min_length=3, max_length=40)
+    admin_password: str = Field(min_length=8, max_length=128)
+    branding: dict = Field(default_factory=dict)
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
 # ---------------------------------------------------------------- lifecycle
 
 @app.on_event("startup")
@@ -75,6 +112,125 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     await db.disconnect()
+
+
+# ---------------------------------------------------------------- setup
+
+@app.get("/api/setup/status")
+async def setup_status():
+    pool = await db.connect()
+    done = await pool.fetchval("SELECT value FROM settings WHERE key = 'setup_complete'")
+    info = {"setup_complete": bool(done)}
+    if done:
+        for key in ("company_name", "server_host", "branding"):
+            val = await pool.fetchval("SELECT value FROM settings WHERE key = $1", key)
+            if key == "branding" and val:
+                val = json.loads(val)
+            info[key] = val
+    return info
+
+
+@app.post("/api/setup")
+async def run_setup(payload: SetupRequest, response: Response):
+    pool = await db.connect()
+    done = await pool.fetchval("SELECT value FROM settings WHERE key = 'setup_complete'")
+    if done:
+        raise HTTPException(status_code=409, detail="Setup already complete")
+
+    certs.ensure_certs(payload.server_host)
+
+    branding = json.dumps(payload.branding or {})
+    for key, value in (
+        ("company_name", payload.company_name),
+        ("server_host", payload.server_host),
+        ("branding", branding),
+        ("setup_complete", "1"),
+    ):
+        await pool.execute(
+            "INSERT INTO settings (key, value) VALUES ($1, $2) "
+            "ON CONFLICT (key) DO UPDATE SET value = $2",
+            key, value,
+        )
+
+    user = await pool.fetchrow(
+        "INSERT INTO users (username, password_hash, role) "
+        "VALUES ($1, $2, 'admin') RETURNING id, username, role",
+        payload.admin_username, auth.hash_password(payload.admin_password),
+    )
+    token = auth.issue_session(user["id"])
+    response.set_cookie(**auth.secure_cookie(token))
+    return {
+        "company": payload.company_name,
+        "server_host": payload.server_host,
+        "admin": dict(user),
+    }
+
+
+# ---------------------------------------------------------------- sessions
+
+@app.post("/api/login")
+async def login(payload: LoginRequest, response: Response):
+    await require_setup_done()
+    pool = await db.connect()
+    user = await pool.fetchrow(
+        "SELECT id, username, password_hash, role, active FROM users WHERE username = $1",
+        payload.username,
+    )
+    if user is None or not user["active"] or not auth.verify_password(payload.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = auth.issue_session(user["id"])
+    response.set_cookie(**auth.secure_cookie(token))
+    return {"username": user["username"], "role": user["role"]}
+
+
+@app.post("/api/logout")
+async def logout(response: Response):
+    response.delete_cookie(auth.SESSION_COOKIE)
+    return {"ok": True}
+
+
+@app.get("/api/me")
+async def me(user: dict = Depends(require_session)):
+    return user
+
+
+@app.get("/api/bootstrap")
+async def bootstrap(user: dict = Depends(require_session)):
+    pool = await db.connect()
+    info = {"user": user}
+    for key in ("company_name", "server_host", "branding"):
+        val = await pool.fetchval("SELECT value FROM settings WHERE key = $1", key)
+        if key == "branding" and val:
+            val = json.loads(val)
+        info[key] = val
+    info["agent_token_configured"] = bool(config.API_TOKEN)
+    if user["role"] == "admin":
+        info["agent_token"] = config.API_TOKEN
+    return info
+
+
+# ---------------------------------------------------------------- certs & agent template
+
+@app.get("/api/ca.crt", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def download_ca():
+    path = Path(config.DATA_DIR) / "certs" / "ca.crt"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="CA not generated yet")
+    return FileResponse(path, media_type="application/x-pem-file", filename="itk-ca.crt")
+
+
+@app.get("/api/agent-template", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def agent_template(user: dict = Depends(require_session)):
+    pool = await db.connect()
+    server_host = await pool.fetchval("SELECT value FROM settings WHERE key = 'server_host'")
+    company = await pool.fetchval("SELECT value FROM settings WHERE key = 'company_name'")
+    ca_path = Path(config.DATA_DIR) / "certs" / "ca.crt"
+    return {
+        "company": company,
+        "server_host": server_host,
+        "agent_token": config.API_TOKEN,
+        "ca_cert": ca_path.read_text() if ca_path.exists() else None,
+    }
 
 
 # ---------------------------------------------------------------- ingest
@@ -109,7 +265,7 @@ async def ingest(batch: IngestBatch, request: Request, _: None = Depends(require
 
 # ---------------------------------------------------------------- admin API
 
-@app.get("/api/agents", dependencies=[Depends(require_token)])
+@app.get("/api/agents", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def list_agents():
     pool = await db.connect()
     rows = await pool.fetch(
@@ -119,7 +275,7 @@ async def list_agents():
     return [dict(r) for r in rows]
 
 
-@app.get("/api/events", dependencies=[Depends(require_token)])
+@app.get("/api/events", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def list_events(agent: str | None = None, kind: str | None = None, limit: int = 100):
     pool = await db.connect()
     sql = (
@@ -139,7 +295,7 @@ async def list_events(agent: str | None = None, kind: str | None = None, limit: 
     return [dict(r) for r in rows]
 
 
-@app.get("/api/features", dependencies=[Depends(require_token)])
+@app.get("/api/features", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def list_features():
     pool = await db.connect()
     with open(config.FEATURES_FILE, "r", encoding="utf-8") as fh:
@@ -160,7 +316,7 @@ async def list_features():
     return result
 
 
-@app.put("/api/features/{name}", dependencies=[Depends(require_token)])
+@app.put("/api/features/{name}", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def update_feature(name: str, update: FeatureUpdate):
     pool = await db.connect()
     row = await pool.fetchrow("SELECT * FROM feature_configs WHERE name = $1", name)
@@ -186,7 +342,7 @@ async def healthz():
     return {"status": "ok"}
 
 
-@app.get("/api/status", dependencies=[Depends(require_token)])
+@app.get("/api/status", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def api_status(request: Request):
     return {"last_ingest_error": getattr(request.app.state, "last_ingest_error", None)}
 

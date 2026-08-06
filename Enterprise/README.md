@@ -36,6 +36,21 @@ That one command:
 > auto-generates a random one, persists it in the `api_data` volume, and prints
 > it once in `docker logs enterprise-api-1` (AUTO-GENERATED API TOKEN banner).
 
+### First-time setup (once, in the browser)
+
+Open the printed URL → a **setup wizard** appears (only until configured):
+
+1. Enter **company name**, confirm the **server address**, create the **first
+   admin account**, pick a **brand color**.
+2. The server then generates everything locally on that machine:
+   - a **local CA + server certificate** (persisted in `api_data` under
+     `certs/`; `ca.key` stays server-only),
+   - an **authentication token**,
+   - a **company-scoped agent template** (endpoint + token + CA trust).
+3. You land in the branded portal, logged in as admin. Team login (users +
+   roles) is P2; the **Agent Setup** tab shows the server host, agent token and
+   CA download you'll bake into the company MSI in P3.
+
 Public-IP deployment (internet clients): `./deploy.sh --public`, or pin a
 fixed address/domain in `.env` (`SERVER_HOST=192.168.1.50` or `SERVER_HOST=it.example.com`).
 Moving the server to a different machine later = just re-run `./deploy.sh --regen`.
@@ -58,8 +73,8 @@ and are written to `HKLM\SOFTWARE\ITToolkit\Agent` (GPO-overridable).
 | `ARCHITECTURE.md` | Full blueprint (zero-change guarantee, data model, security, migration) |
 | `ROADMAP.md` | **Next-steps plan**: CI agent delivery, first-time setup wizard, support-engineer features |
 | `docker-compose.yml` | One-host stack: `db` (Postgres) + `api` + `caddy` |
-| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, `/healthz`; serves portal |
-| `portal/` | Single-page admin UI (Agents / Events / Feature toggles / config editor) |
+| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session endpoints, `/api/ca.crt`, `/api/agent-template`, `/healthz`; serves portal |
+| `portal/` | Setup wizard + login + single-page admin UI (Agents / Events / Feature toggles / Agent Setup) |
 | `agent/` | `Agent-Collect.ps1` (worker), ps2exe + WiX MSI packaging |
 | `deploy/deploy.sh` | One-command bring-up with auto-IP detection |
 | `.env.example` | Template — copy to `.env` (never committed) |
@@ -73,7 +88,8 @@ end-to-end (exit 0) and regenerates the baked agent config on IP change.
 
 ## Honest boundaries
 
-- Portal has **one shared API token** (no per-user login yet).
+- Portal uses **per-user sessions** (first admin from setup); team user
+  management + roles (admin / operation / monitoring) land in P2.
 - MSI/exe build must run on **Windows** — a GitHub Actions job is provided
   (`.github/workflows/ci.yml`).
 - Agent exe is signed manually (Authenticode) — same boundary as the existing

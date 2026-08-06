@@ -30,3 +30,18 @@ CREATE TABLE IF NOT EXISTS feature_configs (
 
 CREATE INDEX IF NOT EXISTS idx_events_agent ON events(agent_id, captured_at DESC);
 CREATE INDEX IF NOT EXISTS idx_events_kind ON events(kind);
+
+CREATE TABLE IF NOT EXISTS settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id            SERIAL PRIMARY KEY,
+    username      TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role          TEXT NOT NULL DEFAULT 'monitoring',
+    active        BOOLEAN NOT NULL DEFAULT TRUE,
+    created_by    INTEGER,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
