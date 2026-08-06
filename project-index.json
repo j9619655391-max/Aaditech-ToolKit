@@ -1,9 +1,9 @@
 {
   "index_version": "2.0",
   "path": "project-index.json",
-  "generated": "2026-08-06T20:29:24+05:30",
-  "last_verified_commit": "dce05b74fdd620d60df956bac1cd9c1290332e30",
-  "last_verified_date": "2026-08-06T20:25:21+05:30",
+  "generated": "2026-08-06T20:33:22+05:30",
+  "last_verified_commit": "7fbd5a5a365a04383aa70bc875c5a71b8ec2e0be",
+  "last_verified_date": "2026-08-06T20:29:24+05:30",
   "auto_indexed": true,
   "indexer": "Scripts/Index/Update-ProjectIndex.ps1",
   "repository": {
@@ -13,145 +13,145 @@
     "project_type": "Windows desktop-support toolkit (PowerShell scripts + batch launchers + markdown docs)",
     "git_repo": true,
     "branch": "main",
-    "commit_count": 34,
+    "commit_count": 35,
     "tracked_files": 95,
     "working_tree_clean": false
   },
   "current_state": {
     "total_files": 74,
     "extension_counts": {
-      ".json": 1,
-      ".ps1": 19,
+      ".html": 1,
       "(none)": 1,
-      ".gitignore": 1,
       ".gitattributes": 1,
       ".xlsx": 1,
-      ".psm1": 10,
-      ".bat": 3,
-      ".txt": 6,
       ".yml": 1,
+      ".psm1": 10,
+      ".gitignore": 1,
+      ".ps1": 19,
+      ".bat": 3,
+      ".json": 1,
       ".md": 29,
-      ".html": 1
+      ".txt": 6
     }
   },
   "file_inventory": {
     "scan_basis": "audit/index.json (pre-remediation, 59 files) + delta detection at 2026-08-05T23:15:00",
     "current_snapshot": {
-      "Scripts/Remote/README.md": "617FD53DD38EA499",
-      "Data/README.txt": "A18E8A08272C1161",
-      "Scripts/Modules/CredentialManager.psm1": "38D20C7DB00ADA33",
-      "Scaling Plan/DELIVERY-SUMMARY.md": "E9E9C7352013146E",
-      "Scripts/GUI/Toolkit-GUI.ps1": "625D7AA765C4D46C",
-      ".gitignore": "EA2A733838DB7AFF",
-      "QUICK-SUMMARY.md": "9C9EC2A58797C4A3",
-      "IT-TOOLKIT-GAP-ANALYSIS.md": "FE245A969FADF51E",
-      "Scripts/Run-QuickCheck.bat": "B7A5EAF5466D88AC",
-      "Enterprise_Audit_Prompt.md": "1A76EA837F17543A",
-      "Toolkit-Menu.bat": "3AFBA39E9AD7CFC5",
-      "Config/CONFIG-GUIDE.md": "8FEAD3227F92E747",
-      "Scaling Plan/ARCHITECTURE.md": "2AA4CFDBF7BBDA02",
-      "Data/DATABASE-GUIDE.md": "4C083B1653236947",
-      "Templates/Ticket-Reply-Templates.txt": "22B5CF98150035E4",
-      "Scripts/Index/Update-ProjectIndex.ps1": "D1674F04EE293FC8",
-      "Documentation/Troubleshooting-Flowcharts.md": "FC7D660B6003DE36",
-      "Templates/CMD-Commands-Reference.txt": "B95C18F99396DCBD",
-      "Remote-Tools/Generate-RDP-Shortcuts.ps1": "C7FACEF5AAB50C19",
-      "COMPLETION-REPORT.md": "780E0FC1C45EF736",
-      "Scripts/Modules/AlertEngine.psm1": "8A4356B2CAE9433F",
-      "Scaling Plan/START-HERE.md": "1C20761210783D23",
-      "Scripts/Modules/TaskScheduler.psm1": "6C1225E38F64D450",
-      "Software/Portable-Software-Links.md": "9132209449371D1C",
-      "Scripts/GUI/DASHBOARD-GUIDE.md": "ECED19D49DB25F1C",
-      "Scripts/Templates/Report-Template.html": "AD42679B20E7E25F",
-      "VERSION.md": "F7A70CE1CE1D6A4E",
-      "Scripts/Tests/Phase1-Regression.Tests.ps1": "A65CA83589FAAAEC",
-      "Scripts/Modules/ReportGenerator.psm1": "9F944735E7A1968F",
-      ".githooks/pre-commit": "7C10E966D139FDAB",
-      "Scaling Plan/DOCUMENTATION-INDEX.md": "64A600DB89C864EC",
-      "Scripts/Remote/BatchScan.ps1": "90393C433ED0F7EC",
-      "Scripts/Tests/Phase2-Modules.Tests.ps1": "96CCD51221A55B19",
-      "Templates/Knowledge-Base.xlsx": "B9EA0A5696BA4C10",
+      "Scripts/Index/Update-ProjectIndex.ps1": "15E96DBAB3453283",
       "Scripts/Pin-QuickAccess-Folders.ps1": "A9CD9431CC4FDED7",
-      "Documentation/Setup-Guide.md": "15AD4F2B22B74B9C",
-      "Scripts/Tests/README.md": "92C6A4FFCC10F389",
-      "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1": "600F8663B519C2A4",
-      "Scripts/Remote/Invoke-RemoteQuickCheck.ps1": "9076A751DEFC1627",
+      "Scripts/Modules/AlertEngine.psm1": "8A4356B2CAE9433F",
+      ".githooks/pre-commit": "7C10E966D139FDAB",
       "Scripts/Modules/SCHEDULE-GUIDE.md": "6CC8E4746ADE0859",
-      "Remote-Tools/README.md": "93C454DD5F63B141",
-      "Templates/AI-Assistant-Prompts.txt": "24917D3B26468BBF",
-      "CHANGELOG.md": "4DFC2C111DE08CCC",
-      "Drivers/README.txt": "FFE4F43CAEBDCFF3",
-      "Scripts/Modules/SanitizeEngine.psm1": "D28B2184291C7761",
-      "Scripts/README.md": "798CD3C7EBCB6F2B",
-      ".github/workflows/ci.yml": "A96662DF269132EB",
-      "Scaling Plan/QUICK-REFERENCE.md": "F4D84638A578C75E",
-      "Scaling Plan/README-IMPLEMENTATION.md": "3D09B658CF73DA5A",
-      "Scripts/Modules/LogManager.psm1": "2D51E3B8CFD9D742",
-      "Config/config.json": "22F398E6B911FFE0",
-      "Logs/README.txt": "D4700D874CD57092",
+      "Scripts/Remote/Invoke-RemoteQuickCheck.ps1": "9076A751DEFC1627",
+      "Templates/CMD-Commands-Reference.txt": "B95C18F99396DCBD",
       "Scripts/Modules/ToolkitData.psm1": "7315F1C2DBC2F656",
-      "Scripts/Modules/RemoteToolkit.psm1": "C3F1BCC274A20EB8",
-      "Scripts/QuickCheck.ps1": "081186741B8CBDF5",
-      "Scripts/Index/Install-GitHook.ps1": "4297737FFE05AD6C",
-      "Scripts/Tests/RemoteToolkit.tests.ps1": "2C436539C5FB9D97",
-      "Scripts/Modules/ExportEngine.psm1": "F9DE33C74893F279",
-      "Scripts/Printer-Fix.ps1": "A153029A777F5F41",
-      "Scripts/Tests/BatchLauncher.Tests.ps1": "6B266E017144421B",
-      "Documentation/Cheat-Sheet.md": "5AEF066924286207",
-      "Scripts/Modules/ToolkitConfig.psm1": "0C2734BE83029928",
-      "Documentation/Windows-Smoke-Run.md": "DB635BAD72D20FF2",
-      "Setup-Wizard.bat": "EAF6EF8B41AD1A84",
-      "Documentation/README.md": "CE91F64E4A31AAD7",
-      "Scripts/User-Inventory.ps1": "304B5225DED0D8F2",
-      ".gitattributes": "3A68D96E89F3BDF7",
-      "Scaling Plan/IMPLEMENTATION-PLAN.md": "FE14CFCE5A9F0EDE",
-      "Scaling Plan/PROGRESS-TRACKING.md": "86023E79F453BB40",
-      "ANALYSIS-RECOMMENDATIONS.md": "E0E7C629B68F39B6",
-      "Scripts/Network-Diagnostic.ps1": "C4A5F3BF447FF16B",
-      "Scripts/Export-EventLogs.ps1": "10748DE50BE4476D",
       "Scripts/Tests/Run-RemoteToolkit-Tests.ps1": "2CEA9159CA89D51C",
-      "Scripts/Firewall-Test.ps1": "BCD2E24F539A8DBD"
+      "Scripts/Modules/SanitizeEngine.psm1": "D28B2184291C7761",
+      "Scripts/GUI/DASHBOARD-GUIDE.md": "ECED19D49DB25F1C",
+      "Remote-Tools/Generate-RDP-Shortcuts.ps1": "C7FACEF5AAB50C19",
+      "Scaling Plan/QUICK-REFERENCE.md": "F4D84638A578C75E",
+      "Scripts/Network-Diagnostic.ps1": "C4A5F3BF447FF16B",
+      "Config/config.json": "22F398E6B911FFE0",
+      "Documentation/Cheat-Sheet.md": "5AEF066924286207",
+      "Templates/AI-Assistant-Prompts.txt": "24917D3B26468BBF",
+      "Scaling Plan/DELIVERY-SUMMARY.md": "E9E9C7352013146E",
+      "Scripts/Remote/BatchScan.ps1": "90393C433ED0F7EC",
+      "Scripts/Index/Install-GitHook.ps1": "4297737FFE05AD6C",
+      "Remote-Tools/README.md": "93C454DD5F63B141",
+      "IT-TOOLKIT-GAP-ANALYSIS.md": "FE245A969FADF51E",
+      "Scaling Plan/DOCUMENTATION-INDEX.md": "64A600DB89C864EC",
+      "Scripts/Modules/ToolkitConfig.psm1": "0C2734BE83029928",
+      "Data/DATABASE-GUIDE.md": "4C083B1653236947",
+      "Scripts/Tests/README.md": "92C6A4FFCC10F389",
+      "Scaling Plan/IMPLEMENTATION-PLAN.md": "FE14CFCE5A9F0EDE",
+      "Scripts/User-Inventory.ps1": "304B5225DED0D8F2",
+      "Drivers/README.txt": "FFE4F43CAEBDCFF3",
+      "Scripts/Run-QuickCheck.bat": "B7A5EAF5466D88AC",
+      "Logs/README.txt": "D4700D874CD57092",
+      "Templates/Ticket-Reply-Templates.txt": "22B5CF98150035E4",
+      "Scaling Plan/ARCHITECTURE.md": "2AA4CFDBF7BBDA02",
+      "Software/Portable-Software-Links.md": "9132209449371D1C",
+      "Documentation/Setup-Guide.md": "15AD4F2B22B74B9C",
+      "Scripts/Printer-Fix.ps1": "A153029A777F5F41",
+      "Config/CONFIG-GUIDE.md": "8FEAD3227F92E747",
+      "QUICK-SUMMARY.md": "9C9EC2A58797C4A3",
+      "COMPLETION-REPORT.md": "780E0FC1C45EF736",
+      "CHANGELOG.md": "4DFC2C111DE08CCC",
+      "Enterprise_Audit_Prompt.md": "1A76EA837F17543A",
+      ".gitattributes": "3A68D96E89F3BDF7",
+      ".github/workflows/ci.yml": "A96662DF269132EB",
+      "Scripts/GUI/Toolkit-GUI.ps1": "625D7AA765C4D46C",
+      "Scripts/Firewall-Test.ps1": "BCD2E24F539A8DBD",
+      "Scripts/Remote/README.md": "617FD53DD38EA499",
+      "ANALYSIS-RECOMMENDATIONS.md": "E0E7C629B68F39B6",
+      "VERSION.md": "F7A70CE1CE1D6A4E",
+      "Scaling Plan/START-HERE.md": "1C20761210783D23",
+      "Scripts/Modules/ExportEngine.psm1": "F9DE33C74893F279",
+      "Scripts/Modules/TaskScheduler.psm1": "6C1225E38F64D450",
+      "Setup-Wizard.bat": "EAF6EF8B41AD1A84",
+      "Scripts/Tests/Phase1-Regression.Tests.ps1": "A65CA83589FAAAEC",
+      "Scripts/Tests/Phase2-Modules.Tests.ps1": "96CCD51221A55B19",
+      "Scripts/Modules/ReportGenerator.psm1": "9F944735E7A1968F",
+      "Toolkit-Menu.bat": "3AFBA39E9AD7CFC5",
+      "Documentation/Troubleshooting-Flowcharts.md": "FC7D660B6003DE36",
+      "Scripts/Tests/BatchLauncher.Tests.ps1": "6B266E017144421B",
+      "Scripts/QuickCheck.ps1": "081186741B8CBDF5",
+      "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1": "600F8663B519C2A4",
+      ".gitignore": "EA2A733838DB7AFF",
+      "Scripts/Export-EventLogs.ps1": "10748DE50BE4476D",
+      "Templates/Knowledge-Base.xlsx": "1ADC69E3731A1801",
+      "Scripts/Modules/RemoteToolkit.psm1": "C3F1BCC274A20EB8",
+      "Data/README.txt": "A18E8A08272C1161",
+      "Scaling Plan/PROGRESS-TRACKING.md": "86023E79F453BB40",
+      "Scaling Plan/README-IMPLEMENTATION.md": "3D09B658CF73DA5A",
+      "Scripts/Tests/RemoteToolkit.tests.ps1": "2C436539C5FB9D97",
+      "Scripts/Templates/Report-Template.html": "AD42679B20E7E25F",
+      "Documentation/README.md": "CE91F64E4A31AAD7",
+      "Scripts/README.md": "798CD3C7EBCB6F2B",
+      "Scripts/Modules/LogManager.psm1": "2D51E3B8CFD9D742",
+      "Scripts/Modules/CredentialManager.psm1": "38D20C7DB00ADA33",
+      "Documentation/Windows-Smoke-Run.md": "DB635BAD72D20FF2"
     },
     "files": [
       {
         "path": ".gitattributes",
         "size_bytes": 241,
-        "lines": 6,
+        "lines": 7,
         "last_modified": "2026-08-06T20:29:09",
         "sha256_short": "3A68D96E89F3BDF7"
       },
       {
         "path": ".gitignore",
         "size_bytes": 96,
-        "lines": 8,
+        "lines": 9,
         "last_modified": "2026-08-06T03:46:18",
         "sha256_short": "EA2A733838DB7AFF"
       },
       {
         "path": "ANALYSIS-RECOMMENDATIONS.md",
         "size_bytes": 48188,
-        "lines": 1361,
+        "lines": 1362,
         "last_modified": "2026-07-10T00:51:15",
         "sha256_short": "E0E7C629B68F39B6"
       },
       {
         "path": "CHANGELOG.md",
         "size_bytes": 6719,
-        "lines": 114,
+        "lines": 115,
         "last_modified": "2026-08-06T04:21:19",
         "sha256_short": "4DFC2C111DE08CCC"
       },
       {
         "path": "COMPLETION-REPORT.md",
         "size_bytes": 16715,
-        "lines": 540,
+        "lines": 541,
         "last_modified": "2026-07-10T00:51:15",
         "sha256_short": "780E0FC1C45EF736"
       },
       {
         "path": "Enterprise_Audit_Prompt.md",
         "size_bytes": 9403,
-        "lines": 830,
+        "lines": 831,
         "last_modified": "2026-08-02T03:36:42",
         "sha256_short": "1A76EA837F17543A"
       },
@@ -165,21 +165,21 @@
       {
         "path": "QUICK-SUMMARY.md",
         "size_bytes": 12652,
-        "lines": 277,
+        "lines": 278,
         "last_modified": "2026-07-10T00:51:15",
         "sha256_short": "9C9EC2A58797C4A3"
       },
       {
         "path": "Setup-Wizard.bat",
         "size_bytes": 10046,
-        "lines": 349,
+        "lines": 350,
         "last_modified": "2026-08-05T22:58:39",
         "sha256_short": "EAF6EF8B41AD1A84"
       },
       {
         "path": "Toolkit-Menu.bat",
         "size_bytes": 4053,
-        "lines": 132,
+        "lines": 133,
         "last_modified": "2026-08-05T22:45:56",
         "sha256_short": "3AFBA39E9AD7CFC5"
       },
@@ -193,28 +193,28 @@
       {
         "path": "Documentation/Cheat-Sheet.md",
         "size_bytes": 3042,
-        "lines": 62,
+        "lines": 63,
         "last_modified": "2026-07-06T16:17:53",
         "sha256_short": "5AEF066924286207"
       },
       {
         "path": "Documentation/README.md",
         "size_bytes": 11507,
-        "lines": 394,
+        "lines": 395,
         "last_modified": "2026-08-06T04:22:16",
         "sha256_short": "CE91F64E4A31AAD7"
       },
       {
         "path": "Documentation/Setup-Guide.md",
         "size_bytes": 7019,
-        "lines": 121,
+        "lines": 122,
         "last_modified": "2026-07-06T16:37:54",
         "sha256_short": "15AD4F2B22B74B9C"
       },
       {
         "path": "Documentation/Troubleshooting-Flowcharts.md",
         "size_bytes": 2472,
-        "lines": 136,
+        "lines": 137,
         "last_modified": "2026-07-06T16:18:07",
         "sha256_short": "FC7D660B6003DE36"
       },
@@ -228,14 +228,14 @@
       {
         "path": ".githooks/pre-commit",
         "size_bytes": 813,
-        "lines": 24,
+        "lines": 25,
         "last_modified": "2026-08-06T00:17:32",
         "sha256_short": "7C10E966D139FDAB"
       },
       {
         "path": "Drivers/README.txt",
         "size_bytes": 136,
-        "lines": 1,
+        "lines": 2,
         "last_modified": "2026-07-06T16:18:36",
         "sha256_short": "FFE4F43CAEBDCFF3"
       },
@@ -256,35 +256,35 @@
       {
         "path": "Remote-Tools/Generate-RDP-Shortcuts.ps1",
         "size_bytes": 1659,
-        "lines": 50,
+        "lines": 51,
         "last_modified": "2026-07-06T18:40:12",
         "sha256_short": "C7FACEF5AAB50C19"
       },
       {
         "path": "Remote-Tools/README.md",
         "size_bytes": 1332,
-        "lines": 23,
+        "lines": 24,
         "last_modified": "2026-07-06T16:35:53",
         "sha256_short": "93C454DD5F63B141"
       },
       {
         "path": "Software/Portable-Software-Links.md",
         "size_bytes": 2252,
-        "lines": 31,
+        "lines": 32,
         "last_modified": "2026-07-06T16:35:42",
         "sha256_short": "9132209449371D1C"
       },
       {
         "path": "Logs/README.txt",
         "size_bytes": 113,
-        "lines": 1,
+        "lines": 2,
         "last_modified": "2026-08-05T22:34:01",
         "sha256_short": "D4700D874CD57092"
       },
       {
         "path": "Scripts/Export-EventLogs.ps1",
         "size_bytes": 3967,
-        "lines": 82,
+        "lines": 83,
         "last_modified": "2026-08-06T03:42:17",
         "sha256_short": "10748DE50BE4476D"
       },
@@ -298,49 +298,49 @@
       {
         "path": "Scripts/Network-Diagnostic.ps1",
         "size_bytes": 5481,
-        "lines": 114,
+        "lines": 115,
         "last_modified": "2026-08-06T20:20:18",
         "sha256_short": "C4A5F3BF447FF16B"
       },
       {
         "path": "Scripts/Pin-QuickAccess-Folders.ps1",
         "size_bytes": 1204,
-        "lines": 36,
+        "lines": 37,
         "last_modified": "2026-07-06T16:36:18",
         "sha256_short": "A9CD9431CC4FDED7"
       },
       {
         "path": "Scripts/Printer-Fix.ps1",
         "size_bytes": 1939,
-        "lines": 43,
+        "lines": 44,
         "last_modified": "2026-07-06T16:36:10",
         "sha256_short": "A153029A777F5F41"
       },
       {
         "path": "Scripts/QuickCheck.ps1",
         "size_bytes": 14190,
-        "lines": 284,
+        "lines": 285,
         "last_modified": "2026-08-05T22:57:10",
         "sha256_short": "081186741B8CBDF5"
       },
       {
         "path": "Scripts/README.md",
         "size_bytes": 11615,
-        "lines": 440,
+        "lines": 441,
         "last_modified": "2026-08-05T23:00:44",
         "sha256_short": "798CD3C7EBCB6F2B"
       },
       {
         "path": "Scripts/Run-QuickCheck.bat",
         "size_bytes": 243,
-        "lines": 5,
+        "lines": 6,
         "last_modified": "2026-07-06T16:16:38",
         "sha256_short": "B7A5EAF5466D88AC"
       },
       {
         "path": "Scripts/User-Inventory.ps1",
         "size_bytes": 7841,
-        "lines": 177,
+        "lines": 178,
         "last_modified": "2026-08-05T22:57:14",
         "sha256_short": "304B5225DED0D8F2"
       },
@@ -354,7 +354,7 @@
       {
         "path": "Scripts/Tests/Phase1-Regression.Tests.ps1",
         "size_bytes": 6680,
-        "lines": 175,
+        "lines": 176,
         "last_modified": "2026-08-05T22:53:27",
         "sha256_short": "A65CA83589FAAAEC"
       },
@@ -368,14 +368,14 @@
       {
         "path": "Scripts/Tests/README.md",
         "size_bytes": 665,
-        "lines": 23,
+        "lines": 24,
         "last_modified": "2026-07-12T19:56:40",
         "sha256_short": "92C6A4FFCC10F389"
       },
       {
         "path": "Scripts/Tests/RemoteToolkit.tests.ps1",
         "size_bytes": 1494,
-        "lines": 38,
+        "lines": 39,
         "last_modified": "2026-08-06T20:20:36",
         "sha256_short": "2C436539C5FB9D97"
       },
@@ -403,21 +403,21 @@
       {
         "path": "Scripts/Index/Install-GitHook.ps1",
         "size_bytes": 1630,
-        "lines": 47,
+        "lines": 48,
         "last_modified": "2026-08-06T00:17:37",
         "sha256_short": "4297737FFE05AD6C"
       },
       {
         "path": "Scripts/Index/Update-ProjectIndex.ps1",
-        "size_bytes": 14973,
-        "lines": 368,
-        "last_modified": "2026-08-06T20:24:39",
-        "sha256_short": "D1674F04EE293FC8"
+        "size_bytes": 15423,
+        "lines": 376,
+        "last_modified": "2026-08-06T20:32:53",
+        "sha256_short": "15E96DBAB3453283"
       },
       {
         "path": "Scripts/Templates/Report-Template.html",
         "size_bytes": 895,
-        "lines": 23,
+        "lines": 24,
         "last_modified": "2026-07-12T19:23:18",
         "sha256_short": "AD42679B20E7E25F"
       },
@@ -431,7 +431,7 @@
       {
         "path": "Scripts/Modules/CredentialManager.psm1",
         "size_bytes": 9938,
-        "lines": 266,
+        "lines": 267,
         "last_modified": "2026-08-06T20:20:23",
         "sha256_short": "38D20C7DB00ADA33"
       },
@@ -445,28 +445,28 @@
       {
         "path": "Scripts/Modules/LogManager.psm1",
         "size_bytes": 2713,
-        "lines": 90,
+        "lines": 91,
         "last_modified": "2026-08-05T22:55:43",
         "sha256_short": "2D51E3B8CFD9D742"
       },
       {
         "path": "Scripts/Modules/RemoteToolkit.psm1",
         "size_bytes": 9942,
-        "lines": 262,
+        "lines": 263,
         "last_modified": "2026-08-05T22:53:33",
         "sha256_short": "C3F1BCC274A20EB8"
       },
       {
         "path": "Scripts/Modules/ReportGenerator.psm1",
         "size_bytes": 4346,
-        "lines": 136,
+        "lines": 137,
         "last_modified": "2026-07-12T19:23:18",
         "sha256_short": "9F944735E7A1968F"
       },
       {
         "path": "Scripts/Modules/SanitizeEngine.psm1",
         "size_bytes": 5252,
-        "lines": 139,
+        "lines": 140,
         "last_modified": "2026-08-06T03:42:41",
         "sha256_short": "D28B2184291C7761"
       },
@@ -487,7 +487,7 @@
       {
         "path": "Scripts/Modules/ToolkitConfig.psm1",
         "size_bytes": 3036,
-        "lines": 101,
+        "lines": 102,
         "last_modified": "2026-08-05T22:57:05",
         "sha256_short": "0C2734BE83029928"
       },
@@ -501,119 +501,119 @@
       {
         "path": "Scripts/Remote/BatchScan.ps1",
         "size_bytes": 2763,
-        "lines": 77,
+        "lines": 78,
         "last_modified": "2026-08-05T23:04:04",
         "sha256_short": "90393C433ED0F7EC"
       },
       {
         "path": "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1",
         "size_bytes": 1609,
-        "lines": 49,
+        "lines": 50,
         "last_modified": "2026-08-05T23:03:43",
         "sha256_short": "600F8663B519C2A4"
       },
       {
         "path": "Scripts/Remote/Invoke-RemoteQuickCheck.ps1",
         "size_bytes": 1575,
-        "lines": 49,
+        "lines": 50,
         "last_modified": "2026-07-13T14:22:29",
         "sha256_short": "9076A751DEFC1627"
       },
       {
         "path": "Scripts/Remote/README.md",
         "size_bytes": 1250,
-        "lines": 27,
+        "lines": 28,
         "last_modified": "2026-07-13T14:22:29",
         "sha256_short": "617FD53DD38EA499"
       },
       {
         "path": ".github/workflows/ci.yml",
         "size_bytes": 3052,
-        "lines": 80,
+        "lines": 81,
         "last_modified": "2026-08-06T04:21:10",
         "sha256_short": "A96662DF269132EB"
       },
       {
         "path": "Templates/AI-Assistant-Prompts.txt",
         "size_bytes": 13168,
-        "lines": 302,
+        "lines": 303,
         "last_modified": "2026-07-10T00:51:15",
         "sha256_short": "24917D3B26468BBF"
       },
       {
         "path": "Templates/CMD-Commands-Reference.txt",
         "size_bytes": 3123,
-        "lines": 64,
+        "lines": 65,
         "last_modified": "2026-07-06T16:36:39",
         "sha256_short": "B95C18F99396DCBD"
       },
       {
         "path": "Templates/Knowledge-Base.xlsx",
-        "size_bytes": 11414,
-        "lines": 77,
+        "size_bytes": 19262,
+        "lines": 33,
         "last_modified": "2026-07-06T16:17:27",
-        "sha256_short": "B9EA0A5696BA4C10"
+        "sha256_short": "1ADC69E3731A1801"
       },
       {
         "path": "Templates/Ticket-Reply-Templates.txt",
         "size_bytes": 2500,
-        "lines": 92,
+        "lines": 93,
         "last_modified": "2026-07-06T16:17:39",
         "sha256_short": "22B5CF98150035E4"
       },
       {
         "path": "Scaling Plan/ARCHITECTURE.md",
         "size_bytes": 12875,
-        "lines": 443,
+        "lines": 444,
         "last_modified": "2026-07-10T04:31:17",
         "sha256_short": "2AA4CFDBF7BBDA02"
       },
       {
         "path": "Scaling Plan/DELIVERY-SUMMARY.md",
         "size_bytes": 13058,
-        "lines": 498,
+        "lines": 499,
         "last_modified": "2026-08-05T22:55:14",
         "sha256_short": "E9E9C7352013146E"
       },
       {
         "path": "Scaling Plan/DOCUMENTATION-INDEX.md",
         "size_bytes": 13021,
-        "lines": 451,
+        "lines": 452,
         "last_modified": "2026-07-10T04:34:14",
         "sha256_short": "64A600DB89C864EC"
       },
       {
         "path": "Scaling Plan/IMPLEMENTATION-PLAN.md",
         "size_bytes": 50075,
-        "lines": 1727,
+        "lines": 1728,
         "last_modified": "2026-07-10T04:28:16",
         "sha256_short": "FE14CFCE5A9F0EDE"
       },
       {
         "path": "Scaling Plan/PROGRESS-TRACKING.md",
         "size_bytes": 32949,
-        "lines": 1075,
+        "lines": 1076,
         "last_modified": "2026-07-12T19:23:18",
         "sha256_short": "86023E79F453BB40"
       },
       {
         "path": "Scaling Plan/QUICK-REFERENCE.md",
         "size_bytes": 11859,
-        "lines": 457,
+        "lines": 458,
         "last_modified": "2026-07-10T04:30:30",
         "sha256_short": "F4D84638A578C75E"
       },
       {
         "path": "Scaling Plan/README-IMPLEMENTATION.md",
         "size_bytes": 12171,
-        "lines": 365,
+        "lines": 366,
         "last_modified": "2026-07-10T04:31:59",
         "sha256_short": "3D09B658CF73DA5A"
       },
       {
         "path": "Scaling Plan/START-HERE.md",
         "size_bytes": 12349,
-        "lines": 390,
+        "lines": 391,
         "last_modified": "2026-07-10T04:32:39",
         "sha256_short": "1C20761210783D23"
       },
@@ -627,19 +627,17 @@
       {
         "path": "Data/README.txt",
         "size_bytes": 122,
-        "lines": 2,
+        "lines": 3,
         "last_modified": "2026-08-06T03:46:18",
         "sha256_short": "A18E8A08272C1161"
       }
     ],
     "latest_delta": {
-      "detected_at": "2026-08-06T20:29:24+05:30",
-      "added": [
-        ".gitattributes"
-      ],
+      "detected_at": "2026-08-06T20:33:22+05:30",
+      "added": [],
       "removed": [],
       "changed": [],
-      "unchanged_count": 73
+      "unchanged_count": 74
     },
     "delta_history": [
       {
@@ -816,6 +814,16 @@
         "removed": [],
         "changed": [],
         "unchanged_count": 73
+      },
+      {
+        "detected_at": "2026-08-06T20:33:22+05:30",
+        "added": [],
+        "removed": [],
+        "changed": [
+          "Scripts/Index/Update-ProjectIndex.ps1",
+          "Templates/Knowledge-Base.xlsx"
+        ],
+        "unchanged_count": 72
       }
     ],
     "unchanged_files": 37,
@@ -1249,6 +1257,6 @@
   "progress": {
     "percent": 100.0,
     "issues_resolved": "17/17",
-    "last_verified_commit": "dce05b74fdd620d60df956bac1cd9c1290332e30"
+    "last_verified_commit": "7fbd5a5a365a04383aa70bc875c5a71b8ec2e0be"
   }
 }

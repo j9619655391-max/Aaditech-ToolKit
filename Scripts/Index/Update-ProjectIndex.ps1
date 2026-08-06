@@ -42,11 +42,18 @@ function Get-FileSnapshot {
         $rel = ($_.FullName.Substring($Root.Length).Replace('\', '/').TrimStart('/'))
         if ($rel -match '(^|/)\.git(/|$)' -or $rel -match '(^|/)audit(/|$)') { return }
         if ($rel -in @('project-index.json', 'project-state.json', 'project-progress.json')) { return }
-        $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.Substring(0, 16)
-        $lines = (Get-Content $_.FullName -ErrorAction SilentlyContinue).Count
+        # Hash normalized (LF) content so snapshots are byte-identical regardless
+        # of OS checkout line endings (Windows CI applies CRLF to .bat/.cmd).
+        $raw = [System.IO.File]::ReadAllBytes($_.FullName)
+        $text = [System.Text.Encoding]::UTF8.GetString($raw)
+        $norm = $text -replace "`r`n", "`n"
+        $normBytes = [System.Text.Encoding]::UTF8.GetBytes($norm)
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        $hash = ([BitConverter]::ToString($sha.ComputeHash($normBytes))).Replace('-', '').Substring(0, 16)
+        $lines = @($norm -split "`n").Count
         $files += [PSCustomObject]@{
             path = $rel
-            size_bytes = $_.Length
+            size_bytes = $normBytes.Length
             lines = $lines
             last_modified = $_.LastWriteTime.ToString('yyyy-MM-ddTHH:mm:ss')
             sha256_short = $hash
