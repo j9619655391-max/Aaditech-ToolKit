@@ -39,7 +39,7 @@ function Get-FileSnapshot {
     param([string]$Root)
     $files = @()
     Get-ChildItem $Root -Recurse -File -Force | ForEach-Object {
-        $rel = ($_.FullName.Substring($Root.Length).TrimStart('/').Replace('\', '/'))
+        $rel = ($_.FullName.Substring($Root.Length).Replace('\', '/').TrimStart('/'))
         if ($rel -match '(^|/)\.git(/|$)' -or $rel -match '(^|/)audit(/|$)') { return }
         if ($rel -in @('project-index.json', 'project-state.json', 'project-progress.json')) { return }
         $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.Substring(0, 16)
