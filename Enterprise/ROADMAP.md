@@ -37,9 +37,11 @@ are all derived from the setup answers.
 - Server: FastAPI + PostgreSQL + Caddy in Docker (one host, one DB) — verified live.
 - Agent: PowerShell wrapper (sanitize → local queue → HTTPS ingest) — verified end-to-end.
 - Deploy: `deploy.sh` LAN-first, `--regen`/`--public`, auto-generated secrets.
-- Portal: single-page UI (Agents / Events / Feature toggles / Agent Setup) — **session login, no shared token input**.
+- Portal: single-page UI (Agents / Events / Feature toggles / Users / Agent Setup) — **session login, RBAC roles, no shared token input**.
 - **P1 done & verified live** (see §3): first-time setup wizard, local CA + server
   certs, first admin account, login/logout/me/bootstrap, CA download, agent template.
+- **P2 done & verified live** (see §4): team users + RBAC (admin / operation /
+  monitoring), Users page, role-gated routes + UI.
 - CI: `agent-build` job scaffolded (generic binary path, **not yet run end-to-end**).
 
 ---
@@ -102,7 +104,15 @@ setup** by the server (P3), never inside CI.
 
 ---
 
-## 4. P2 — Team users & RBAC (admin creates the team)
+## 4. P2 — Team users & RBAC (admin creates the team) ✅ DONE (2026-08-07)
+
+> **Implemented & verified live:** `require_role()` dependency enforcing
+> admin / operation / monitoring on every admin route; `/api/users` CRUD
+> (admin-only) — create, change role, disable/enable, reset password (self-
+> disable blocked); feature toggling gated to admin/operation; `monitoring` is
+> read-only (403 on PUT); non-admins never receive `agent_token`; disabled
+> users are rejected at login; portal shows a **Users** tab only for admins and
+> hides config controls for monitoring.
 
 ### 4.1 Model
 - `users` (id, username, password_hash, role, active, created_by, created_at).
@@ -114,9 +124,9 @@ setup** by the server (P3), never inside CI.
   | **monitoring** | Read-only dashboards + alerts; no commands, no user mgmt, no config |
 
 ### 4.2 Portal
-- Login page (username/password) → signed session cookie.
-- **Users page** (admin-only): create/disable users, assign role, reset password.
-- Every API route checks role; portal UI hides what the role can't do.
+- Login page (username/password) → signed session cookie. ✅
+- **Users page** (admin-only): create/disable users, assign role, reset password. ✅
+- Every API route checks role; portal UI hides what the role can't do. ✅
 
 ---
 
@@ -188,8 +198,8 @@ new kind-specific fleet panels (disk health, battery, update compliance, offline
 | Phase | Scope | Depends on | Est. |
 | --- | --- | --- | --- |
 | **P0** | CI generic exe/msi build + verify artifacts | — | small |
-| **P1** | Setup wizard + CA/server certs + token + first admin | — | medium |
-| **P2** | Users + RBAC (admin/operation/monitoring) + portal login | P1 | medium |
+| **P1** | Setup wizard + CA/server certs + token + first admin ✅ | — | medium |
+| **P2** | Users + RBAC (admin/operation/monitoring) + portal login ✅ | P1 | medium |
 | **P3** | Agent bundle (config+CA) + download page + install-agent.cmd | P0, P1 | small |
 | **P4** | Collectors + fleet panels | P3 | medium |
 | **P5** | Command channel (poll/execute/UI) | P2 | large |

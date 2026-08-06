@@ -1,5 +1,22 @@
 # Changelog
 
+## v3.2 UPDATES — Team users & RBAC (P2)
+
+- **NEW: roles** — admin (everything) / operation (view + feature control +
+  agent download; no user mgmt) / monitoring (read-only). `require_role()`
+  dependency enforces it on every admin route; `monitoring` gets 403 on
+  feature writes; non-admins never receive `agent_token`.
+- **NEW: `/api/users`** (admin-only): list / create / change role / disable /
+  enable / reset password. Self-disable blocked; duplicate usernames → 409;
+  disabled accounts rejected at login.
+- **Portal:** new **Users** tab (admin-only) with create form, role dropdown,
+  disable/enable and password reset; feature config controls hidden for
+  `monitoring`; dashboard bootstraps from `/api/bootstrap` (company + user).
+- **Verified live** on `10.73.77.26`: user CRUD + duplicate 409, ops can read
+  + toggle features but not manage users, monitoring blocked from feature
+  writes, disabled login rejected, role change + password reset, self-disable
+  400; test data reset so the setup wizard is ready for first-run.
+
 ## v3.1 UPDATES — First-time setup wizard + local certificates (P1)
 
 - **NEW: setup wizard** (`Enterprise/portal/`): first visit shows company name /

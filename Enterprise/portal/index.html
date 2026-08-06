@@ -43,6 +43,7 @@
     <button data-view="agents" class="active">Agents</button>
     <button data-view="events">Events</button>
     <button data-view="features">Features</button>
+    <button data-view="users">Users</button>
     <button data-view="agent">Agent Setup</button>
   </nav>
   <div id="authwrap">
@@ -78,20 +79,26 @@ function applyBranding(b) {
 async function start() {
   const status = await fetch('/api/setup/status').then(r => r.json()).catch(() => ({ setup_complete: false }));
   if (!status.setup_complete) return renderSetup();
+  let boot;
   try {
-    const me = await fetch('/api/me').then(r => r.json());
-    if (!me || !me.username) return renderLogin();
+    const res = await fetch('/api/bootstrap');
+    if (!res.ok) throw new Error(res.status);
+    boot = await res.json();
   } catch { return renderLogin(); }
-  applyBranding(status);
+  window.boot = boot;
+  window.user = boot.user;
+  applyBranding(boot);
   document.getElementById('header').style.display = 'flex';
-  document.getElementById('who').textContent = '';
-  await loadMe();
+  document.getElementById('who').textContent = (boot.user ? boot.user.username + ' · ' + boot.user.role : '');
+  setupNav();
   render();
 }
 
-async function loadMe() {
-  const me = await fetch('/api/me').then(r => r.json()).catch(() => null);
-  if (me) document.getElementById('who').textContent = me.username + ' · ' + me.role;
+function setupNav() {
+  const isAdmin = window.user && window.user.role === 'admin';
+  document.querySelectorAll('nav button').forEach(b => {
+    if (b.dataset.view === 'users') b.style.display = isAdmin ? '' : 'none';
+  });
 }
 
 // ---------------------------------------------------------------- setup wizard
@@ -179,6 +186,7 @@ async function render() {
   if (view === 'agents') return renderAgents();
   if (view === 'events') return renderEvents();
   if (view === 'features') return renderFeatures();
+  if (view === 'users') return renderUsers();
   renderAgentSetup();
 }
 
@@ -228,16 +236,20 @@ function toggleJson(id) {
 async function renderFeatures() {
   const data = await api('/api/features');
   if (!data) return;
+  const canConfig = window.user && window.user.role !== 'monitoring';
+  const controls = f => canConfig
+    ? `<button class="action" onclick="toggleFeature('${esc(f.name)}', ${!f.enabled})">${f.enabled ? 'Disable' : 'Enable'}</button>
+       <button class="action" onclick="editFeature('${esc(f.name)}')">Edit config</button>
+       <div id="cfg-${esc(f.name)}" style="display:none;margin-top:10px">
+         <textarea id="cfgval-${esc(f.name)}" rows="4">${esc(JSON.stringify(f.config || {}, null, 2))}</textarea><br>
+         <button class="action" onclick="saveConfig('${esc(f.name)}')">Save</button>
+       </div>`
+    : '<span class="muted">Read-only for your role</span>';
   const rows = data.map(f => `
     <div class="card">
       <h3>${esc(f.label)} <span class="badge ${f.enabled ? 'on' : 'off'}">${f.enabled ? 'enabled' : 'disabled'}</span></h3>
       <p class="muted">${esc(f.description)}<br>Script: <code>${esc(f.script)}</code></p>
-      <button class="action" onclick="toggleFeature('${esc(f.name)}', ${!f.enabled})">${f.enabled ? 'Disable' : 'Enable'}</button>
-      <button class="action" onclick="editFeature('${esc(f.name)}')">Edit config</button>
-      <div id="cfg-${esc(f.name)}" style="display:none;margin-top:10px">
-        <textarea id="cfgval-${esc(f.name)}" rows="4">${esc(JSON.stringify(f.config || {}, null, 2))}</textarea><br>
-        <button class="action" onclick="saveConfig('${esc(f.name)}')">Save</button>
-      </div>
+      ${controls(f)}
     </div>`).join('');
   app.innerHTML = `<h3>Feature Controls</h3><p class="muted">Enable/disable or tweak each toolkit feature. Agents pick these up on their next cycle.</p>${rows}`;
 }
@@ -257,6 +269,78 @@ async function saveConfig(name) {
   try { cfg = JSON.parse(document.getElementById('cfgval-' + name).value); } catch { alert('Invalid JSON'); return; }
   const r = await api('/api/features/' + name, { method: 'PUT', body: JSON.stringify({ config: cfg }) });
   if (r) render();
+}
+
+// ---------------------------------------------------------------- users (admin)
+
+async function renderUsers() {
+  const data = await api('/api/users');
+  if (!data) return;
+  const rows = data.map(u => `
+    <tr>
+      <td>${esc(u.username)}</td>
+      <td><span class="badge ${u.active ? 'on' : 'off'}">${esc(u.role)}</span></td>
+      <td>${u.active ? '<span class="badge on">active</span>' : '<span class="badge off">disabled</span>'}</td>
+      <td>${esc(new Date(u.created_at).toLocaleString())}</td>
+      <td>
+        <button class="action" onclick="promptReset('${u.id}', '${esc(u.username)}')">Reset password</button>
+        ${u.username === window.user.username
+          ? '<span class="muted">(you)</span>'
+          : `<button class="ghost" onclick="toggleActive('${u.id}', ${!u.active})">${u.active ? 'Disable' : 'Enable'}</button>`}
+        <select onchange="changeRole('${u.id}', this.value)">
+          <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>admin</option>
+          <option value="operation" ${u.role === 'operation' ? 'selected' : ''}>operation</option>
+          <option value="monitoring" ${u.role === 'monitoring' ? 'selected' : ''}>monitoring</option>
+        </select>
+      </td>
+    </tr>`).join('');
+  app.innerHTML = `
+    <div class="card"><h3>Team users</h3>
+      <table><thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" class="muted">No users yet.</td></tr>'}</tbody></table>
+    </div>
+    <div class="card"><h3>Add user</h3>
+      <div class="row" style="align-items:flex-end">
+        <div style="flex:2"><label>Username</label><input id="nu_user" /></div>
+        <div style="flex:2"><label>Password (min 8)</label><input id="nu_pass" type="password" /></div>
+        <div style="flex:1"><label>Role</label>
+          <select id="nu_role"><option>monitoring</option><option>operation</option><option>admin</option></select>
+        </div>
+        <div><button class="action" onclick="addUser()">Create</button></div>
+      </div>
+      <div class="error" id="users_err"></div>
+    </div>`;
+}
+
+async function addUser() {
+  const err = document.getElementById('users_err');
+  const body = {
+    username: document.getElementById('nu_user').value.trim(),
+    password: document.getElementById('nu_pass').value,
+    role: document.getElementById('nu_role').value,
+  };
+  if (body.username.length < 3) { err.textContent = 'Username must be at least 3 characters.'; return; }
+  if (body.password.length < 8) { err.textContent = 'Password must be at least 8 characters.'; return; }
+  const r = await api('/api/users', { method: 'POST', body: JSON.stringify(body) });
+  if (r) renderUsers();
+}
+
+async function promptReset(id, username) {
+  const pw = prompt('New password for ' + username + ' (min 8 chars):');
+  if (!pw) return;
+  if (pw.length < 8) { alert('Password too short'); return; }
+  const r = await api('/api/users/' + id, { method: 'PUT', body: JSON.stringify({ password: pw }) });
+  if (r) alert('Password updated for ' + username);
+}
+
+async function toggleActive(id, active) {
+  const r = await api('/api/users/' + id, { method: 'PUT', body: JSON.stringify({ active }) });
+  if (r) renderUsers();
+}
+
+async function changeRole(id, role) {
+  const r = await api('/api/users/' + id, { method: 'PUT', body: JSON.stringify({ role }) });
+  if (r) renderUsers();
 }
 
 // ---------------------------------------------------------------- agent setup

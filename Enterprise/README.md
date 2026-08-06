@@ -47,9 +47,11 @@ Open the printed URL → a **setup wizard** appears (only until configured):
      `certs/`; `ca.key` stays server-only),
    - an **authentication token**,
    - a **company-scoped agent template** (endpoint + token + CA trust).
-3. You land in the branded portal, logged in as admin. Team login (users +
-   roles) is P2; the **Agent Setup** tab shows the server host, agent token and
-   CA download you'll bake into the company MSI in P3.
+3. You land in the branded portal, logged in as admin. On the **Users** page
+   (admin-only) create team accounts with roles — **operation** (view + act,
+   no user management) or **monitoring** (read-only). The **Agent Setup** tab
+   shows the server host, agent token and CA download you'll bake into the
+   company MSI in P3. Monitoring users see dashboards but no config controls.
 
 Public-IP deployment (internet clients): `./deploy.sh --public`, or pin a
 fixed address/domain in `.env` (`SERVER_HOST=192.168.1.50` or `SERVER_HOST=it.example.com`).
@@ -73,8 +75,8 @@ and are written to `HKLM\SOFTWARE\ITToolkit\Agent` (GPO-overridable).
 | `ARCHITECTURE.md` | Full blueprint (zero-change guarantee, data model, security, migration) |
 | `ROADMAP.md` | **Next-steps plan**: CI agent delivery, first-time setup wizard, support-engineer features |
 | `docker-compose.yml` | One-host stack: `db` (Postgres) + `api` + `caddy` |
-| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session endpoints, `/api/ca.crt`, `/api/agent-template`, `/healthz`; serves portal |
-| `portal/` | Setup wizard + login + single-page admin UI (Agents / Events / Feature toggles / Agent Setup) |
+| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), `/api/ca.crt`, `/api/agent-template`, `/healthz`; serves portal |
+| `portal/` | Setup wizard + login + single-page admin UI (Agents / Events / Feature toggles / Users / Agent Setup) |
 | `agent/` | `Agent-Collect.ps1` (worker), ps2exe + WiX MSI packaging |
 | `deploy/deploy.sh` | One-command bring-up with auto-IP detection |
 | `.env.example` | Template — copy to `.env` (never committed) |
@@ -88,8 +90,9 @@ end-to-end (exit 0) and regenerates the baked agent config on IP change.
 
 ## Honest boundaries
 
-- Portal uses **per-user sessions** (first admin from setup); team user
-  management + roles (admin / operation / monitoring) land in P2.
+- Portal sessions + RBAC (admin / operation / monitoring) are live; the
+  support-engineer features that the roles will govern (commands, alerts,
+  reports) land in P5/P6.
 - MSI/exe build must run on **Windows** — a GitHub Actions job is provided
   (`.github/workflows/ci.yml`).
 - Agent exe is signed manually (Authenticode) — same boundary as the existing

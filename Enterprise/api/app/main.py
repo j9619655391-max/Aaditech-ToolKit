@@ -5,6 +5,7 @@ import secrets
 import uuid
 from pathlib import Path
 
+import asyncpg
 from fastapi import FastAPI, Depends, Header, HTTPException, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +14,8 @@ from pydantic import BaseModel, Field
 from . import auth, certs, config, db
 
 app = FastAPI(title="IT-Toolkit Enterprise", version="1.0.0")
+
+ROLES = ("admin", "operation", "monitoring")
 
 
 # ---------------------------------------------------------------- deps
@@ -44,6 +47,17 @@ async def require_session(request: Request) -> dict:
     if user is None:
         raise HTTPException(status_code=401, detail="Not logged in")
     return dict(user)
+
+
+def require_role(*roles: str):
+    """Dependency factory: like require_session, but also enforces a role."""
+
+    async def _dep(user: dict = Depends(require_session)) -> dict:
+        if user["role"] not in roles:
+            raise HTTPException(status_code=403, detail="Forbidden for this role")
+        return user
+
+    return _dep
 
 
 async def get_agent_id(pool, hostname: str) -> int:
@@ -89,6 +103,18 @@ class SetupRequest(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class UserCreate(BaseModel):
+    username: str = Field(min_length=3, max_length=40)
+    password: str = Field(min_length=8, max_length=128)
+    role: str = "monitoring"
+
+
+class UserUpdate(BaseModel):
+    role: str | None = None
+    active: bool | None = None
+    password: str | None = None
 
 
 # ---------------------------------------------------------------- lifecycle
@@ -209,10 +235,68 @@ async def bootstrap(user: dict = Depends(require_session)):
     return info
 
 
+# ---------------------------------------------------------------- user management (admin)
+
+def _check_role(value: str) -> None:
+    if value not in ROLES:
+        raise HTTPException(status_code=422, detail=f"Invalid role: {value}")
+
+
+@app.get("/api/users", dependencies=[Depends(require_session)])
+async def list_users(_: dict = Depends(require_role("admin"))):
+    pool = await db.connect()
+    rows = await pool.fetch(
+        "SELECT id, username, role, active, created_by, created_at "
+        "FROM users ORDER BY id"
+    )
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/users", dependencies=[Depends(require_session)])
+async def create_user(payload: UserCreate, admin: dict = Depends(require_role("admin"))):
+    _check_role(payload.role)
+    pool = await db.connect()
+    try:
+        row = await pool.fetchrow(
+            "INSERT INTO users (username, password_hash, role, created_by) "
+            "VALUES ($1, $2, $3, $4) "
+            "RETURNING id, username, role, active, created_at",
+            payload.username, auth.hash_password(payload.password), payload.role, admin["id"],
+        )
+    except asyncpg.exceptions.UniqueViolationError:
+        raise HTTPException(status_code=409, detail="Username already exists")
+    return dict(row)
+
+
+@app.put("/api/users/{user_id}", dependencies=[Depends(require_session)])
+async def update_user(
+    user_id: int, payload: UserUpdate, admin: dict = Depends(require_role("admin"))
+):
+    if payload.role is not None:
+        _check_role(payload.role)
+    pool = await db.connect()
+    row = await pool.fetchrow("SELECT * FROM users WHERE id = $1", user_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if row["id"] == admin["id"] and payload.active is False:
+        raise HTTPException(status_code=400, detail="You cannot disable your own account")
+
+    new_role = payload.role if payload.role is not None else row["role"]
+    new_active = payload.active if payload.active is not None else row["active"]
+    new_hash = (
+        auth.hash_password(payload.password) if payload.password else row["password_hash"]
+    )
+    await pool.execute(
+        "UPDATE users SET role = $2, active = $3, password_hash = $4 WHERE id = $1",
+        user_id, new_role, new_active, new_hash,
+    )
+    return {"ok": True, "id": user_id, "role": new_role, "active": new_active}
+
+
 # ---------------------------------------------------------------- certs & agent template
 
 @app.get("/api/ca.crt", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def download_ca():
+async def download_ca(_: dict = Depends(require_role("admin", "operation"))):
     path = Path(config.DATA_DIR) / "certs" / "ca.crt"
     if not path.exists():
         raise HTTPException(status_code=404, detail="CA not generated yet")
@@ -220,7 +304,7 @@ async def download_ca():
 
 
 @app.get("/api/agent-template", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def agent_template(user: dict = Depends(require_session)):
+async def agent_template(_: dict = Depends(require_role("admin", "operation"))):
     pool = await db.connect()
     server_host = await pool.fetchval("SELECT value FROM settings WHERE key = 'server_host'")
     company = await pool.fetchval("SELECT value FROM settings WHERE key = 'company_name'")
@@ -317,7 +401,7 @@ async def list_features():
 
 
 @app.put("/api/features/{name}", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def update_feature(name: str, update: FeatureUpdate):
+async def update_feature(name: str, update: FeatureUpdate, _: dict = Depends(require_role("admin", "operation"))):
     pool = await db.connect()
     row = await pool.fetchrow("SELECT * FROM feature_configs WHERE name = $1", name)
     if row:
