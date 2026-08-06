@@ -1,31 +1,38 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-07T03:21:10+05:30",
+  "generated": "2026-08-07T03:26:53+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "b884d192235c682cea1abe38db795ac0d7471559",
-  "last_verified_date": "2026-08-07T03:17:23+05:30",
+  "last_verified_commit": "5a7bca5cfd9a029e9bc49410ed0105dd407fb588",
+  "last_verified_date": "2026-08-07T03:21:10+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 46,
+    "commit_count": 47,
     "clean_working_tree": false,
-    "head": "b884d192235c682cea1abe38db795ac0d7471559"
+    "head": "5a7bca5cfd9a029e9bc49410ed0105dd407fb588"
   },
   "latest_delta": {
-    "detected_at": "2026-08-07T03:21:10+05:30",
-    "added": [],
+    "detected_at": "2026-08-07T03:26:53+05:30",
+    "added": [
+      "Enterprise/api/app/__pycache__/bundle.cpython-314.pyc",
+      "Enterprise/api/app/bundle.py"
+    ],
     "removed": [],
     "changed": [
-      "VERSION.md",
       "Enterprise/api/app/__pycache__/main.cpython-314.pyc",
       "Enterprise/portal/index.html",
+      "Enterprise/docker-compose.yml",
+      "Enterprise/api/app/config.py",
       "Enterprise/README.md",
       "Enterprise/ARCHITECTURE.md",
-      "Enterprise/api/app/main.py",
+      "Enterprise/deploy/deploy.sh",
       "CHANGELOG.md",
-      "Enterprise/ROADMAP.md"
+      "VERSION.md",
+      "Enterprise/api/app/main.py",
+      "Enterprise/ROADMAP.md",
+      "Enterprise/api/app/__pycache__/config.cpython-314.pyc"
     ],
-    "unchanged_count": 96
+    "unchanged_count": 92
   },
   "module_state": {
     "working": [

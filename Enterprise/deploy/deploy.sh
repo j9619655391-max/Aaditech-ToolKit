@@ -196,6 +196,10 @@ printf '\n\033[1;32m✔ Enterprise server is up!\033[0m\n'
 echo "  Portal:     $SCHEME://$HOST/"
 echo "  API token:  $API_TOKEN  (also in .env)"
 echo
+echo "To make the agent downloadable from the portal (P3), upload the CI-built"
+echo "generic IT-Toolkit-Agent.msi into the agent_artifacts volume:"
+echo "  docker compose -f $HERE/docker-compose.yml cp <path>/IT-Toolkit-Agent.msi api:/artifacts/"
+echo
 echo "Next: build the agent exe/msi on Windows (or CI):"
 echo "  1) .\\Enterprise\\agent\\build\\build-agent.ps1"
 echo "  2) .\\Enterprise\\agent\\wix\\build-msi.ps1"

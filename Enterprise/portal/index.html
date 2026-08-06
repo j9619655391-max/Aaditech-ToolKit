@@ -343,20 +343,37 @@ async function changeRole(id, role) {
   if (r) renderUsers();
 }
 
-// ---------------------------------------------------------------- agent setup
+// ---------------------------------------------------------------- agent setup / bundle
 
 async function renderAgentSetup() {
-  const data = await api('/api/agent-template');
+  const data = await api('/api/agent-bundle');
   if (!data) return;
-  const caLink = data.ca_cert ? `<a href="/api/ca.crt" class="action" style="text-decoration:none;display:inline-block">Download CA certificate</a>` : '';
+  const caLink = data.ca_cert
+    ? `<a href="/api/ca.crt" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">Download CA (.crt)</a>` : '';
+  const msiBlock = data.msi_available
+    ? `<a href="${esc(data.msi_url)}" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">Download MSI (${(data.msi_size/1048576).toFixed(1)} MB)</a>`
+    : '<span class="badge off">MSI not published yet</span> <span class="muted">— becomes available once the CI generic build (P0) is uploaded to the server.</span>';
   app.innerHTML = `
-    <div class="card"><h3>Server info</h3>
-      <p class="muted">Company</p><div class="code">${esc(data.company)}</div>
-      <p class="muted">Server host</p><div class="code">${esc(data.server_host)}</div>
-      <p class="muted">Agent token (admin only)</p><div class="code">${esc(data.agent_token)}</div>
-      <p class="muted">CA certificate — agents must trust this to reach the server over TLS.</p>
-      <div>${caLink}</div>
-      <p class="muted">Bake these three values into <code>agent-config.json</code> before building the company MSI (build-agent.ps1). Agents will enroll on first run.</p>
+    <div class="card"><h3>Company agent package</h3>
+      <p class="muted">These three files make up the company bundle. Hand them out on a USB / Intranet share, or push the MSI via Intune / GPO / SCCM and drop <code>agent.json</code> + <code>ca.crt</code> into <code>C:\\ProgramData\\ITToolkit-Agent\\</code>.</p>
+      <div class="row" style="flex-wrap:wrap;margin-top:10px">
+        <a href="/api/agent/agent.json" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">Download agent.json</a>
+        ${caLink}
+        <a href="/api/agent/install.cmd" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">Download install-agent.cmd</a>
+        ${msiBlock}
+      </div>
+      <p class="muted" style="margin-top:10px">Company: <code>${esc(data.company)}</code> · Server: <code>${esc(data.server_host)}</code> · Scheme: <code>${esc(data.scheme)}</code></p>
+      <label>Endpoint</label>
+      <div class="code">${esc(data.agent_json.endpoint)}</div>
+      <label>Agent token (keep secret — ships inside agent.json)</label>
+      <div class="code">${esc(data.agent_json.token)}</div>
+    </div>
+    <div class="card"><h3>install-agent.cmd (generated live)</h3>
+      <p class="muted">Installs the MSI, then writes the company <code>agent.json</code> + <code>ca.crt</code> over the bundled template.</p>
+      <pre>${esc(data.install_cmd)}</pre>
+    </div>
+    <div class="card"><h3>agent.json preview</h3>
+      <pre>${esc(JSON.stringify(data.agent_json, null, 2))}</pre>
     </div>`;
 }
 

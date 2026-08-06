@@ -7,6 +7,7 @@ SERVER_HOST = os.environ.get("SERVER_HOST", "localhost")
 PORTAL_DIR = os.environ.get("PORTAL_DIR", "/app/portal")
 FEATURES_FILE = os.environ.get("FEATURES_FILE", "/app/features.json")
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/data"))
+ARTIFACTS_DIR = Path(os.environ.get("ARTIFACTS_DIR", "/artifacts"))
 
 # ---------------------------------------------------------------- API token
 

@@ -204,9 +204,11 @@ silently breaking the DB.
 
 ## 9. Honest gaps (not code yet)
 - **Team accounts work** (RBAC: admin/operation/monitoring enforced in API +
-  portal) but the role-governed support-engineer features they will control
-  (commands, alerts, reports) are still P5/P6.
-- **MSI build must run on Windows/CI** — a `windows-latest` GitHub Actions job
+  portal) and the **company agent bundle downloads work**, but the role-governed
+  support-engineer features (commands, alerts, reports) are still P5/P6.
+- **MSI download endpoint is live but empty until P0 runs** — the generic
+  engine build must run on Windows/CI and be copied into the `agent_artifacts`
+  volume (`docker compose cp IT-Toolkit-Agent.msi api:/artifacts/`); the CI job
   is scaffolded but not yet verified end-to-end.
 - **ps2exe** is a community tool; Authenticode signing of the exe is still a
   manual Windows step (as before).

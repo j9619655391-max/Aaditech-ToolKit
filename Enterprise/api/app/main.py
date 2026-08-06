@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import auth, certs, config, db
+from . import auth, bundle, certs, config, db
 
 app = FastAPI(title="IT-Toolkit Enterprise", version="1.0.0")
 
@@ -315,6 +315,60 @@ async def agent_template(_: dict = Depends(require_role("admin", "operation"))):
         "agent_token": config.API_TOKEN,
         "ca_cert": ca_path.read_text() if ca_path.exists() else None,
     }
+
+
+# ---------------------------------------------------------------- agent bundle (P3)
+
+@app.get("/api/agent-bundle", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def agent_bundle(_: dict = Depends(require_role("admin", "operation"))):
+    pool = await db.connect()
+    agent_json = await bundle.build_agent_json(pool)
+    ca_path = Path(config.DATA_DIR) / "certs" / "ca.crt"
+    ca_present = ca_path.exists()
+    msi = bundle.msi_path()
+    return {
+        "company": agent_json["company"],
+        "server_host": (await pool.fetchval("SELECT value FROM settings WHERE key = 'server_host'")),
+        "scheme": agent_json["endpoint"].split("://")[0],
+        "agent_json": agent_json,
+        "ca_cert": ca_path.read_text() if ca_present else None,
+        "install_cmd": bundle.build_install_cmd(agent_json, ca_present),
+        "msi_available": msi.exists(),
+        "msi_size": msi.stat().st_size if msi.exists() else None,
+        "msi_filename": bundle.MSI_FILENAME,
+        "msi_url": "/api/agent-msi",
+    }
+
+
+@app.get("/api/agent/agent.json", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def download_agent_json(_: dict = Depends(require_role("admin", "operation"))):
+    pool = await db.connect()
+    agent_json = await bundle.build_agent_json(pool)
+    return JSONResponse(
+        content=agent_json,
+        headers={"Content-Disposition": 'attachment; filename="agent.json"'},
+    )
+
+
+@app.get("/api/agent/install.cmd", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def download_install_cmd(_: dict = Depends(require_role("admin", "operation"))):
+    pool = await db.connect()
+    agent_json = await bundle.build_agent_json(pool)
+    ca_path = Path(config.DATA_DIR) / "certs" / "ca.crt"
+    cmd = bundle.build_install_cmd(agent_json, ca_path.exists())
+    return Response(
+        content=cmd,
+        media_type="text/plain",
+        headers={"Content-Disposition": 'attachment; filename="install-agent.cmd"'},
+    )
+
+
+@app.get("/api/agent-msi", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def download_msi(_: dict = Depends(require_role("admin", "operation"))):
+    path = bundle.msi_path()
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="MSI not uploaded yet — CI publishes the generic engine build (P0).")
+    return FileResponse(path, media_type="application/octet-stream", filename=bundle.MSI_FILENAME)
 
 
 # ---------------------------------------------------------------- ingest

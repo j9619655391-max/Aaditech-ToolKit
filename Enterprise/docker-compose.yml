@@ -29,10 +29,12 @@ services:
       SERVER_HOST: ${SERVER_HOST:?set in .env}
       SESSION_SECRET: ${SESSION_SECRET:-}
       DATA_DIR: /data
+      ARTIFACTS_DIR: /artifacts
     volumes:
       - ./portal:/app/portal:ro
       - ./api/features.json:/app/features.json:ro
       - api_data:/data
+      - agent_artifacts:/artifacts
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/healthz')"]
       interval: 10s
@@ -62,6 +64,7 @@ volumes:
   api_data:
   caddy_data:
   caddy_config:
+  agent_artifacts:
 
 networks:
   ittoolkit:

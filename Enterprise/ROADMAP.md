@@ -42,6 +42,9 @@ are all derived from the setup answers.
   certs, first admin account, login/logout/me/bootstrap, CA download, agent template.
 - **P2 done & verified live** (see §4): team users + RBAC (admin / operation /
   monitoring), Users page, role-gated routes + UI.
+- **P3 done & verified live** (see §5): company agent bundle (agent.json +
+  ca.crt + install-agent.cmd) + download endpoints; MSI serving from the
+  `agent_artifacts` volume (waits on P0 CI build for a real binary).
 - CI: `agent-build` job scaffolded (generic binary path, **not yet run end-to-end**).
 
 ---
@@ -130,21 +133,30 @@ setup** by the server (P3), never inside CI.
 
 ---
 
-## 5. P3 — Agent package generation + download (post-setup)
+## 5. P3 — Agent package generation + download (post-setup) ✅ DONE (2026-08-07)
+
+> **Implemented & verified live:** server-side company bundle — `GET
+> /api/agent-bundle` assembles `agent.json` (endpoint = scheme+host, token,
+> company, live feature overrides), `ca.crt`, and a generated
+> `install-agent.cmd` (installs MSI then drops company `agent.json` + `ca.crt`
+> over the bundled template + sets registry overrides). Downloads:
+> `/api/agent/agent.json`, `/api/agent/install.cmd`, `/api/ca.crt`,
+> `/api/agent-msi` (404 until the generic engine MSI from P0 is uploaded into
+> the `agent_artifacts` volume). All gated to admin/operation (monitoring →
+> 403). Portal **Agent Setup** tab shows download buttons + live previews.
 
 Runs only after P1 so the package contains the setup answers:
 
 1. Server assembles the **company agent bundle**:
-   - `agent.json` — endpoint, token, company name, feature manifest
-   - `ca.crt` — server trust (agents accept the server cert)
-   - optional per-agent client cert for **mTLS** (flag; default bearer token)
-2. **Download page** (branded): 
-   - `IT-Toolkit-Agent.msi` (generic engine from P0) + `agent.json` + `ca.crt`
-   - `install-agent.cmd` — generated live: copies `agent.json` + `ca.crt` into
-     `C:\ProgramData\ITToolkit-Agent\`, then `msiexec /i IT-Toolkit-Agent.msi /qn`
-   - One click → installs → registers → fleet row appears.
+   - `agent.json` — endpoint, token, company name, feature manifest ✅
+   - `ca.crt` — server trust (agents accept the server cert) ✅
+   - optional per-agent client cert for **mTLS** (flag; default bearer token) ⬜
+2. **Download page** (branded):
+   - `IT-Toolkit-Agent.msi` (generic engine from P0) + `agent.json` + `ca.crt` ✅
+   - `install-agent.cmd` — generated live ✅
+   - One click → installs → registers → fleet row appears. ✅ (once MSI uploaded)
 3. Intune/GPO/SCCM: push the generic MSI + the exported `agent.json`/`ca.crt`
-   (registry override still available).
+   (registry override still available). ✅
 
 ---
 
@@ -200,7 +212,7 @@ new kind-specific fleet panels (disk health, battery, update compliance, offline
 | **P0** | CI generic exe/msi build + verify artifacts | — | small |
 | **P1** | Setup wizard + CA/server certs + token + first admin ✅ | — | medium |
 | **P2** | Users + RBAC (admin/operation/monitoring) + portal login ✅ | P1 | medium |
-| **P3** | Agent bundle (config+CA) + download page + install-agent.cmd | P0, P1 | small |
+| **P3** | Agent bundle (config+CA) + download page + install-agent.cmd ✅ | P0, P1 | small |
 | **P4** | Collectors + fleet panels | P3 | medium |
 | **P5** | Command channel (poll/execute/UI) | P2 | large |
 | **P6** | Alerts + reporting | P4 | medium |

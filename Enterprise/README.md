@@ -64,9 +64,22 @@ Moving the server to a different machine later = just re-run `./deploy.sh --rege
 .\Enterprise\agent\wix\build-msi.ps1         # → build/out/IT-Toolkit-Agent.msi
 ```
 
-Push the MSI silently to fleets: `msiexec /i IT-Toolkit-Agent.msi /qn`
-(via **Intune / GPO / SCCM**). The endpoint + token ship inside `agent.json`
-and are written to `HKLM\SOFTWARE\ITToolkit\Agent` (GPO-overridable).
+### One-click company install (post-setup)
+
+After the setup wizard, the portal's **Agent Setup** tab generates the company
+package: `agent.json` (endpoint + token + company + feature manifest),
+`ca.crt`, and a live **install-agent.cmd**. Put all three next to the MSI and
+run `install-agent.cmd` (or push the MSI via **Intune / GPO / SCCM** and drop
+`agent.json` + `ca.crt` into `C:\ProgramData\ITToolkit-Agent\`).
+
+The server serves these from `GET /api/agent-bundle` (+ `/api/agent/agent.json`,
+`/api/agent/install.cmd`, `/api/ca.crt`, `/api/agent-msi`) — admin/operation
+only. The MSI endpoint returns 404 until the CI-built generic engine is copied
+into the `agent_artifacts` volume:
+
+```bash
+docker compose cp IT-Toolkit-Agent.msi api:/artifacts/
+```
 
 ## What's in here
 
@@ -74,8 +87,8 @@ and are written to `HKLM\SOFTWARE\ITToolkit\Agent` (GPO-overridable).
 | --- | --- |
 | `ARCHITECTURE.md` | Full blueprint (zero-change guarantee, data model, security, migration) |
 | `ROADMAP.md` | **Next-steps plan**: CI agent delivery, first-time setup wizard, support-engineer features |
-| `docker-compose.yml` | One-host stack: `db` (Postgres) + `api` + `caddy` |
-| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), `/api/ca.crt`, `/api/agent-template`, `/healthz`; serves portal |
+| `docker-compose.yml` | One-host stack: `db` (Postgres) + `api` + `caddy` (+ `agent_artifacts` volume for the MSI) |
+| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), agent bundle (`/api/agent-bundle`, downloads), `/healthz`; serves portal |
 | `portal/` | Setup wizard + login + single-page admin UI (Agents / Events / Feature toggles / Users / Agent Setup) |
 | `agent/` | `Agent-Collect.ps1` (worker), ps2exe + WiX MSI packaging |
 | `deploy/deploy.sh` | One-command bring-up with auto-IP detection |
@@ -93,6 +106,8 @@ end-to-end (exit 0) and regenerates the baked agent config on IP change.
 - Portal sessions + RBAC (admin / operation / monitoring) are live; the
   support-engineer features that the roles will govern (commands, alerts,
   reports) land in P5/P6.
+- The **MSI download is wired but empty** until the generic engine from P0 is
+  built on CI and copied into the `agent_artifacts` volume (`docker compose cp`).
 - MSI/exe build must run on **Windows** — a GitHub Actions job is provided
   (`.github/workflows/ci.yml`).
 - Agent exe is signed manually (Authenticode) — same boundary as the existing

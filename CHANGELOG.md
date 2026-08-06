@@ -1,5 +1,23 @@
 # Changelog
 
+## v3.3 UPDATES — Company agent bundle + downloads (P3)
+
+- **NEW: server-side company bundle** — `bundle.py` assembles `agent.json`
+  (endpoint = scheme+host, token, company, **live feature overrides**) + `ca.crt`
+  + a generated `install-agent.cmd` (installs the MSI, then writes the company
+  `agent.json` + `ca.crt` over the bundled template and sets registry overrides).
+- **NEW: download endpoints** (admin/operation; monitoring → 403):
+  `GET /api/agent-bundle` (everything at once), `/api/agent/agent.json`,
+  `/api/agent/install.cmd`, `/api/ca.crt`, and `/api/agent-msi` — serves the
+  generic engine MSI from the new **`agent_artifacts` volume**, returning 404
+  until a real build is uploaded (`docker compose cp IT-Toolkit-Agent.msi api:/artifacts/`).
+- **Portal:** **Agent Setup** tab now shows download buttons + live previews of
+  `install-agent.cmd` and `agent.json`; deploy.sh prints the MSI upload command.
+- **Verified live** on `10.73.77.26`: bundle reflects feature toggles, all
+  downloads (agent.json/install.cmd/CA) stream with correct filenames, MSI
+  404→200→404 with the volume, RBAC 403 for monitoring, 401 unauthenticated;
+  test data reset so the setup wizard is ready for first-run.
+
 ## v3.2 UPDATES — Team users & RBAC (P2)
 
 - **NEW: roles** — admin (everything) / operation (view + feature control +

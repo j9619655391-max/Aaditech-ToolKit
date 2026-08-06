@@ -1,9 +1,9 @@
 {
   "index_version": "2.0",
   "path": "project-index.json",
-  "generated": "2026-08-07T03:21:10+05:30",
-  "last_verified_commit": "b884d192235c682cea1abe38db795ac0d7471559",
-  "last_verified_date": "2026-08-07T03:17:23+05:30",
+  "generated": "2026-08-07T03:26:53+05:30",
+  "last_verified_commit": "5a7bca5cfd9a029e9bc49410ed0105dd407fb588",
+  "last_verified_date": "2026-08-07T03:21:10+05:30",
   "auto_indexed": true,
   "indexer": "Scripts/Index/Update-ProjectIndex.ps1",
   "repository": {
@@ -13,141 +13,143 @@
     "project_type": "Windows desktop-support toolkit (PowerShell scripts + batch launchers + markdown docs)",
     "git_repo": true,
     "branch": "main",
-    "commit_count": 46,
-    "tracked_files": 118,
+    "commit_count": 47,
+    "tracked_files": 119,
     "working_tree_clean": false
   },
   "current_state": {
-    "total_files": 104,
+    "total_files": 106,
     "extension_counts": {
-      ".py": 6,
-      ".json": 4,
-      ".wxs": 1,
-      ".gitattributes": 1,
-      ".xlsx": 1,
-      ".sh": 1,
-      "(none)": 3,
-      ".yml": 2,
-      ".gitignore": 1,
-      ".pyc": 5,
-      ".md": 32,
-      ".bat": 3,
-      ".ps1": 22,
-      ".env": 1,
-      ".txt": 7,
       ".psm1": 10,
-      ".example": 1,
+      "(none)": 3,
       ".sql": 1,
-      ".html": 2
+      ".ps1": 22,
+      ".gitignore": 1,
+      ".txt": 7,
+      ".pyc": 6,
+      ".xlsx": 1,
+      ".yml": 2,
+      ".example": 1,
+      ".json": 4,
+      ".md": 32,
+      ".sh": 1,
+      ".gitattributes": 1,
+      ".py": 7,
+      ".env": 1,
+      ".html": 2,
+      ".wxs": 1,
+      ".bat": 3
     }
   },
   "file_inventory": {
     "scan_basis": "audit/index.json (pre-remediation, 59 files) + delta detection at 2026-08-05T23:15:00",
     "current_snapshot": {
-      "ANALYSIS-RECOMMENDATIONS.md": "E0E7C629B68F39B6",
-      "Scripts/Pin-QuickAccess-Folders.ps1": "A9CD9431CC4FDED7",
-      "Enterprise/api/app/__pycache__/certs.cpython-314.pyc": "9D97434E7B6CCEAB",
-      "Scaling Plan/README-IMPLEMENTATION.md": "3D09B658CF73DA5A",
-      "Scripts/GUI/Toolkit-GUI.ps1": "625D7AA765C4D46C",
-      "Scripts/Modules/SCHEDULE-GUIDE.md": "6CC8E4746ADE0859",
-      "Scripts/Modules/ExportEngine.psm1": "F9DE33C74893F279",
-      "Templates/Knowledge-Base.xlsx": "1ADC69E3731A1801",
-      "Scaling Plan/PROGRESS-TRACKING.md": "86023E79F453BB40",
-      "Scripts/Modules/TaskScheduler.psm1": "6C1225E38F64D450",
-      "Toolkit-Menu.bat": "3AFBA39E9AD7CFC5",
-      "Scripts/Printer-Fix.ps1": "A153029A777F5F41",
-      "Scripts/Tests/Phase2-Modules.Tests.ps1": "96CCD51221A55B19",
-      "Enterprise/agent/build/build-agent.ps1": "F14CDAB93F3111B8",
-      "VERSION.md": "7474C1738AF8F7DF",
-      "Scripts/Index/Install-GitHook.ps1": "4297737FFE05AD6C",
-      "Enterprise/deploy/Caddyfile": "A7EB44F1FBF1508F",
-      "Enterprise/.env": "BABD790216F0CEF7",
-      "Templates/AI-Assistant-Prompts.txt": "24917D3B26468BBF",
-      "Documentation/Windows-Smoke-Run.md": "144635F0C7AFA9D9",
       "Scripts/Export-EventLogs.ps1": "10748DE50BE4476D",
-      "Documentation/README.md": "93B836EFF2B50292",
-      "Scripts/Run-QuickCheck.bat": "B7A5EAF5466D88AC",
-      "Scripts/Firewall-Test.ps1": "BCD2E24F539A8DBD",
-      "Enterprise/api/app/__pycache__/main.cpython-314.pyc": "7EB9A1C5E67470DE",
-      "Templates/Ticket-Reply-Templates.txt": "22B5CF98150035E4",
-      "Remote-Tools/Generate-RDP-Shortcuts.ps1": "C7FACEF5AAB50C19",
-      "Enterprise/api/app/db.py": "4B26A5FAD917ADA2",
-      "Scripts/Modules/SanitizeEngine.psm1": "D28B2184291C7761",
-      "Scripts/Modules/RemoteToolkit.psm1": "C3F1BCC274A20EB8",
       "Config/CONFIG-GUIDE.md": "8FEAD3227F92E747",
-      "Drivers/README.txt": "FFE4F43CAEBDCFF3",
-      "Enterprise/api/requirements.txt": "97297837F5BDDD52",
-      "Scripts/GUI/DASHBOARD-GUIDE.md": "ECED19D49DB25F1C",
-      "Enterprise/docker-compose.yml": "DE4FC5A57944BE02",
-      "Enterprise/api/Dockerfile": "8752850CB7A9A819",
-      "Scripts/Modules/ToolkitData.psm1": "7315F1C2DBC2F656",
-      "Scaling Plan/DELIVERY-SUMMARY.md": "E9E9C7352013146E",
-      "Scripts/Modules/CredentialManager.psm1": "38D20C7DB00ADA33",
-      "Software/Portable-Software-Links.md": "9132209449371D1C",
-      "Documentation/Setup-Guide.md": "15AD4F2B22B74B9C",
-      "Data/DATABASE-GUIDE.md": "4C083B1653236947",
-      "Enterprise/agent/agent-config.json": "46E715B2BDFB2655",
-      "Enterprise/api/schema.sql": "734C5F3700387473",
-      "Enterprise/portal/index.html": "2B6C915B2249802C",
-      "Scripts/Modules/LogManager.psm1": "2D51E3B8CFD9D742",
-      ".github/workflows/ci.yml": "73AB4D576DAB7D6B",
-      "Enterprise/README.md": "2034FEDADB169360",
-      "Scripts/Tests/Run-RemoteToolkit-Tests.ps1": "2CEA9159CA89D51C",
-      "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1": "600F8663B519C2A4",
-      "Enterprise/api/app/__pycache__/auth.cpython-314.pyc": "1727F3FD4FAB1727",
+      "Enterprise_Audit_Prompt.md": "1A76EA837F17543A",
+      "Enterprise/api/app/__pycache__/main.cpython-314.pyc": "7A762392CA5641B4",
+      ".gitignore": "074C1A244CC9155D",
+      "Scripts/Modules/TaskScheduler.psm1": "6C1225E38F64D450",
       "Enterprise/.env.example": "27EE15F5604F9429",
-      "Scaling Plan/START-HERE.md": "1C20761210783D23",
-      "Scaling Plan/ARCHITECTURE.md": "2AA4CFDBF7BBDA02",
-      "Documentation/Troubleshooting-Flowcharts.md": "FC7D660B6003DE36",
-      "Enterprise/api/features.json": "39406E4705DC0E09",
-      "Enterprise/ARCHITECTURE.md": "9EE0A576D0A27ABF",
-      "Enterprise/agent/wix/build-msi.ps1": "39AFFD5C1A1924DD",
-      ".gitattributes": "3A68D96E89F3BDF7",
-      "Remote-Tools/README.md": "93C454DD5F63B141",
-      "Scripts/Network-Diagnostic.ps1": "C4A5F3BF447FF16B",
       "Logs/README.txt": "D4700D874CD57092",
-      "Enterprise/agent/agent-config.example.json": "4C14BB0ADA9BAD3E",
-      "Scaling Plan/QUICK-REFERENCE.md": "F4D84638A578C75E",
-      "Templates/CMD-Commands-Reference.txt": "B95C18F99396DCBD",
-      "Enterprise/api/app/auth.py": "08D2947DED93126C",
-      "Scaling Plan/IMPLEMENTATION-PLAN.md": "FE14CFCE5A9F0EDE",
-      "Scripts/Templates/Report-Template.html": "AD42679B20E7E25F",
+      ".github/workflows/ci.yml": "73AB4D576DAB7D6B",
       "Scripts/Tests/RemoteToolkit.tests.ps1": "2C436539C5FB9D97",
-      "Enterprise/agent/wix/Agent.wxs": "DC5AF10E67D8748D",
-      "Enterprise/agent/Agent-Collect.ps1": "6716580F24BE8786",
-      "Scaling Plan/DOCUMENTATION-INDEX.md": "64A600DB89C864EC",
-      "Scripts/QuickCheck.ps1": "081186741B8CBDF5",
-      "Config/config.json": "22F398E6B911FFE0",
-      "Scripts/Tests/Phase1-Regression.Tests.ps1": "A65CA83589FAAAEC",
-      "Scripts/User-Inventory.ps1": "304B5225DED0D8F2",
-      "Enterprise/api/app/__pycache__/db.cpython-314.pyc": "B03850BBBE29A35F",
-      "Scripts/Modules/ReportGenerator.psm1": "9F944735E7A1968F",
-      "Enterprise/deploy/deploy.sh": "7912FF3214497B16",
+      "Scripts/Modules/LogManager.psm1": "2D51E3B8CFD9D742",
+      "Scripts/Tests/Run-RemoteToolkit-Tests.ps1": "2CEA9159CA89D51C",
+      "Scaling Plan/README-IMPLEMENTATION.md": "3D09B658CF73DA5A",
+      "Scripts/Network-Diagnostic.ps1": "C4A5F3BF447FF16B",
+      "Scripts/Remote/Invoke-RemoteNetworkDiagnostic.ps1": "600F8663B519C2A4",
+      "Scripts/Firewall-Test.ps1": "BCD2E24F539A8DBD",
       ".githooks/pre-commit": "7C10E966D139FDAB",
-      "Scripts/Remote/README.md": "617FD53DD38EA499",
-      "Enterprise/api/app/main.py": "CF60DC841081C2FA",
-      "Scripts/Modules/AlertEngine.psm1": "8A4356B2CAE9433F",
-      "Enterprise/api/app/config.py": "2A0F4FC7314993E8",
+      "Documentation/README.md": "93B836EFF2B50292",
+      "Toolkit-Menu.bat": "3AFBA39E9AD7CFC5",
+      "Scripts/Pin-QuickAccess-Folders.ps1": "A9CD9431CC4FDED7",
+      "Templates/AI-Assistant-Prompts.txt": "24917D3B26468BBF",
+      "Scripts/Tests/Phase1-Regression.Tests.ps1": "A65CA83589FAAAEC",
+      "Enterprise/api/app/db.py": "4B26A5FAD917ADA2",
+      "COMPLETION-REPORT.md": "0EC8BAFCE2BF5B0B",
+      "Enterprise/portal/index.html": "4F227A78546D34B8",
+      "Scripts/Remote/BatchScan.ps1": "90393C433ED0F7EC",
+      "Enterprise/docker-compose.yml": "33B6AB42DA1A83FB",
+      "Templates/Knowledge-Base.xlsx": "1ADC69E3731A1801",
+      "Enterprise/api/app/__init__.py": "E3B0C44298FC1C14",
+      "Scripts/Modules/SanitizeEngine.psm1": "D28B2184291C7761",
+      "Enterprise/agent/agent-config.example.json": "4C14BB0ADA9BAD3E",
+      "Enterprise/api/app/config.py": "B800BD32AF76F979",
+      "Scripts/Modules/ToolkitData.psm1": "7315F1C2DBC2F656",
+      "Scripts/Tests/BatchLauncher.Tests.ps1": "6B266E017144421B",
+      "Scripts/Printer-Fix.ps1": "A153029A777F5F41",
+      "Scripts/Templates/Report-Template.html": "AD42679B20E7E25F",
+      "Scripts/User-Inventory.ps1": "304B5225DED0D8F2",
+      "Enterprise/api/schema.sql": "734C5F3700387473",
+      "Scaling Plan/IMPLEMENTATION-PLAN.md": "FE14CFCE5A9F0EDE",
       "QUICK-SUMMARY.md": "D335A8CA3F002ADD",
       "Scripts/Modules/ToolkitConfig.psm1": "0C2734BE83029928",
-      "Enterprise/api/app/__pycache__/config.cpython-314.pyc": "F998C82EB16454D9",
-      "CHANGELOG.md": "3CA5FDCA4DDF1594",
+      "Enterprise/api/app/__pycache__/certs.cpython-314.pyc": "9D97434E7B6CCEAB",
       "IT-TOOLKIT-GAP-ANALYSIS.md": "A58488E6A0EE1EB5",
+      "Scripts/Modules/ReportGenerator.psm1": "9F944735E7A1968F",
       "Documentation/Cheat-Sheet.md": "5AEF066924286207",
-      "Enterprise/ROADMAP.md": "C875AC23FB6745C8",
-      "Enterprise/api/app/certs.py": "9D2584724AFF80BD",
-      "Data/README.txt": "A18E8A08272C1161",
-      "Scripts/Tests/README.md": "92C6A4FFCC10F389",
+      "Scripts/Remote/Invoke-RemoteQuickCheck.ps1": "9076A751DEFC1627",
+      "Enterprise/api/app/auth.py": "08D2947DED93126C",
       "Scripts/Index/Update-ProjectIndex.ps1": "5DF1F18DDACDF8EB",
-      "Scripts/Tests/BatchLauncher.Tests.ps1": "6B266E017144421B",
-      "Enterprise/api/app/__init__.py": "E3B0C44298FC1C14",
-      "Enterprise_Audit_Prompt.md": "1A76EA837F17543A",
-      "COMPLETION-REPORT.md": "0EC8BAFCE2BF5B0B",
-      "Scripts/README.md": "798CD3C7EBCB6F2B",
-      "Scripts/Remote/BatchScan.ps1": "90393C433ED0F7EC",
+      "Scripts/GUI/Toolkit-GUI.ps1": "625D7AA765C4D46C",
+      "Documentation/Windows-Smoke-Run.md": "144635F0C7AFA9D9",
+      "Remote-Tools/README.md": "93C454DD5F63B141",
+      "Enterprise/api/requirements.txt": "97297837F5BDDD52",
+      "Documentation/Setup-Guide.md": "15AD4F2B22B74B9C",
+      "Scaling Plan/START-HERE.md": "1C20761210783D23",
+      "Enterprise/README.md": "0E82065E03A2FA02",
+      "Enterprise/agent/build/build-agent.ps1": "F14CDAB93F3111B8",
       "Setup-Wizard.bat": "EAF6EF8B41AD1A84",
-      ".gitignore": "074C1A244CC9155D",
-      "Scripts/Remote/Invoke-RemoteQuickCheck.ps1": "9076A751DEFC1627"
+      "Enterprise/ARCHITECTURE.md": "374719E8E52D7CD9",
+      "Drivers/README.txt": "FFE4F43CAEBDCFF3",
+      "ANALYSIS-RECOMMENDATIONS.md": "E0E7C629B68F39B6",
+      "Enterprise/agent/wix/Agent.wxs": "DC5AF10E67D8748D",
+      "Enterprise/api/Dockerfile": "8752850CB7A9A819",
+      "Scripts/Modules/ExportEngine.psm1": "F9DE33C74893F279",
+      "Enterprise/api/app/certs.py": "9D2584724AFF80BD",
+      "Scripts/Tests/README.md": "92C6A4FFCC10F389",
+      "Enterprise/api/app/__pycache__/bundle.cpython-314.pyc": "0C43573FF32CF595",
+      "Software/Portable-Software-Links.md": "9132209449371D1C",
+      "Scripts/Tests/Phase2-Modules.Tests.ps1": "96CCD51221A55B19",
+      "Scripts/Modules/AlertEngine.psm1": "8A4356B2CAE9433F",
+      "Scaling Plan/DOCUMENTATION-INDEX.md": "64A600DB89C864EC",
+      "Enterprise/deploy/deploy.sh": "8E2371A36ECAD360",
+      "CHANGELOG.md": "EF8ABC4CB65F687E",
+      "Data/DATABASE-GUIDE.md": "4C083B1653236947",
+      "VERSION.md": "F48C2D032D6865C7",
+      "Scripts/Modules/RemoteToolkit.psm1": "C3F1BCC274A20EB8",
+      "Scripts/Run-QuickCheck.bat": "B7A5EAF5466D88AC",
+      "Enterprise/api/app/__pycache__/db.cpython-314.pyc": "B03850BBBE29A35F",
+      "Remote-Tools/Generate-RDP-Shortcuts.ps1": "C7FACEF5AAB50C19",
+      "Scaling Plan/QUICK-REFERENCE.md": "F4D84638A578C75E",
+      "Enterprise/deploy/Caddyfile": "A7EB44F1FBF1508F",
+      "Scripts/README.md": "798CD3C7EBCB6F2B",
+      "Scripts/QuickCheck.ps1": "081186741B8CBDF5",
+      "Enterprise/api/app/__pycache__/auth.cpython-314.pyc": "1727F3FD4FAB1727",
+      "Templates/Ticket-Reply-Templates.txt": "22B5CF98150035E4",
+      "Enterprise/api/app/main.py": "F9E719123822CBFE",
+      "Scaling Plan/PROGRESS-TRACKING.md": "86023E79F453BB40",
+      "Data/README.txt": "A18E8A08272C1161",
+      "Scripts/Modules/SCHEDULE-GUIDE.md": "6CC8E4746ADE0859",
+      "Enterprise/agent/agent-config.json": "46E715B2BDFB2655",
+      "Enterprise/.env": "BABD790216F0CEF7",
+      "Enterprise/agent/Agent-Collect.ps1": "6716580F24BE8786",
+      ".gitattributes": "3A68D96E89F3BDF7",
+      "Scripts/Modules/CredentialManager.psm1": "38D20C7DB00ADA33",
+      "Enterprise/ROADMAP.md": "40B42E658AE24002",
+      "Scripts/Index/Install-GitHook.ps1": "4297737FFE05AD6C",
+      "Enterprise/api/features.json": "39406E4705DC0E09",
+      "Documentation/Troubleshooting-Flowcharts.md": "FC7D660B6003DE36",
+      "Enterprise/api/app/bundle.py": "C6EEF8DD6B0847D5",
+      "Scripts/GUI/DASHBOARD-GUIDE.md": "ECED19D49DB25F1C",
+      "Scaling Plan/DELIVERY-SUMMARY.md": "E9E9C7352013146E",
+      "Config/config.json": "22F398E6B911FFE0",
+      "Scaling Plan/ARCHITECTURE.md": "2AA4CFDBF7BBDA02",
+      "Enterprise/api/app/__pycache__/config.cpython-314.pyc": "7B6D912BC79621F4",
+      "Templates/CMD-Commands-Reference.txt": "B95C18F99396DCBD",
+      "Scripts/Remote/README.md": "617FD53DD38EA499",
+      "Enterprise/agent/wix/build-msi.ps1": "39AFFD5C1A1924DD"
     },
     "files": [
       {
@@ -187,10 +189,10 @@
       },
       {
         "path": "CHANGELOG.md",
-        "size_bytes": 12438,
-        "lines": 183,
-        "last_modified": "2026-08-07T03:21:05",
-        "sha256_short": "3CA5FDCA4DDF1594"
+        "size_bytes": 13664,
+        "lines": 201,
+        "last_modified": "2026-08-07T03:26:43",
+        "sha256_short": "EF8ABC4CB65F687E"
       },
       {
         "path": "COMPLETION-REPORT.md",
@@ -308,7 +310,7 @@
         "path": "Enterprise/agent/agent-config.json",
         "size_bytes": 705,
         "lines": 15,
-        "last_modified": "2026-08-07T03:19:41",
+        "last_modified": "2026-08-07T03:25:02",
         "sha256_short": "46E715B2BDFB2655"
       },
       {
@@ -347,6 +349,13 @@
         "sha256_short": "1727F3FD4FAB1727"
       },
       {
+        "path": "Enterprise/api/app/__pycache__/bundle.cpython-314.pyc",
+        "size_bytes": 6376,
+        "lines": 38,
+        "last_modified": "2026-08-07T03:25:02",
+        "sha256_short": "0C43573FF32CF595"
+      },
+      {
         "path": "Enterprise/api/app/__pycache__/certs.cpython-314.pyc",
         "size_bytes": 8179,
         "lines": 42,
@@ -355,10 +364,10 @@
       },
       {
         "path": "Enterprise/api/app/__pycache__/config.cpython-314.pyc",
-        "size_bytes": 4128,
-        "lines": 25,
-        "last_modified": "2026-08-07T03:14:31",
-        "sha256_short": "F998C82EB16454D9"
+        "size_bytes": 4280,
+        "lines": 27,
+        "last_modified": "2026-08-07T03:25:02",
+        "sha256_short": "7B6D912BC79621F4"
       },
       {
         "path": "Enterprise/api/app/__pycache__/db.cpython-314.pyc",
@@ -369,10 +378,10 @@
       },
       {
         "path": "Enterprise/api/app/__pycache__/main.cpython-314.pyc",
-        "size_bytes": 36832,
-        "lines": 200,
-        "last_modified": "2026-08-07T03:19:41",
-        "sha256_short": "7EB9A1C5E67470DE"
+        "size_bytes": 42110,
+        "lines": 236,
+        "last_modified": "2026-08-07T03:25:02",
+        "sha256_short": "7A762392CA5641B4"
       },
       {
         "path": "Enterprise/api/app/auth.py",
@@ -380,6 +389,13 @@
         "lines": 73,
         "last_modified": "2026-08-07T03:13:01",
         "sha256_short": "08D2947DED93126C"
+      },
+      {
+        "path": "Enterprise/api/app/bundle.py",
+        "size_bytes": 3066,
+        "lines": 87,
+        "last_modified": "2026-08-07T03:24:19",
+        "sha256_short": "C6EEF8DD6B0847D5"
       },
       {
         "path": "Enterprise/api/app/certs.py",
@@ -390,10 +406,10 @@
       },
       {
         "path": "Enterprise/api/app/config.py",
-        "size_bytes": 2160,
-        "lines": 64,
-        "last_modified": "2026-08-07T03:12:08",
-        "sha256_short": "2A0F4FC7314993E8"
+        "size_bytes": 2228,
+        "lines": 65,
+        "last_modified": "2026-08-07T03:24:11",
+        "sha256_short": "B800BD32AF76F979"
       },
       {
         "path": "Enterprise/api/app/db.py",
@@ -404,10 +420,10 @@
       },
       {
         "path": "Enterprise/api/app/main.py",
-        "size_bytes": 15900,
-        "lines": 442,
-        "last_modified": "2026-08-07T03:19:09",
-        "sha256_short": "CF60DC841081C2FA"
+        "size_bytes": 18389,
+        "lines": 496,
+        "last_modified": "2026-08-07T03:24:34",
+        "sha256_short": "F9E719123822CBFE"
       },
       {
         "path": "Enterprise/api/Dockerfile",
@@ -439,10 +455,10 @@
       },
       {
         "path": "Enterprise/ARCHITECTURE.md",
-        "size_bytes": 11810,
-        "lines": 215,
-        "last_modified": "2026-08-07T03:20:56",
-        "sha256_short": "9EE0A576D0A27ABF"
+        "size_bytes": 11995,
+        "lines": 217,
+        "last_modified": "2026-08-07T03:26:31",
+        "sha256_short": "374719E8E52D7CD9"
       },
       {
         "path": "Enterprise/deploy/Caddyfile",
@@ -453,38 +469,38 @@
       },
       {
         "path": "Enterprise/deploy/deploy.sh",
-        "size_bytes": 7761,
-        "lines": 203,
-        "last_modified": "2026-08-06T23:34:28",
-        "sha256_short": "7912FF3214497B16"
+        "size_bytes": 8014,
+        "lines": 207,
+        "last_modified": "2026-08-07T03:24:59",
+        "sha256_short": "8E2371A36ECAD360"
       },
       {
         "path": "Enterprise/docker-compose.yml",
-        "size_bytes": 1800,
-        "lines": 69,
-        "last_modified": "2026-08-07T03:14:25",
-        "sha256_short": "DE4FC5A57944BE02"
+        "size_bytes": 1886,
+        "lines": 72,
+        "last_modified": "2026-08-07T03:24:42",
+        "sha256_short": "33B6AB42DA1A83FB"
       },
       {
         "path": "Enterprise/portal/index.html",
-        "size_bytes": 17356,
-        "lines": 367,
-        "last_modified": "2026-08-07T03:19:37",
-        "sha256_short": "2B6C915B2249802C"
+        "size_bytes": 18694,
+        "lines": 384,
+        "last_modified": "2026-08-07T03:24:53",
+        "sha256_short": "4F227A78546D34B8"
       },
       {
         "path": "Enterprise/README.md",
-        "size_bytes": 5222,
-        "lines": 100,
-        "last_modified": "2026-08-07T03:20:52",
-        "sha256_short": "2034FEDADB169360"
+        "size_bytes": 5972,
+        "lines": 115,
+        "last_modified": "2026-08-07T03:26:23",
+        "sha256_short": "0E82065E03A2FA02"
       },
       {
         "path": "Enterprise/ROADMAP.md",
-        "size_bytes": 12140,
-        "lines": 249,
-        "last_modified": "2026-08-07T03:20:40",
-        "sha256_short": "C875AC23FB6745C8"
+        "size_bytes": 12966,
+        "lines": 261,
+        "last_modified": "2026-08-07T03:26:00",
+        "sha256_short": "40B42E658AE24002"
       },
       {
         "path": "IT-TOOLKIT-GAP-ANALYSIS.md",
@@ -873,39 +889,36 @@
       },
       {
         "path": "VERSION.md",
-        "size_bytes": 4439,
-        "lines": 77,
-        "last_modified": "2026-08-07T03:21:00",
-        "sha256_short": "7474C1738AF8F7DF"
+        "size_bytes": 4776,
+        "lines": 78,
+        "last_modified": "2026-08-07T03:26:37",
+        "sha256_short": "F48C2D032D6865C7"
       }
     ],
     "latest_delta": {
-      "detected_at": "2026-08-07T03:21:10+05:30",
-      "added": [],
+      "detected_at": "2026-08-07T03:26:53+05:30",
+      "added": [
+        "Enterprise/api/app/__pycache__/bundle.cpython-314.pyc",
+        "Enterprise/api/app/bundle.py"
+      ],
       "removed": [],
       "changed": [
-        "VERSION.md",
         "Enterprise/api/app/__pycache__/main.cpython-314.pyc",
         "Enterprise/portal/index.html",
+        "Enterprise/docker-compose.yml",
+        "Enterprise/api/app/config.py",
         "Enterprise/README.md",
         "Enterprise/ARCHITECTURE.md",
-        "Enterprise/api/app/main.py",
+        "Enterprise/deploy/deploy.sh",
         "CHANGELOG.md",
-        "Enterprise/ROADMAP.md"
+        "VERSION.md",
+        "Enterprise/api/app/main.py",
+        "Enterprise/ROADMAP.md",
+        "Enterprise/api/app/__pycache__/config.cpython-314.pyc"
       ],
-      "unchanged_count": 96
+      "unchanged_count": 92
     },
     "delta_history": [
-      {
-        "detected_at": "2026-08-06T04:21:25+05:30",
-        "added": [],
-        "removed": [],
-        "changed": [
-          "CHANGELOG.md",
-          ".github/workflows/ci.yml"
-        ],
-        "unchanged_count": 70
-      },
       {
         "detected_at": "2026-08-06T04:22:19+05:30",
         "added": [
@@ -1174,6 +1187,29 @@
           "Enterprise/ROADMAP.md"
         ],
         "unchanged_count": 96
+      },
+      {
+        "detected_at": "2026-08-07T03:26:53+05:30",
+        "added": [
+          "Enterprise/api/app/__pycache__/bundle.cpython-314.pyc",
+          "Enterprise/api/app/bundle.py"
+        ],
+        "removed": [],
+        "changed": [
+          "Enterprise/api/app/__pycache__/main.cpython-314.pyc",
+          "Enterprise/portal/index.html",
+          "Enterprise/docker-compose.yml",
+          "Enterprise/api/app/config.py",
+          "Enterprise/README.md",
+          "Enterprise/ARCHITECTURE.md",
+          "Enterprise/deploy/deploy.sh",
+          "CHANGELOG.md",
+          "VERSION.md",
+          "Enterprise/api/app/main.py",
+          "Enterprise/ROADMAP.md",
+          "Enterprise/api/app/__pycache__/config.cpython-314.pyc"
+        ],
+        "unchanged_count": 92
       }
     ],
     "unchanged_files": 37,
@@ -1607,6 +1643,6 @@
   "progress": {
     "percent": 100.0,
     "issues_resolved": "17/17",
-    "last_verified_commit": "b884d192235c682cea1abe38db795ac0d7471559"
+    "last_verified_commit": "5a7bca5cfd9a029e9bc49410ed0105dd407fb588"
   }
 }
