@@ -1,0 +1,6 @@
+# Force LF checkout everywhere so index SHA-256 snapshots are byte-identical
+# on every OS (macOS dev + Windows CI). CRLF is preserved only for batch files,
+# which cmd.exe expects.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
