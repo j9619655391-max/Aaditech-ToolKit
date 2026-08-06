@@ -56,6 +56,7 @@ and are written to `HKLM\SOFTWARE\ITToolkit\Agent` (GPO-overridable).
 | Path | Purpose |
 | --- | --- |
 | `ARCHITECTURE.md` | Full blueprint (zero-change guarantee, data model, security, migration) |
+| `ROADMAP.md` | **Next-steps plan**: CI agent delivery, first-time setup wizard, support-engineer features |
 | `docker-compose.yml` | One-host stack: `db` (Postgres) + `api` + `caddy` |
 | `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, `/healthz`; serves portal |
 | `portal/` | Single-page admin UI (Agents / Events / Feature toggles / config editor) |
