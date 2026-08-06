@@ -85,7 +85,7 @@ async def ingest(batch: IngestBatch, request: Request, _: None = Depends(require
                 "INSERT INTO events (agent_id, kind, payload, sanitized, client_msg_id, captured_at) "
                 "VALUES ($1, $2, $3, $4, $5, COALESCE(($6::text)::timestamptz, now())) "
                 "ON CONFLICT (client_msg_id) DO NOTHING RETURNING id",
-                agent_id, ev.kind, json.dumps(ev.payload), ev.sanitized, msg_id, ev.captured_at,
+                agent_id, ev.kind, ev.payload, ev.sanitized, msg_id, ev.captured_at,
             )
             if row:
                 count += 1
@@ -158,14 +158,14 @@ async def update_feature(name: str, update: FeatureUpdate):
         new_config = update.config if update.config is not None else row["config"]
         await pool.execute(
             "UPDATE feature_configs SET enabled = $2, config = $3, updated_at = now() WHERE name = $1",
-            name, new_enabled, json.dumps(new_config),
+            name, new_enabled, new_config,
         )
     else:
         new_enabled = update.enabled if update.enabled is not None else True
         new_config = update.config if update.config is not None else {}
         await pool.execute(
             "INSERT INTO feature_configs (name, enabled, config) VALUES ($1, $2, $3)",
-            name, new_enabled, json.dumps(new_config),
+            name, new_enabled, new_config,
         )
     return {"name": name, "enabled": new_enabled, "config": new_config}
 
