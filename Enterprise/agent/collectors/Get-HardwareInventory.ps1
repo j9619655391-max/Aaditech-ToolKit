@@ -19,6 +19,19 @@ function Get-BatteryWear {
     return @{ current_mwh = $full }
 }
 
+function Get-BatteryInfo {
+    $info = Get-BatteryWear
+    $charge = Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($charge -and $charge.EstimatedChargeRemaining) {
+        $info.charge_percent = [int]$charge.EstimatedChargeRemaining
+        $info.status_code = $charge.BatteryStatus
+        $info.status = switch ([int]$charge.BatteryStatus) {
+            1 { 'discharging' } 2 { 'on-ac' } 3 { 'fully-charged' } 4 { 'low' } default { 'unknown' }
+        }
+    }
+    return $info
+}
+
 $cs    = Get-CimInstance Win32_ComputerSystem
 $bios  = Get-CimInstance Win32_BIOS
 $cpu   = Get-CimInstance Win32_Processor | Select-Object -First 1
@@ -42,5 +55,5 @@ $disks = Get-CimInstance Win32_DiskDrive |
     os            = $os.Caption
     os_version    = $os.Version
     disks         = @($disks)
-    battery       = Get-BatteryWear
+    battery       = Get-BatteryInfo
 } | ConvertTo-Json -Compress -Depth 6

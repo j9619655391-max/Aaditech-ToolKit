@@ -20,6 +20,10 @@ RUN_SCRIPT_ALLOWLIST = [
     if s.strip()
 ]
 
+# ---------------------------------------------------------------- alerts (P6)
+
+ALERT_EVAL_MINUTES = int(os.environ.get("ALERT_EVAL_MINUTES", "1"))
+
 # ---------------------------------------------------------------- API token
 
 _PLACEHOLDERS = {"", "change-me", "change-me-random-token", "changeme"}

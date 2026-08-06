@@ -1,5 +1,40 @@
 # Changelog
 
+## v3.6 UPDATES — Alerts + reporting (P6)
+
+- **NEW: `alert_rules` + `alerts` tables** (schema.sql + idempotent runtime
+  migration) — `alert_rules` (name, description, condition jsonb, severity,
+  enabled), `alerts` (rule_id, agent_id, severity, message, status open/
+  acknowledged/resolved, created_at, resolved_at) + `idx_alerts_status`.
+- **NEW: seeded rules** (`rules.py::seed_rules`, idempotent): agent-offline
+  (15 min no report), disk-low (<10% free on a logical volume), smart-predict
+  (SMART predicted failure), battery-low (<20%), service-down (critical service
+  stopped), reboot-pending (>7 days uptime).
+- **NEW: eval loop** — background asyncio `alert_loop()` on API startup
+  (`ALERT_EVAL_MINUTES` env, default 1 min) opens an alert once per rule/agent
+  while a condition fires and **auto-resolves** open/acknowledged alerts when it
+  clears; a persistent condition re-opens after manual resolve.
+- **NEW: alert API** — `GET /api/alerts?status=&limit=` (all roles),
+  `GET /api/alerts/open` (badge count), `POST /api/alerts/{id}/ack` and
+  `/resolve` (admin/operation; monitoring → 403), `GET /api/alert-rules`,
+  `PUT /api/alert-rules/{name}` (admin-only; toggle enabled / severity /
+  condition jsonb).
+- **NEW: reports API** — `GET /api/report/fleet` (CSV, one row per agent with
+  latest hardware/health/update/disk snapshot) and
+  `GET /api/report/agent/{id}?format=json|csv` (all events for one agent).
+- **Portal:** **Alerts** page (status filter + ack/resolve buttons, rule admin
+  panel for admins) + **open-alert badge** in the nav polling `/api/alerts/open`
+  every 30s; **Reports** page with fleet CSV + per-agent JSON/CSV export links.
+- **Collectors:** `Get-DiskHealth.ps1` gained `logical` volume array
+  (Drive/SizeGB/FreeGB/FreePercent); `Get-HardwareInventory.ps1` gained
+  `battery.charge_percent` + `battery.status` — feeds the disk-low and
+  battery-low rules.
+- **Verified live** on `10.73.77.26`: rules seeded; disk-low/battery-low/
+  reboot-pending fired from ingested fixtures; ack/resolve + RBAC (monitoring
+  403, operation/admin 200); auto-resolve on condition clear; re-open on
+  persistent condition; fleet CSV + agent JSON/CSV exports; test data reset to
+  first-run.
+
 ## v3.5 UPDATES — Command channel / remote ops (P5)
 
 - **NEW: `commands` table** (schema.sql + idempotent runtime migration) —

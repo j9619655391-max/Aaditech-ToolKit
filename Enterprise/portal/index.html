@@ -44,6 +44,8 @@
     <button data-view="fleet">Fleet</button>
     <button data-view="events">Events</button>
     <button data-view="commands">Commands</button>
+    <button data-view="alerts">Alerts <span id="alertBadge" style="display:none;background:var(--bad);color:#0f172a;border-radius:999px;padding:0 6px;font-size:11px;margin-left:4px"></span></button>
+    <button data-view="reports">Reports</button>
     <button data-view="features">Features</button>
     <button data-view="users">Users</button>
     <button data-view="agent">Agent Setup</button>
@@ -93,7 +95,20 @@ async function start() {
   document.getElementById('header').style.display = 'flex';
   document.getElementById('who').textContent = (boot.user ? boot.user.username + ' · ' + boot.user.role : '');
   setupNav();
+  refreshAlertBadge();
+  setInterval(refreshAlertBadge, 30000);
   render();
+}
+
+async function refreshAlertBadge() {
+  try {
+    const r = await fetch('/api/alerts/open');
+    if (!r.ok) return;
+    const d = await r.json();
+    const badge = document.getElementById('alertBadge');
+    if (d.open > 0) { badge.textContent = d.open; badge.style.display = 'inline'; }
+    else badge.style.display = 'none';
+  } catch {}
 }
 
 function setupNav() {
@@ -189,6 +204,8 @@ async function render() {
   if (view === 'fleet') return renderFleet();
   if (view === 'events') return renderEvents();
   if (view === 'commands') return renderCommands();
+  if (view === 'alerts') return renderAlerts();
+  if (view === 'reports') return renderReports();
   if (view === 'features') return renderFeatures();
   if (view === 'users') return renderUsers();
   renderAgentSetup();
@@ -405,6 +422,114 @@ ${c.result ? 'result: ' + esc(JSON.stringify(c.result, null, 2)) : ''}</pre>
       <tbody>${rows || '<tr><td colspan="5" class="muted">No commands issued yet.</td></tr>'}</tbody></table>
     </div>`;
   cmdKind();
+}
+
+// ---------------------------------------------------------------- alerts (P6)
+
+let alertFilter = 'open';
+
+async function ackAlert(id) {
+  const r = await api('/api/alerts/' + id + '/ack', { method: 'POST' });
+  if (r) { renderAlerts(); refreshAlertBadge(); }
+}
+
+async function resolveAlert(id) {
+  const r = await api('/api/alerts/' + id + '/resolve', { method: 'POST' });
+  if (r) { renderAlerts(); refreshAlertBadge(); }
+}
+
+async function toggleRule(name, enabled) {
+  const r = await api('/api/alert-rules/' + name, { method: 'PUT', body: JSON.stringify({ enabled }) });
+  if (r) renderAlerts();
+}
+
+async function saveRule(name) {
+  const sev = document.getElementById('rule-sev-' + name).value;
+  const condEl = document.getElementById('rule-cond-' + name);
+  let cond = {};
+  try { cond = JSON.parse(condEl.value); } catch { alert('Invalid condition JSON'); return; }
+  const r = await api('/api/alert-rules/' + name, { method: 'PUT', body: JSON.stringify({ severity: sev, condition: cond }) });
+  if (r) renderAlerts();
+}
+
+async function renderAlerts() {
+  const [alerts, rules] = await Promise.all([
+    api('/api/alerts?status=' + (alertFilter === 'all' ? '' : alertFilter) + '&limit=200'),
+    api('/api/alert-rules'),
+  ]);
+  if (!alerts) return;
+  const canAct = window.user && (window.user.role === 'admin' || window.user.role === 'operation');
+  const isAdmin = window.user && window.user.role === 'admin';
+  const severityBadge = s => `<span class="badge ${s === 'critical' ? 'off' : s === 'warning' ? '' : 'on'}">${esc(s)}</span>`;
+
+  const rows = alerts.map(al => `
+    <tr>
+      <td>${esc(al.hostname || '—')}</td>
+      <td>${esc(al.rule || '')}</td>
+      <td>${severityBadge(al.severity)}</td>
+      <td>${esc(al.message)}</td>
+      <td><span class="badge ${al.status === 'open' ? 'off' : al.status === 'acknowledged' ? '' : 'on'}">${esc(al.status)}</span></td>
+      <td>${esc(new Date(al.created_at).toLocaleString())}</td>
+      <td>${canAct && al.status !== 'resolved'
+        ? (al.status === 'open'
+            ? `<button class="action" onclick="ackAlert(${al.id})">Ack</button> `
+            : '')
+          + `<button class="ghost" onclick="resolveAlert(${al.id})">Resolve</button>`
+        : ''}</td>
+    </tr>`).join('');
+
+  const filterBtns = ['open', 'acknowledged', 'resolved', 'all'].map(s =>
+    `<button class="ghost ${alertFilter === s ? 'active' : ''}" style="${alertFilter === s ? 'background:var(--accent);border-color:var(--accent);color:#0f172a' : ''}" onclick="setAlertFilter('${s}')">${s}</button>`).join(' ');
+
+  const rulesBlock = isAdmin ? `
+    <div class="card"><h3>Alert rules (admin)</h3>
+      <table><thead><tr><th>Rule</th><th>Severity</th><th>Condition</th><th>Enabled</th><th></th></tr></thead>
+      <tbody>${(rules || []).map(r => `
+        <tr>
+          <td>${esc(r.name)}<br><span class="muted">${esc(r.description || '')}</span></td>
+          <td><select id="rule-sev-${esc(r.name)}"><option ${r.severity === 'info' ? 'selected' : ''}>info</option><option ${r.severity === 'warning' ? 'selected' : ''}>warning</option><option ${r.severity === 'critical' ? 'selected' : ''}>critical</option></select></td>
+          <td><textarea id="rule-cond-${esc(r.name)}" rows="3" style="width:100%;font-size:11px">${esc(JSON.stringify(r.condition, null, 2))}</textarea></td>
+          <td><button class="action" onclick="toggleRule('${esc(r.name)}', ${!r.enabled})">${r.enabled ? 'enabled' : 'disabled'}</button></td>
+          <td><button class="ghost" onclick="saveRule('${esc(r.name)}')">Save</button></td>
+        </tr>`).join('')}</tbody></table>
+    </div>` : '';
+
+  app.innerHTML = `
+    <div class="card"><h3>Alerts</h3>
+      <div style="margin-bottom:8px">${filterBtns}</div>
+      <table><thead><tr><th>Agent</th><th>Rule</th><th>Severity</th><th>Message</th><th>Status</th><th>Created</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="7" class="muted">No alerts match this filter.</td></tr>'}</tbody></table>
+    </div>` + rulesBlock;
+}
+
+function setAlertFilter(s) { alertFilter = s; renderAlerts(); }
+
+// ---------------------------------------------------------------- reports (P6)
+
+async function renderReports() {
+  const agents = await api('/api/agents');
+  if (!agents) return;
+  app.innerHTML = `
+    <div class="card"><h3>Fleet report</h3>
+      <p class="muted">One row per agent with the latest hardware/health/update snapshot. Download as CSV.</p>
+      <a href="/api/report/fleet" class="action" style="text-decoration:none;display:inline-block">Export fleet CSV</a>
+    </div>
+    <div class="card"><h3>Agent report</h3>
+      <p class="muted">All collected events for a single agent.</p>
+      <div class="row" style="align-items:flex-end;flex-wrap:wrap">
+        <div style="flex:2;min-width:200px"><label>Agent</label>
+          <select id="rep_agent">${(agents || []).map(a => `<option value="${a.id}">${esc(a.hostname)}</option>`).join('') || '<option>—</option>'}</select></div>
+        <div style="min-width:80px"><a id="rep_json" href="#" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">JSON</a><a id="rep_csv" href="#" class="ghost" style="text-decoration:none;display:inline-block">CSV</a></div>
+      </div>
+    </div>`;
+  const sel = document.getElementById('rep_agent');
+  const link = () => {
+    const id = sel.value;
+    document.getElementById('rep_json').href = '/api/report/agent/' + id + '?format=json';
+    document.getElementById('rep_csv').href = '/api/report/agent/' + id + '?format=csv';
+  };
+  sel.addEventListener('change', link);
+  link();
 }
 
 async function renderFeatures() {

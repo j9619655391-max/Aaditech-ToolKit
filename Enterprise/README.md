@@ -88,8 +88,8 @@ docker compose cp IT-Toolkit-Agent.msi api:/artifacts/
 | `ARCHITECTURE.md` | Full blueprint (zero-change guarantee, data model, security, migration) |
 | `ROADMAP.md` | **Next-steps plan**: CI agent delivery, first-time setup wizard, support-engineer features |
 | `docker-compose.yml` | One-host stack: `db` (Postgres) + `api` + `caddy` (+ `agent_artifacts` volume for the MSI) |
-| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), agent bundle (`/api/agent-bundle`, downloads), `/healthz`; serves portal |
-| `portal/` | Setup wizard + login + single-page admin UI (Agents / Fleet / Events / Commands / Feature toggles / Users / Agent Setup) |
+| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), agent bundle (`/api/agent-bundle`, downloads), alerts + reports (P6), `/healthz`; serves portal |
+| `portal/` | Setup wizard + login + single-page admin UI (Agents / Fleet / Events / Commands / Alerts / Reports / Feature toggles / Users / Agent Setup) |
 | `agent/` | `Agent-Collect.ps1` (worker — collects, parses structured JSON, flushes, polls + executes commands), ps2exe + WiX MSI packaging |
 | `agent/collectors/` | 7 support-engineer collectors (hardware, software, diskhealth, health, bitlocker, updatecompliance, licenses) |
 
@@ -106,6 +106,24 @@ cycle and post results back (audited history):
 | `deploy/deploy.sh` | One-command bring-up with auto-IP detection |
 | `.env.example` | Template — copy to `.env` (never committed) |
 
+## Alerts + reports (P6)
+
+Seeded rules evaluate on a background loop (`ALERT_EVAL_MINUTES` env, default
+1 min) and open an alert when a condition fires, **auto-resolving** when it
+clears: agent offline (>15 min), disk < 10% free, SMART predicted failure,
+battery < 20%, critical service stopped, reboot pending > 7 days uptime.
+
+- **Alerts page** (portal): status filter (open/acknowledged/resolved/all),
+  ack + resolve buttons (admin/operation), and an **open-alert badge** in the
+  nav (polls every 30s). Admins can toggle/enable/disable rules and edit
+  severity + condition JSON.
+- **Reports page** (portal): **fleet CSV** (one row per agent, latest
+  hardware/health/update snapshot) and **per-agent** JSON/CSV exports.
+- API: `GET /api/alerts`, `GET /api/alerts/open`, `POST /api/alerts/{id}/ack`,
+  `POST /api/alerts/{id}/resolve`, `GET/PUT /api/alert-rules`,
+  `GET /api/report/fleet`, `GET /api/report/agent/{id}?format=json|csv`.
+- SMTP email delivery is an optional follow-up (portal-first today).
+
 ## Verified
 
 The full stack was smoke-tested locally with Docker:
@@ -116,7 +134,7 @@ end-to-end (exit 0) and regenerates the baked agent config on IP change.
 ## Honest boundaries
 
 - Portal sessions + RBAC (admin / operation / monitoring) are live; **alerts +
-  reports** land in P6.
+  reports** shipped in P6 (portal-first; SMTP email delivery optional later).
 - `wake` sends the WOL magic packet from the target's own network via the agent
   (works when the machine has a peer online); for true remote power-on you still
   need the BIOS/WoL setting enabled on the target.

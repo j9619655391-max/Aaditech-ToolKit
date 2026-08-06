@@ -40,6 +40,32 @@ _SCHEMA_MIGRATIONS = [
     """
     CREATE INDEX IF NOT EXISTS idx_commands_agent_pending ON commands(agent_id, status)
     """,
+    """
+    CREATE TABLE IF NOT EXISTS alert_rules (
+        id          SERIAL PRIMARY KEY,
+        name        TEXT NOT NULL UNIQUE,
+        description TEXT,
+        condition   jsonb NOT NULL DEFAULT '{}',
+        severity    TEXT NOT NULL DEFAULT 'warning',
+        enabled     BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS alerts (
+        id          SERIAL PRIMARY KEY,
+        rule_id     INTEGER REFERENCES alert_rules(id),
+        agent_id    INTEGER REFERENCES agents(id),
+        severity    TEXT NOT NULL,
+        message     TEXT NOT NULL,
+        status      TEXT NOT NULL DEFAULT 'open',
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        resolved_at TIMESTAMPTZ
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status)
+    """,
 ]
 
 

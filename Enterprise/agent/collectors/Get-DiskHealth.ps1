@@ -42,8 +42,18 @@ foreach ($s in $smart) {
     }
 }
 
+$logical = @(Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 } | ForEach-Object {
+    [pscustomobject]@{
+        Drive       = $_.DeviceID
+        SizeGB      = if ($_.Size) { [math]::Round($_.Size / 1GB, 1) } else { $null }
+        FreeGB      = if ($_.FreeSpace) { [math]::Round($_.FreeSpace / 1GB, 1) } else { $null }
+        FreePercent = if ($_.Size -gt 0) { [math]::Round(($_.FreeSpace / $_.Size) * 100, 1) } else { $null }
+    }
+})
+
 [pscustomobject]@{
     disks             = $disks
+    logical           = $logical
     smart_failures    = $failures
     predicted_failure = (@($failures).Count -gt 0)
 } | ConvertTo-Json -Compress -Depth 5

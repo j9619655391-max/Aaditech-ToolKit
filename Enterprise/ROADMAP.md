@@ -49,6 +49,9 @@ are all derived from the setup answers.
   structured-JSON agent output + fleet panels (offline/disk/battery/updates/health).
 - **P5 done & verified live** (see §7): command channel — issue/poll/execute/
   result for reboot, wake, run-script (allowlisted + flag-gated); RBAC enforced.
+- **P6 done & verified live** (see §8): alerts (seeded rules + background eval
+  loop + auto-resolve + ack/resolve) and reports (fleet CSV + per-agent
+  JSON/CSV); Alerts + Reports portal pages, open-alert badge.
 - CI: `agent-build` job scaffolded (generic binary path, **not yet run end-to-end**).
 
 ---
@@ -217,16 +220,32 @@ new kind-specific fleet panels (disk health, battery, update compliance, offline
 
 ---
 
-## 8. P6 — Alerts + reporting
+## 8. P6 — Alerts + reporting ✅ DONE (2026-08-07)
 
-- `alert_rules` (name, condition json, severity, enabled) + `alerts`
-  (rule_id, agent_id, severity, message, status, created_at).
+> **Implemented & verified live:** `alert_rules` + `alerts` tables (schema.sql
+> + runtime migration, `idx_alerts_status`). Rules seeded idempotently on
+> startup/eval (`rules.py::seed_rules`): agent-offline (15 min), disk-low (<10%
+> free on a logical volume), smart-predict (SMART predicted failure), battery-low
+> (<20%), service-down (critical service stopped), reboot-pending (>7 days
+> uptime). Background `alert_loop()` (asyncio, `ALERT_EVAL_MINUTES` env, default
+> 1 min) opens an alert once per rule/agent while a condition fires and **auto-
+> resolves** open/acknowledged alerts when it clears; a persistent condition
+> re-opens after manual resolve. Portal Alerts page (status filter + ack/resolve,
+> rule admin panel with live toggle/severity/condition edit) + open-alert badge
+> polling `/api/alerts/open` every 30s. Reports: `GET /api/report/fleet` (CSV),
+> `GET /api/report/agent/{id}?format=json|csv`; Reports page with export links.
+> E2E: 3 rules fired from ingested fixtures, ack/resolve + RBAC (monitoring 403,
+> operation/admin 200), auto-resolve on condition clear, re-open on persistent
+> condition, all report exports — verified; test data reset to first-run.
+
+- `alert_rules` (name, description, condition json, severity, enabled) + `alerts`
+  (rule_id, agent_id, severity, message, status, created_at, resolved_at). ✅
 - Seeded rules: **agent offline** (last_seen > X), disk < Y%, SMART
-  predicted-failure, service down, battery < 20%, reboot-pending > 7 days.
+  predicted-failure, service down, battery < 20%, reboot-pending > 7 days. ✅
 - Eval loop in the API (background task); portal Alerts page + badge
-  (email via SMTP = optional flag).
+  (email via SMTP = optional flag). ✅ (SMTP flag still open — see §11.2)
 - Reports: `GET /api/report/fleet` (CSV) + `GET /api/report/agent/{id}`
-  (JSON/CSV); Reports page with export buttons.
+  (JSON/CSV); Reports page with export buttons. ✅
 
 ---
 
@@ -240,7 +259,7 @@ new kind-specific fleet panels (disk health, battery, update compliance, offline
 | **P3** | Agent bundle (config+CA) + download page + install-agent.cmd ✅ | P0, P1 | small |
 | **P4** | Collectors + fleet panels ✅ | P3 | medium |
 | **P5** | Command channel (poll/execute/UI) ✅ | P2 | large |
-| **P6** | Alerts + reporting | P4 | medium |
+| **P6** | Alerts + reporting ✅ | P4 | medium |
 
 Each phase lands green on CI and keeps the existing toolkit untouched.
 

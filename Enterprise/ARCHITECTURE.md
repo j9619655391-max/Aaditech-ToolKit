@@ -119,6 +119,9 @@ IT-Toolkit-Agent.exe
 - `agents` — hostname, os, agent_version, last_seen, ip, registered_at
 - `events` — agent_id, kind (inventory/eventlog/network/firewall/diagnostic), payload jsonb, sanitized bool, captured_at
 - `feature_configs` — web-editable feature toggles/params (the "modify from portal" requirement)
+- `commands` (P5) — agent_id, kind (reboot/wake/run-script), payload jsonb, status lifecycle, result jsonb, audit trail
+- `alert_rules` (P6) — name, description, condition jsonb, severity, enabled
+- `alerts` (P6) — rule_id, agent_id, severity, message, status (open/acknowledged/resolved), timestamps
 
 ### API surface (all Bearer-token protected)
 - `POST /ingest` — agent batch upload (bulk, idempotent via `client_msg_id`)
@@ -127,11 +130,15 @@ IT-Toolkit-Agent.exe
 - `GET /api/features` — list what the toolkit can run (from a manifest)
 - `PUT /api/features/{name}` — toggle/configure from the portal
 - `GET /healthz` — liveness for Docker healthcheck
+- P5 commands: `GET/POST /api/commands`, agent `GET /api/commands/poll`, `POST /api/commands/{id}/result`
+- P6 alerts: `GET /api/alerts?status=&limit=`, `GET /api/alerts/open`, `POST /api/alerts/{id}/ack|resolve`, `GET/PUT /api/alert-rules`; eval loop background task (`ALERT_EVAL_MINUTES`)
+- P6 reports: `GET /api/report/fleet` (CSV), `GET /api/report/agent/{id}?format=json|csv`
 
 ### Web portal (served from the API container, same origin)
-Single-page HTML+JS (no build step): login-less token entry → **Agents**,
-**Events**, **Features** (edit toggles), **Config** panels. Because it shares the
-API origin, CORS is a non-issue and it's trivially redeployable.
+Single-page HTML+JS (no build step): session login (P2) → **Agents**, **Fleet**,
+**Events**, **Commands** (P5), **Alerts** (P6, with open-alert badge),
+**Reports** (P6), **Features** (edit toggles), **Users** (admin), **Agent Setup**.
+Because it shares the API origin, CORS is a non-issue and it's trivially redeployable.
 
 ---
 
@@ -204,8 +211,10 @@ silently breaking the DB.
 
 ## 9. Honest gaps (not code yet)
 - **Team accounts work** (RBAC: admin/operation/monitoring enforced in API +
-  portal) and the **company agent bundle downloads work**, but the role-governed
-  support-engineer features (commands, alerts, reports) are still P5/P6.
+  portal), the **company agent bundle downloads work**, and the **support-
+  engineer features are all shipped**: commands (P5), **alerts + reports (P6)** —
+  role-governed (admin/operation; monitoring read-only). Remaining:
+  **SMTP email alerts** (optional flag) and mTLS client certs (flag).
 - **MSI download endpoint is live but empty until P0 runs** — the generic
   engine build must run on Windows/CI and be copied into the `agent_artifacts`
   volume (`docker compose cp IT-Toolkit-Agent.msi api:/artifacts/`); the CI job
