@@ -111,6 +111,29 @@ else
     log ".env exists — keeping it (SERVER_HOST=$([ -f "$ENV_FILE" ] && grep '^SERVER_HOST=' "$ENV_FILE" | cut -d= -f2))"
 fi
 
+# Auto-regenerate placeholder/empty secrets so a manual .env.example copy can
+# never ship with known credentials.
+fix_placeholder() {
+    local key="$1"
+    local val
+    val="$(grep "^$key=" "$ENV_FILE" | cut -d= -f2)"
+    if [ -z "$val" ] || [ "$val" = "change-me" ] || [ "$val" = "change-me-strong" ] || [ "$val" = "change-me-random-token" ]; then
+        local new
+        new="$(generate_secret)"
+        if [ "$(uname)" = "Darwin" ]; then
+            sed -i '' "s|^$key=.*|$key=$new|" "$ENV_FILE"
+        else
+            sed -i "s|^$key=.*|$key=$new|" "$ENV_FILE"
+        fi
+        log "$key was placeholder — auto-regenerated"
+        if [ "$key" = "POSTGRES_PASSWORD" ] && compose volume ls --format '{{.Name}}' 2>/dev/null | grep -q 'pgdata'; then
+            die "POSTGRES_PASSWORD changed but an old pgdata volume exists.\n   Reset it (destructive):  docker compose -f $HERE/docker-compose.yml down -v && $0"
+        fi
+    fi
+}
+fix_placeholder "API_TOKEN"
+fix_placeholder "POSTGRES_PASSWORD"
+
 # shellcheck disable=SC1090
 set -a; source "$ENV_FILE"; set +a
 

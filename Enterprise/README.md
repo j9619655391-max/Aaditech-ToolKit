@@ -25,11 +25,16 @@ cd Enterprise/deploy
 That one command:
 - detects this machine's **LAN IP** (macOS + Linux, prefers en0/en1/eth0 so
   VPN interfaces don't win) — clients on the same intranet use this address,
-- generates `.env` with random secrets,
+- **auto-generates** `.env` secrets (API token + Postgres password) — placeholders
+  in a hand-copied `.env` are auto-regenerated, never used as-is,
 - **writes `agent/agent-config.json` with the LAN endpoint + token baked in**
   (this is what flows into the exe/msi),
 - starts `db + api + caddy` via `docker compose`,
 - prints the portal URL + token.
+
+> **Token safety net:** if the API ever boots with no `API_TOKEN` set, it
+> auto-generates a random one, persists it in the `api_data` volume, and prints
+> it once in `docker logs enterprise-api-1` (AUTO-GENERATED API TOKEN banner).
 
 Public-IP deployment (internet clients): `./deploy.sh --public`, or pin a
 fixed address/domain in `.env` (`SERVER_HOST=192.168.1.50` or `SERVER_HOST=it.example.com`).

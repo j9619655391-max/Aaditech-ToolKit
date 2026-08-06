@@ -24,11 +24,13 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-ittoolkit}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-ittoolkit}
-      API_TOKEN: ${API_TOKEN:?set in .env}
+      API_TOKEN: ${API_TOKEN:-}
+      API_TOKEN_FILE: /data/api_token
       SERVER_HOST: ${SERVER_HOST:?set in .env}
     volumes:
       - ./portal:/app/portal:ro
       - ./api/features.json:/app/features.json:ro
+      - api_data:/data
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/healthz')"]
       interval: 10s
@@ -55,6 +57,7 @@ services:
 
 volumes:
   pgdata:
+  api_data:
   caddy_data:
   caddy_config:
 
