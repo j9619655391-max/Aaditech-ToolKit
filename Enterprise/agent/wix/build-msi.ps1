@@ -48,7 +48,15 @@ if (Test-Path $collectors) {
 $wix = Get-Command wix -ErrorAction SilentlyContinue
 if (-not $wix) { throw "WiX toolset not found. Install: dotnet tool install --global wix" }
 
-& $wix.Source build "$(Join-Path $WixDir 'Agent.wxs')" -o "$(Join-Path $BuildOut 'IT-Toolkit-Agent.msi')"
+# Run wix from the WXS directory so its relative Source paths (stage\...) resolve
+# against the WXS location regardless of the caller's working directory.
+Push-Location $WixDir
+try {
+    & $wix.Source build 'Agent.wxs' -o "$(Join-Path $BuildOut 'IT-Toolkit-Agent.msi')"
+}
+finally {
+    Pop-Location
+}
 
 Write-Host "MSI built: $BuildOut\IT-Toolkit-Agent.msi"
 Write-Host "Deploy with: msiexec /i IT-Toolkit-Agent.msi /qn   (or push via Intune/GPO/SCCM)"
