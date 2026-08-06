@@ -164,14 +164,33 @@ Complete guide to all documentation files and resources in the toolkit.
 
 ---
 
+### Enterprise/ (Phase 3 — client-server stack)
+**Purpose:** Centralized agent → server → web-portal layer. Additive, zero changes to the existing toolkit.
+
+**Docs:**
+- `Enterprise/README.md` — quick start (intranet/LAN deploy, agent + MSI build)
+- `Enterprise/ARCHITECTURE.md` — full blueprint (zero-change guarantee, data model, security, migration)
+
+**Covers:**
+- `Enterprise/deploy/deploy.sh` — one-command bring-up, **LAN-first**, `--regen` / `--public`
+- `Enterprise/agent/Agent-Collect.ps1` → `.exe` (ps2exe) + `.msi` (WiX)
+- `Enterprise/api/` (FastAPI: `/ingest`, `/api/*`) + `docker-compose.yml` (db+api+caddy, one DB)
+- `Enterprise/portal/` — admin UI (Agents / Events / Feature config editor)
+- Auto-generated secrets (API token + Postgres password) — no manual setup
+
+**When to use:** Before/introducing fleet telemetry, remote log collection, or web-based admin.
+
+---
+
 ## Other Important Files
 
 ### CHANGELOG.md
 **Purpose:** Version history and what's new
 
-**Current version:** 2.0
+**Current version:** 3.0
 
 **What changed:**
+- v3.0: Enterprise client-server stack (agent/.exe/.msi, FastAPI server, portal, Docker intranet deploy, auto-generated tokens)
 - v2.0: Complete Firewall-Test, enhanced User-Inventory, Setup-Wizard, 33+ AI prompts
 - v1.0: Initial release with core scripts
 

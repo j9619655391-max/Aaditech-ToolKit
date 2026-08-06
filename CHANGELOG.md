@@ -9,6 +9,8 @@
   - **Deploy** (`Enterprise/deploy/deploy.sh`): one-command bring-up — **intranet/LAN-first by default** (auto-detects LAN IP on macOS + Linux, prefers en0/en1/eth0), `--regen` to re-point when moving machines, `--public` for internet clients; generates `.env` secrets, bakes the endpoint into `agent-config.json`, starts Docker.
   - **CI**: new `agent-build` job (windows-latest) produces the `.exe` + `.msi` artifacts from repo secrets.
 - **Verified locally:** full stack smoke-tested in Docker — ingest (idempotent dedupe), auth 401, agents/events queries, feature enable/disable, portal, and a real agent→server round-trip with PII `[REDACTED-*]` sanitization.
+- **FIXED (deploy verification):** event payloads were persisted as JSON *strings* — now bound as true `jsonb` objects (asyncpg `jsonb` codec registered; nested payloads round-trip as dicts via `/api/events`).
+- **NEW:** API token is **auto-generated everywhere** — `deploy.sh` generates random secrets on first run, auto-regenerates any placeholder (`change-me-*`) it finds in an existing `.env`, and the API self-generates + persists (volume) + prints (once) a token if `API_TOKEN` is ever empty. No manual secret setup.
 - See `Enterprise/README.md` + `Enterprise/ARCHITECTURE.md` for the blueprint.
 
 ## v2.0 UPDATES — Enhanced with comprehensive fixes & features

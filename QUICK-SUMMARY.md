@@ -1,5 +1,14 @@
 # IT Toolkit v2.0 — Executive Summary & Quick Recommendations
 
+> **STATUS UPDATE (v3.0 / Phase 3 delivered):** This is the v2.0 planning doc
+> written before the enterprise stack existed. Since then **Phase 2 → Phase 3 of
+> the roadmap below has been delivered**: centralized client-server stack with
+> agent `.exe`/`.msi`, FastAPI server, web portal, PostgreSQL, and Docker-based
+> **intranet (LAN)** deployment — see `Enterprise/README.md`. The claim below
+> that "Docker is not needed" is now **superseded** by `Enterprise/`.
+> The remaining roadmap items (anomaly detection, remediation automation,
+> Intune/cloud integrations) are still open follow-ups.
+
 **Status:** ✅ Solid foundation with high-value enhancement opportunities  
 **Current Capability:** Desktop support diagnostics for single machines  
 **Opportunity:** Expand to multi-machine fleet management + automation  

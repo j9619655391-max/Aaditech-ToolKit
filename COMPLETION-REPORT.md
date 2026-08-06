@@ -7,8 +7,11 @@
 > **Status note (2026-08-06):** This report documents the v2.0 completion
 > milestone. Since then the toolkit was hardened (Phase 2), tagged **v1.0.0**,
 > pushed to GitHub (`https://github.com/j9619655391-max/Aaditech-ToolKit`),
-> and **all GitHub Actions CI steps pass on `windows-latest`**. See
-> `VERSION.md` and `CHANGELOG.md` for the current status.
+> and **all GitHub Actions CI steps pass on `windows-latest`**. Additionally,
+> **Phase 3 (Enterprise client-server stack)** was delivered under `Enterprise/`
+> — agent `.exe`/`.msi`, FastAPI server, web portal, PostgreSQL, Docker intranet
+> (LAN) deployment, auto-generated secrets. See `VERSION.md` and
+> `Enterprise/README.md` for the current status.
 
 ---
 
