@@ -319,6 +319,8 @@ Config/
 | Config documentation | 2.0 | ✓ Complete | 2026-07-09 |
 | Remote-Tools guide | 2.0 | ✓ Complete | 2026-07-09 |
 | Software links | 2.0 | ✓ Verified | 2026-07-09 |
+| Windows-Smoke-Run.md | 1.0.0 | ✓ Added (release gate) | 2026-08-06 |
+| Release (v1.0.0) | 1.0.0 | ✓ Pushed to GitHub, CI green | 2026-08-06 |
 
 ---
 

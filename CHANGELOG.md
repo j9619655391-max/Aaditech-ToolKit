@@ -88,7 +88,23 @@
 - **Docs** — `Config/CONFIG-GUIDE.md`, `VERSION.md` (v1.0.0 release reference)
 - **Tests** — NEW `BatchLauncher.Tests.ps1` (batch control-flow 9/9), `Phase2-Modules.Tests.ps1` (11/11) — all green locally
 - **CI** — Pester suites (RemoteToolkit, BatchLauncher, Phase2 modules) added to `ci.yml`
-- **Release** — annotated tag `v1.0.0` created (local repo, no remote configured)
+- **Release** — annotated tag `v1.0.0` created
+
+### 🚀 PUBLISHED TO GITHUB + CI GREEN (verified 2026-08-06)
+- ✓ Connected remote: `origin` → `https://github.com/j9619655391-max/Aaditech-ToolKit` (public)
+- ✓ Pushed `main` + annotated tag `v1.0.0`
+- ✓ GitHub Actions CI **green on `windows-latest`** — all 9 steps pass:
+  PowerShell parse (30 files), JSON validation, Phase 1 regression, Pester suites,
+  PSScriptAnalyzer (0 errors), project-index freshness
+- **CI-blocking fixes made during first runs:**
+  - `audit/audit-engine.ps1` — invalid `[...]` array syntax → `@(...)`
+  - Suppressed intentional PSScriptAnalyzer findings (`8.8.8.8` reachability target,
+    trusted vault reconstruction, synthetic test fixtures) via `[SuppressMessageAttribute] param()`
+  - Indexer made cross-platform deterministic:
+    - normalized LF line endings in hashes (Windows checkout applies CRLF to `.bat`/`.cmd`)
+    - stripped Windows path separators so relative paths are identical
+    - sorted `files`/`modules`/`scripts` arrays (macOS vs NTFS enumeration order differs)
+  - `.gitattributes` added (LF for text/code, CRLF for batch files)
 
 ---
 

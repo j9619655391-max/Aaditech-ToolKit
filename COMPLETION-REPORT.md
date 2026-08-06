@@ -4,6 +4,12 @@
 **Status:** ✓ COMPLETE AND VERIFIED  
 **Quality:** All items implemented, documented, and verified  
 
+> **Status note (2026-08-06):** This report documents the v2.0 completion
+> milestone. Since then the toolkit was hardened (Phase 2), tagged **v1.0.0**,
+> pushed to GitHub (`https://github.com/j9619655391-max/Aaditech-ToolKit`),
+> and **all GitHub Actions CI steps pass on `windows-latest`**. See
+> `VERSION.md` and `CHANGELOG.md` for the current status.
+
 ---
 
 ## EXECUTIVE SUMMARY

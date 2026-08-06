@@ -3,7 +3,9 @@
 **Current release:** `v1.0.0`
 **Release date:** 2026-08-06
 **Branch:** `main`
-**Repository identity:** local (no remote configured as of this release)
+**Repository:** https://github.com/j9619655391-max/Aaditech-ToolKit
+**Remote:** `origin` (GitHub, public) — `main` + `v1.0.0` tag pushed
+**CI status:** ✅ green on `windows-latest` (all 9 steps, verified 2026-08-06)
 
 ## What is this document?
 A single source of truth for the toolkit's version, module inventory, and
@@ -46,8 +48,10 @@ and this file.
 | Batch control-flow | `Scripts/Tests/BatchLauncher.Tests.ps1` | PASS 9/9 |
 | Phase 2 modules | `Scripts/Tests/Phase2-Modules.Tests.ps1` | PASS 11/11 |
 
-CI (`ci.yml`) runs: PowerShell parse, JSON validation, Phase 1 regression,
-PSScriptAnalyzer (errors), and project-index freshness (`-Check`).
+CI (`ci.yml`) runs on `windows-latest` and is **green**: PowerShell parse
+(30 files), JSON validation, Phase 1 regression, Pester suites (RemoteToolkit,
+BatchLauncher, Phase2 modules), PSScriptAnalyzer (0 errors), and project-index
+freshness (`-Check`).
 
 ## Manual smoke-run items (Windows-only)
 The following cannot be end-to-end verified on a macOS dev host and require a

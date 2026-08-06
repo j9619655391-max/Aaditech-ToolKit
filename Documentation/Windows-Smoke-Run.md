@@ -1,10 +1,11 @@
 # Windows Smoke-Run Manual — IT-Toolkit v1.0.0
 
-> **Purpose:** This runbook lists the checks that **cannot be validated on a
-> macOS dev host** and therefore require a one-time manual execution on a real
-> Windows machine before the release is considered fully shipped.
+> **Purpose:** This runbook lists the checks that **cannot be validated by CI
+> on a headless runner** and therefore require a one-time manual execution on a
+> real Windows machine before the release is considered fully shipped.
 >
-> Everything here is **implemented, CI-parsed, and guarded**, but the actual
+> Everything here is **implemented, CI-verified (parse, Pester, PSScriptAnalyzer,
+> index freshness — all green), and guarded**, but the actual interactive /
 > platform-provided behavior (cmd.exe, WinRM, WinForms, schtasks, Authenticode)
 > needs a human on Windows to observe and confirm.
 
@@ -100,21 +101,24 @@ Covered by `Phase2-Modules.Tests.ps1` on any host with `sqlite3`, but confirm th
 
 ## 8. Final release gate
 
-- [ ] Run the full Pester suite on Windows:
+> Since 2026-08-06 these are **already verified automatically** by GitHub
+> Actions CI on `windows-latest` (green). The manual gate below applies only to
+> the interactive/live steps (sections 1-7) that CI cannot execute.
+
+- [ ] Run the full Pester suite on Windows (CI already runs these — optional re-check):
     ```powershell
     Invoke-Pester -Path .\Scripts\Tests\RemoteToolkit.tests.ps1   # 5/5
     Invoke-Pester -Path .\Scripts\Tests\BatchLauncher.Tests.ps1   # 9/9
     Invoke-Pester -Path .\Scripts\Tests\Phase2-Modules.Tests.ps1  # 11/11
     ```
-- [ ] `pwsh -NoProfile -File .\Scripts\Index\Update-ProjectIndex.ps1 -Check` returns fresh
-- [ ] GI worktree clean
+- [ ] `pwsh -NoProfile -File .\Scripts\Index\Update-ProjectIndex.ps1 -Check` returns fresh (CI verifies this too)
+- [ ] Git worktree clean
 
 ---
 
 ## When all boxes are checked
 
-1. Run `git tag -a v1.0.0` (already tagged) or the current `vX.Y.Z`
-2. Strip the `.githooks` requirement note from release notes
-3. Mark the release **fully shipped and platform-verified** in `CHANGELOG.md`
+1. `v1.0.0` is already tagged and pushed to `origin` (GitHub Actions CI green)
+2. Mark the release **fully shipped and platform-verified** in `CHANGELOG.md`
 
 See `../VERSION.md` for the version reference and test inventory.
