@@ -133,20 +133,22 @@
 
     <!-- ==================== scheduled task (runs agent as SYSTEM) ==================== -->
     <CustomAction Id="CreateSchedTask"
+                  Directory="INSTALLFOLDER"
                   Return="check"
                   Impersonate="no"
                   Execute="deferred"
                   ExeCommand="&quot;[SystemFolder]schtasks.exe&quot; /create /tn ITToolkitAgent /sc minute /mo 30 /ru SYSTEM /f /tr &quot;\&quot;[INSTALLFOLDER]IT-Toolkit-Agent.exe\&quot; -LoopMinutes 30&quot;" />
 
     <CustomAction Id="RemoveSchedTask"
+                  Directory="INSTALLFOLDER"
                   Return="ignore"
                   Impersonate="no"
                   Execute="deferred"
                   ExeCommand="&quot;[SystemFolder]schtasks.exe&quot; /delete /tn ITToolkitAgent /f" />
 
     <InstallExecuteSequence>
-      <Custom Action="RemoveSchedTask" After="InstallInitialize">REMOVE~="ALL"</Custom>
-      <Custom Action="CreateSchedTask" After="InstallFinalize">NOT Installed AND NOT REMOVE</Custom>
+      <Custom Action="RemoveSchedTask" After="InstallInitialize" Condition="REMOVE=&quot;ALL&quot;" />
+      <Custom Action="CreateSchedTask" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE" />
     </InstallExecuteSequence>
 
     <!-- ==================== feature ==================== -->
