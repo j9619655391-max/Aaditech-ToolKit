@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-07T04:22:58+05:30",
-  "last_verified_commit": "68fe25c0cf06284a0cc1f38ce13ba67041cb64ef",
-  "last_verified_date": "2026-08-07T04:08:38+05:30",
+  "generated": "2026-08-07T05:13:54+05:30",
+  "last_verified_commit": "0cf2de45c04ff61a76edff2ba1cfe59377432d15",
+  "last_verified_date": "2026-08-07T04:22:56+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -14,20 +14,10 @@
   "latest_delta": {
     "added": 0,
     "removed": 0,
-    "changed": 0,
-    "unchanged": 106
+    "changed": 2,
+    "unchanged": 104
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-06T20:33:22+05:30",
-      "added": [],
-      "removed": [],
-      "changed": [
-        "Scripts/Index/Update-ProjectIndex.ps1",
-        "Templates/Knowledge-Base.xlsx"
-      ],
-      "unchanged_count": 72
-    },
     {
       "detected_at": "2026-08-06T20:39:46+05:30",
       "added": [],
@@ -358,6 +348,16 @@
         "Scripts/Index/Update-ProjectIndex.ps1"
       ],
       "unchanged_count": 105
+    },
+    {
+      "detected_at": "2026-08-07T05:13:54+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [
+        "Enterprise/agent/wix/build-msi.ps1",
+        ".github/workflows/ci.yml"
+      ],
+      "unchanged_count": 104
     }
   ],
   "next_recommended_tasks": [

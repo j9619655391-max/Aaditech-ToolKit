@@ -116,7 +116,7 @@ jobs:
         run: ./Enterprise/agent/build/build-agent.ps1
 
       - name: Install WiX toolset
-        run: dotnet tool install --global wix
+        run: dotnet tool install --global wix --version "5.*"
 
       - name: Build MSI
         run: |

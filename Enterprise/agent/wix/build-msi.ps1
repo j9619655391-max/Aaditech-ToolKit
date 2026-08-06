@@ -3,7 +3,8 @@
 # Stages the built agent exe, its config, and the toolkit files it wraps into
 # wix\stage\ (the WXS references stage\...), then invokes WiX.
 #
-# Prereqs: WiX v4 toolset (`dotnet tool install --global wix`).
+# Prereqs: WiX v5 toolset (`dotnet tool install --global wix --version "5.*"`).
+# (WiX v7 requires accepting the OSMF EULA; v5 is MIT and uses the same v4 WXS schema.)
 # Steps:
 #   1. run Enterprise/agent/build/build-agent.ps1  (produces build/out/)
 #   2. run this script                               (produces build/out/IT-Toolkit-Agent.msi)
