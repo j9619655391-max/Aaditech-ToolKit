@@ -1,5 +1,20 @@
 # Changelog
 
+## v3.8 UPDATES — SMTP alert email (P6.1)
+
+- **NEW: optional alert email** — `rules.py` sends a digest email when the eval
+  loop opens new alerts, configured via `.env`: `SMTP_HOST`, `SMTP_PORT` (587),
+  `SMTP_USER`/`SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TO` (comma-separated),
+  `SMTP_STARTTLS` (default true). No-op when `SMTP_HOST` is unset (portal-first
+  default). Send runs in a thread so the eval loop is never blocked.
+- **NEW: `POST /api/alerts/test-email`** (admin) — sends a test message using the
+  current SMTP config; 400 when SMTP is unconfigured, 502 if the send fails.
+- **docker-compose.yml + `.env.example`** — SMTP vars wired through.
+- **Verified end-to-end** with a local MailHog sink: test email delivered, and a
+  real `disk-low` alert opened by the eval loop triggered a digest email
+  (`[warning] ... low disk space: C: 2% free`). Test infra + config cleaned up;
+  server reset to first-run.
+
 ## v3.7 UPDATES — CI agent build green end-to-end (P0) + MSI live
 
 - **NEW: `agent-build` CI job verified end-to-end** on `windows-latest`

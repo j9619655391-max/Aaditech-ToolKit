@@ -545,6 +545,20 @@ async def update_rule(name: str, update: RuleUpdate, _: dict = Depends(require_r
     return {"ok": True, "name": name}
 
 
+@app.post("/api/alerts/test-email", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def test_alert_email(_: dict = Depends(require_role("admin"))):
+    """Send a test alert email using the configured SMTP settings."""
+    if not config.SMTP_HOST:
+        raise HTTPException(status_code=400, detail="SMTP not configured (set SMTP_HOST + SMTP_TO in .env)")
+    sent = await rules._send_alert_email(
+        await db.connect(),
+        [{"severity": "info", "hostname": "test", "message": "SMTP test message from IT-Toolkit"}],
+    )
+    if not sent:
+        raise HTTPException(status_code=502, detail="SMTP send failed — check logs")
+    return {"ok": True, "to": config.SMTP_TO}
+
+
 # ---------------------------------------------------------------- reports (P6)
 
 async def _agent_report_rows(pool) -> list[dict]:

@@ -7,8 +7,10 @@ resolves open alerts when the condition clears.
 """
 import asyncio
 import logging
+import smtplib
 
 from datetime import datetime, timedelta, timezone
+from email.message import EmailMessage
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -131,9 +133,49 @@ async def _check(pool, agent: dict, kind: str, condition: dict):
     return False, ""
 
 
+async def _send_alert_email(pool, opened_alerts: list[dict]) -> bool:
+    """Send one digest email for the alerts opened this eval run.
+
+    No-op when SMTP is not configured. Runs in a thread so the eval loop is
+    not blocked. Returns True if a message was accepted for delivery.
+    """
+    from . import config
+
+    if not config.SMTP_HOST or not config.SMTP_TO:
+        return False
+
+    def _send() -> bool:
+        msg = EmailMessage()
+        msg["Subject"] = f"[IT-Toolkit] {len(opened_alerts)} new alert(s)"
+        msg["From"] = config.SMTP_FROM or config.SMTP_USER
+        msg["To"] = ", ".join(config.SMTP_TO)
+        lines = [
+            "The following alert(s) were opened:",
+            "",
+            *[f"- [{a['severity']}] {a['hostname']}: {a['message']}" for a in opened_alerts],
+            "",
+            "Open the portal to ack/resolve: https://localhost/",
+        ]
+        msg.set_content("\n".join(lines))
+        try:
+            with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT, timeout=20) as srv:
+                if config.SMTP_STARTTLS:
+                    srv.starttls()
+                if config.SMTP_USER:
+                    srv.login(config.SMTP_USER, config.SMTP_PASSWORD)
+                srv.send_message(msg)
+            return True
+        except Exception as exc:
+            logger.error("alert email send failed: %r", exc)
+            return False
+
+    return await asyncio.to_thread(_send)
+
+
 async def evaluate_rules(pool) -> int:
     """Evaluate all enabled rules; return number of alerts opened this run."""
     opened = 0
+    opened_alerts: list[dict] = []
     rules = await pool.fetch("SELECT * FROM alert_rules WHERE enabled = TRUE")
     agents = await pool.fetch("SELECT id, hostname, last_seen FROM agents")
     for rule in rules:
@@ -145,17 +187,23 @@ async def evaluate_rules(pool) -> int:
                     rule["id"], agent["id"],
                 )
                 if existing is None:
-                    await pool.execute(
-                        "INSERT INTO alerts (rule_id, agent_id, severity, message) VALUES ($1, $2, $3, $4)",
+                    row = await pool.fetchrow(
+                        "INSERT INTO alerts (rule_id, agent_id, severity, message) "
+                        "VALUES ($1, $2, $3, $4) RETURNING severity, message",
                         rule["id"], agent["id"], rule["severity"], message,
                     )
                     opened += 1
+                    opened_alerts.append(
+                        {"hostname": agent["hostname"], "severity": row["severity"], "message": row["message"]},
+                    )
             else:
                 await pool.execute(
                     "UPDATE alerts SET status = 'resolved', resolved_at = now() "
                     "WHERE rule_id = $1 AND agent_id = $2 AND status IN ('open', 'acknowledged')",
                     rule["id"], agent["id"],
                 )
+    if opened_alerts:
+        await _send_alert_email(pool, opened_alerts)
     return opened
 
 

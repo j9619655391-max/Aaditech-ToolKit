@@ -117,12 +117,15 @@ battery < 20%, critical service stopped, reboot pending > 7 days uptime.
   ack + resolve buttons (admin/operation), and an **open-alert badge** in the
   nav (polls every 30s). Admins can toggle/enable/disable rules and edit
   severity + condition JSON.
+- **Optional SMTP email** (P6.1): when `SMTP_HOST` + `SMTP_TO` are set in
+  `.env`, the eval loop emails a digest whenever it opens new alerts. Verify
+  delivery from the portal with the admin `POST /api/alerts/test-email` check.
 - **Reports page** (portal): **fleet CSV** (one row per agent, latest
   hardware/health/update snapshot) and **per-agent** JSON/CSV exports.
 - API: `GET /api/alerts`, `GET /api/alerts/open`, `POST /api/alerts/{id}/ack`,
   `POST /api/alerts/{id}/resolve`, `GET/PUT /api/alert-rules`,
-  `GET /api/report/fleet`, `GET /api/report/agent/{id}?format=json|csv`.
-- SMTP email delivery is an optional follow-up (portal-first today).
+  `GET /api/report/fleet`, `GET /api/report/agent/{id}?format=json|csv`,
+  `POST /api/alerts/test-email` (admin).
 
 ## Verified
 

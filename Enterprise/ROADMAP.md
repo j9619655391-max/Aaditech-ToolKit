@@ -55,6 +55,10 @@ are all derived from the setup answers.
 - **P0 done & verified (2026-08-07)**: `agent-build` CI job runs green
   end-to-end — exe (ps2exe) + MSI (WiX v5) artifacts; MSI deployed to the
   `agent_artifacts` volume so `/api/agent-msi` serves a real installer.
+- **SMTP alert email done & verified (2026-08-07)**: optional digest email
+  when the eval loop opens new alerts (`SMTP_HOST`/`SMTP_TO` in `.env`), plus a
+  `POST /api/alerts/test-email` admin check — verified end-to-end with a local
+  MailHog sink.
 - CI: PowerShell validation + agent build both green on `windows-latest`.
 
 ---
@@ -254,7 +258,7 @@ new kind-specific fleet panels (disk health, battery, update compliance, offline
 - Seeded rules: **agent offline** (last_seen > X), disk < Y%, SMART
   predicted-failure, service down, battery < 20%, reboot-pending > 7 days. ✅
 - Eval loop in the API (background task); portal Alerts page + badge
-  (email via SMTP = optional flag). ✅ (SMTP flag still open — see §11.2)
+  (email via SMTP = optional flag). ✅ **SMTP email also implemented & verified** (P6.1)
 - Reports: `GET /api/report/fleet` (CSV) + `GET /api/report/agent/{id}`
   (JSON/CSV); Reports page with export buttons. ✅
 
@@ -293,7 +297,9 @@ Each phase lands green on CI and keeps the existing toolkit untouched.
 ## 11. Open decisions (confirm before each phase)
 1. **mTLS now or bearer-token first?** ✅ **Decided:** bearer token first (live);
    mTLS client certs remain a P3 flag — cert infra already built.
-2. **Alerts channel:** portal-first, SMTP email later? (Recommended: yes.)
+2. **Alerts channel:** ✅ **Decided & implemented:** portal-first (P6) **+ optional
+   SMTP email** (P6.1, verified) — set `SMTP_HOST` + `SMTP_TO` in `.env`; digest
+   email on new alerts; `POST /api/alerts/test-email` for admin checks.
 3. **Remote command scope:** ✅ **Decided:** reboot + Wake-on-LAN + `run-script`
    allowlist behind a flag — implemented in P5.
 4. **Exe signing:** manual Authenticode, or add a code-signing cert to CI?

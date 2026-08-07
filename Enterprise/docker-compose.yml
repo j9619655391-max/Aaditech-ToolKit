@@ -33,6 +33,13 @@ services:
       COMMANDS_RUN_SCRIPT_ALLOWED: ${COMMANDS_RUN_SCRIPT_ALLOWED:-false}
       RUN_SCRIPT_ALLOWLIST: ${RUN_SCRIPT_ALLOWLIST:-}
       ALERT_EVAL_MINUTES: ${ALERT_EVAL_MINUTES:-1}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_TO: ${SMTP_TO:-}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
     volumes:
       - ./portal:/app/portal:ro
       - ./api/features.json:/app/features.json:ro

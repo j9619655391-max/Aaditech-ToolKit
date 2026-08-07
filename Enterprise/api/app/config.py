@@ -24,6 +24,20 @@ RUN_SCRIPT_ALLOWLIST = [
 
 ALERT_EVAL_MINUTES = int(os.environ.get("ALERT_EVAL_MINUTES", "1"))
 
+# SMTP email delivery for alerts (P6.1). Emails are only sent when SMTP_HOST
+# is set; the rest are optional (STARTTLS default on, port 587).
+SMTP_HOST = os.environ.get("SMTP_HOST", "")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("SMTP_USER", "")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SMTP_FROM = os.environ.get("SMTP_FROM", "")
+SMTP_TO = [
+    s.strip()
+    for s in os.environ.get("SMTP_TO", "").split(",")
+    if s.strip()
+]
+SMTP_STARTTLS = os.environ.get("SMTP_STARTTLS", "true").lower() in ("1", "true", "yes")
+
 # ---------------------------------------------------------------- API token
 
 _PLACEHOLDERS = {"", "change-me", "change-me-random-token", "changeme"}
