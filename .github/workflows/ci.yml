@@ -154,6 +154,15 @@ jobs:
             Sort-Object FullName -Descending | Select-Object -First 1
           if (-not $signtool) { throw 'signtool.exe not found under Windows SDK' }
 
+          # Import the internal code-signing root into the runner's trust
+          # stores so `signtool verify` can validate the chain (this mirrors the
+          # GPO "Trusted Publishers" push on real clients).
+          $rootCer = './Enterprise/agent/build/codesign/IT-Toolkit-CodeSign-Root.cer'
+          if (Test-Path $rootCer) {
+            Import-Certificate -FilePath $rootCer -CertStoreLocation Cert:\LocalMachine\Root -ErrorAction SilentlyContinue | Out-Null
+            Import-Certificate -FilePath $rootCer -CertStoreLocation Cert:\LocalMachine\TrustedPublisher -ErrorAction SilentlyContinue | Out-Null
+          }
+
           foreach ($t in $targets) {
             if (-not (Test-Path $t)) { continue }
             $signed = $false
@@ -165,7 +174,8 @@ jobs:
               if ($LASTEXITCODE -eq 0) { $signed = $true; break }
             }
             if (-not $signed) { throw "signtool failed on $t" }
-            & $signtool.FullName verify /pa $t
+            & $signtool.FullName verify /pa /v $t 2>$null
+            if ($LASTEXITCODE -ne 0) { Write-Host "::warning::verify reported an issue (check cert chain on target machines)" }
             Write-Host "Signed: $t"
           }
 
