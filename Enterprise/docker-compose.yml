@@ -39,7 +39,7 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_TO: ${SMTP_TO:-}
-      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      SMTP_ENCRYPTION: ${SMTP_ENCRYPTION:-starttls}
     volumes:
       - ./portal:/app/portal:ro
       - ./api/features.json:/app/features.json:ro

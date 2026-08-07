@@ -74,6 +74,39 @@ async def _latest_payload(pool, agent_id: int, kind: str) -> dict | None:
     return row["payload"] if row else None
 
 
+async def get_smtp_settings(pool) -> dict:
+    """Resolve effective SMTP settings: DB settings table first, env as fallback.
+
+    Keys persisted during first-run setup: smtp_host, smtp_port, smtp_user,
+    smtp_password, smtp_from, smtp_to, smtp_encryption.
+    """
+    from . import config
+
+    db = await pool.fetch("SELECT key, value FROM settings WHERE key LIKE 'smtp_%'")
+    kv = {r["key"]: r["value"] for r in db}
+
+    host = kv.get("smtp_host") or config.SMTP_HOST
+    port = int(kv.get("smtp_port") or config.SMTP_PORT)
+    user = kv.get("smtp_user") or config.SMTP_USER
+    password = kv.get("smtp_password") or config.SMTP_PASSWORD
+    from_addr = kv.get("smtp_from") or config.SMTP_FROM or user
+    to = [
+        s.strip()
+        for s in (kv.get("smtp_to") or ",".join(config.SMTP_TO)).split(",")
+        if s.strip()
+    ]
+    encryption = kv.get("smtp_encryption") or config.SMTP_ENCRYPTION
+    return {
+        "host": host,
+        "port": port,
+        "user": user,
+        "password": password,
+        "from": from_addr,
+        "to": to,
+        "encryption": encryption,
+    }
+
+
 async def _check(pool, agent: dict, kind: str, condition: dict):
     """Return (triggered, message)."""
     if kind == "offline":
@@ -136,34 +169,42 @@ async def _check(pool, agent: dict, kind: str, condition: dict):
 async def _send_alert_email(pool, opened_alerts: list[dict]) -> bool:
     """Send one digest email for the alerts opened this eval run.
 
+    Settings come from the DB (set during first-run setup) with env fallback.
     No-op when SMTP is not configured. Runs in a thread so the eval loop is
     not blocked. Returns True if a message was accepted for delivery.
     """
-    from . import config
-
-    if not config.SMTP_HOST or not config.SMTP_TO:
+    smtp = await get_smtp_settings(pool)
+    if not smtp["host"] or not smtp["to"]:
         return False
+
+    portal = (await pool.fetchval("SELECT value FROM settings WHERE key = 'server_host'")) or "localhost"
 
     def _send() -> bool:
         msg = EmailMessage()
         msg["Subject"] = f"[IT-Toolkit] {len(opened_alerts)} new alert(s)"
-        msg["From"] = config.SMTP_FROM or config.SMTP_USER
-        msg["To"] = ", ".join(config.SMTP_TO)
+        msg["From"] = smtp["from"] or smtp["user"]
+        msg["To"] = ", ".join(smtp["to"])
         lines = [
             "The following alert(s) were opened:",
             "",
             *[f"- [{a['severity']}] {a['hostname']}: {a['message']}" for a in opened_alerts],
             "",
-            "Open the portal to ack/resolve: https://localhost/",
+            f"Open the portal to ack/resolve: https://{portal}/",
         ]
         msg.set_content("\n".join(lines))
         try:
-            with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT, timeout=20) as srv:
-                if config.SMTP_STARTTLS:
-                    srv.starttls()
-                if config.SMTP_USER:
-                    srv.login(config.SMTP_USER, config.SMTP_PASSWORD)
-                srv.send_message(msg)
+            if smtp["encryption"] == "ssl":
+                with smtplib.SMTP_SSL(smtp["host"], smtp["port"], timeout=20) as srv:
+                    if smtp["user"]:
+                        srv.login(smtp["user"], smtp["password"])
+                    srv.send_message(msg)
+            else:
+                with smtplib.SMTP(smtp["host"], smtp["port"], timeout=20) as srv:
+                    if smtp["encryption"] == "starttls":
+                        srv.starttls()
+                    if smtp["user"]:
+                        srv.login(smtp["user"], smtp["password"])
+                    srv.send_message(msg)
             return True
         except Exception as exc:
             logger.error("alert email send failed: %r", exc)

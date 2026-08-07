@@ -26,7 +26,7 @@
   button.ghost { background:none; border:1px solid var(--line); color:var(--text); padding:5px 12px; border-radius:6px; cursor:pointer; }
   pre { background:#0b1120; padding:12px; border-radius:8px; overflow:auto; max-height:320px; font-size:12px; }
   .muted { color:var(--muted); font-size:12px; }
-  input, textarea { width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px; font-size:13px; }
+  input, textarea, select { width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px; font-size:13px; }
   textarea { font-family:monospace; font-size:12px; }
   label { display:block; font-size:12px; color:var(--muted); margin:12px 0 4px; }
   .center { max-width:420px; margin:8vh auto 0; }
@@ -134,9 +134,48 @@ function renderSetup() {
       </div>
       <label>Admin password (min 8 chars)</label><input id="admin_password" type="password" />
       <label>Repeat password</label><input id="admin_password2" type="password" />
+
+      <div style="margin-top:22px;border-top:1px solid var(--line);padding-top:8px">
+        <label style="font-size:14px;color:var(--text);font-weight:600">Alert email (SMTP) — optional</label>
+        <p class="muted">Send alert notifications by email. Pick your hosting provider or use custom settings.</p>
+        <label>Email provider</label>
+        <select id="smtp_provider" onchange="smtpProviderChange()">
+          <option value="none">Don't send email alerts</option>
+          <option value="hostinger">Hostinger</option>
+          <option value="office365">Office 365</option>
+          <option value="gmail">Gmail</option>
+          <option value="hotmail">Hotmail / Outlook</option>
+          <option value="custom">Custom SMTP</option>
+        </select>
+        <div id="smtp_fields" style="display:none">
+          <label>Email address</label><input id="smtp_email" value="it-tool@aaditechs.in" />
+          <label>Email password (or app password)</label><input id="smtp_password" type="password" />
+          <label>Alert recipient (defaults to the email above)</label><input id="smtp_recipient" value="it-tool@aaditechs.in" />
+          <div id="smtp_custom" style="display:none">
+            <div class="row">
+              <div style="flex:2"><label>SMTP host</label><input id="smtp_host" placeholder="smtp.example.com" /></div>
+              <div style="flex:1"><label>Port</label><input id="smtp_port" value="587" /></div>
+            </div>
+            <label>Encryption</label>
+            <select id="smtp_encryption">
+              <option value="starttls">STARTTLS</option>
+              <option value="ssl">SSL/TLS</option>
+              <option value="none">None</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <div class="error" id="setup_err"></div>
       <div style="margin-top:18px"><button class="action" style="width:100%" onclick="doSetup()">Finish setup</button></div>
     </div>`;
+}
+
+function smtpProviderChange() {
+  const p = document.getElementById('smtp_provider').value;
+  const custom = p === 'custom';
+  document.getElementById('smtp_fields').style.display = p === 'none' ? 'none' : 'block';
+  document.getElementById('smtp_custom').style.display = custom ? 'block' : 'none';
 }
 
 async function doSetup() {
@@ -145,12 +184,25 @@ async function doSetup() {
   const p2 = document.getElementById('admin_password2').value;
   if (p1.length < 8) { err.textContent = 'Password must be at least 8 characters.'; return; }
   if (p1 !== p2) { err.textContent = 'Passwords do not match.'; return; }
+  const provider = document.getElementById('smtp_provider').value;
+  const smtp = { provider };
+  if (provider !== 'none') {
+    smtp.email = document.getElementById('smtp_email').value.trim();
+    smtp.password = document.getElementById('smtp_password').value;
+    smtp.recipient = document.getElementById('smtp_recipient').value.trim();
+    if (provider === 'custom') {
+      smtp.host = document.getElementById('smtp_host').value.trim();
+      smtp.port = parseInt(document.getElementById('smtp_port').value, 10) || null;
+      smtp.encryption = document.getElementById('smtp_encryption').value;
+    }
+  }
   const body = {
     company_name: document.getElementById('company_name').value.trim(),
     server_host: document.getElementById('server_host').value.trim(),
     admin_username: document.getElementById('admin_username').value.trim(),
     admin_password: p1,
     branding: { color: document.getElementById('branding_color').value, logo_text: document.getElementById('company_name').value.trim() },
+    smtp,
   };
   const res = await fetch('/api/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (!res.ok) { err.textContent = (await res.json()).detail || 'Setup failed'; return; }
@@ -481,6 +533,13 @@ async function renderAlerts() {
   const filterBtns = ['open', 'acknowledged', 'resolved', 'all'].map(s =>
     `<button class="ghost ${alertFilter === s ? 'active' : ''}" style="${alertFilter === s ? 'background:var(--accent);border-color:var(--accent);color:#0f172a' : ''}" onclick="setAlertFilter('${s}')">${s}</button>`).join(' ');
 
+  const emailBlock = isAdmin ? `
+    <div class="card"><h3>Email notifications (admin)</h3>
+      <p class="muted">SMTP is configured during first-time setup (or via SMTP_* env vars). Send a test to verify delivery.</p>
+      <button class="action" onclick="testAlertEmail()">Send test email</button>
+      <span id="email_test_result" class="muted"></span>
+    </div>` : '';
+
   const rulesBlock = isAdmin ? `
     <div class="card"><h3>Alert rules (admin)</h3>
       <table><thead><tr><th>Rule</th><th>Severity</th><th>Condition</th><th>Enabled</th><th></th></tr></thead>
@@ -499,7 +558,17 @@ async function renderAlerts() {
       <div style="margin-bottom:8px">${filterBtns}</div>
       <table><thead><tr><th>Agent</th><th>Rule</th><th>Severity</th><th>Message</th><th>Status</th><th>Created</th><th></th></tr></thead>
       <tbody>${rows || '<tr><td colspan="7" class="muted">No alerts match this filter.</td></tr>'}</tbody></table>
-    </div>` + rulesBlock;
+    </div>` + emailBlock + rulesBlock;
+}
+
+async function testAlertEmail() {
+  const out = document.getElementById('email_test_result');
+  out.textContent = 'Sending…';
+  try {
+    const r = await fetch('/api/alerts/test-email', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const j = await r.json().catch(() => ({}));
+    out.textContent = r.ok ? `Sent to ${j.to || ''}` : (j.detail || 'Failed');
+  } catch { out.textContent = 'Failed'; }
 }
 
 function setAlertFilter(s) { alertFilter = s; renderAlerts(); }

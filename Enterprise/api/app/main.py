@@ -95,12 +95,23 @@ class FeatureUpdate(BaseModel):
     config: dict | None = None
 
 
+class SetupSmtp(BaseModel):
+    provider: str = "custom"  # hostinger | office365 | gmail | hotmail | custom | none
+    email: str = ""
+    password: str = ""
+    recipient: str = ""
+    host: str = ""
+    port: int | None = None
+    encryption: str = "starttls"  # starttls | ssl | none
+
+
 class SetupRequest(BaseModel):
     company_name: str = Field(min_length=1, max_length=100)
     server_host: str = Field(min_length=1, max_length=255)
     admin_username: str = Field(min_length=3, max_length=40)
     admin_password: str = Field(min_length=8, max_length=128)
     branding: dict = Field(default_factory=dict)
+    smtp: SetupSmtp | None = None
 
 
 class LoginRequest(BaseModel):
@@ -198,6 +209,34 @@ async def run_setup(payload: SetupRequest, response: Response):
             "ON CONFLICT (key) DO UPDATE SET value = $2",
             key, value,
         )
+
+    smtp = payload.smtp
+    if smtp and smtp.email and smtp.provider != "none":
+        if smtp.provider == "custom":
+            host, port, encryption = smtp.host, smtp.port, smtp.encryption
+        else:
+            preset = config.SMTP_PROVIDERS.get(smtp.provider)
+            if preset is None:
+                raise HTTPException(status_code=422, detail=f"Unknown SMTP provider: {smtp.provider}")
+            host, port, encryption = preset["host"], preset["port"], preset["encryption"]
+        if not host or not port:
+            raise HTTPException(status_code=422, detail="SMTP host and port are required")
+        if encryption not in ("starttls", "ssl", "none"):
+            raise HTTPException(status_code=422, detail="SMTP encryption must be starttls, ssl or none")
+        for key, value in (
+            ("smtp_host", host),
+            ("smtp_port", str(port)),
+            ("smtp_user", smtp.email),
+            ("smtp_password", smtp.password),
+            ("smtp_from", smtp.email),
+            ("smtp_to", smtp.recipient or smtp.email),
+            ("smtp_encryption", encryption),
+        ):
+            await pool.execute(
+                "INSERT INTO settings (key, value) VALUES ($1, $2) "
+                "ON CONFLICT (key) DO UPDATE SET value = $2",
+                key, value,
+            )
 
     user = await pool.fetchrow(
         "INSERT INTO users (username, password_hash, role) "
@@ -548,15 +587,17 @@ async def update_rule(name: str, update: RuleUpdate, _: dict = Depends(require_r
 @app.post("/api/alerts/test-email", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def test_alert_email(_: dict = Depends(require_role("admin"))):
     """Send a test alert email using the configured SMTP settings."""
-    if not config.SMTP_HOST:
-        raise HTTPException(status_code=400, detail="SMTP not configured (set SMTP_HOST + SMTP_TO in .env)")
+    pool = await db.connect()
+    smtp = await rules.get_smtp_settings(pool)
+    if not smtp["host"] or not smtp["to"]:
+        raise HTTPException(status_code=400, detail="SMTP not configured (add email settings during setup or in .env)")
     sent = await rules._send_alert_email(
-        await db.connect(),
+        pool,
         [{"severity": "info", "hostname": "test", "message": "SMTP test message from IT-Toolkit"}],
     )
     if not sent:
         raise HTTPException(status_code=502, detail="SMTP send failed — check logs")
-    return {"ok": True, "to": config.SMTP_TO}
+    return {"ok": True, "from": smtp["from"], "to": smtp["to"]}
 
 
 # ---------------------------------------------------------------- reports (P6)
