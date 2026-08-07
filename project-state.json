@@ -1,29 +1,28 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-07T16:24:35+05:30",
+  "generated": "2026-08-08T03:52:31+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "d99bb226381292930e3b600166bf7d5cd5d3f04a",
-  "last_verified_date": "2026-08-07T15:36:48+05:30",
+  "last_verified_commit": "c22e1f537aaa1761279ea0aab4f72b23b9591660",
+  "last_verified_date": "2026-08-07T16:24:34+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 58,
+    "commit_count": 59,
     "clean_working_tree": false,
-    "head": "d99bb226381292930e3b600166bf7d5cd5d3f04a"
+    "head": "c22e1f537aaa1761279ea0aab4f72b23b9591660"
   },
   "latest_delta": {
-    "detected_at": "2026-08-07T16:24:35+05:30",
-    "added": [],
+    "detected_at": "2026-08-08T03:52:31+05:30",
+    "added": [
+      "Enterprise/agent/build/codesign/IT-Toolkit-CodeSign-CA.cer",
+      "Enterprise/agent/build/new-codesign-cert.ps1",
+      "Enterprise/agent/build/codesign/IT-Toolkit-CodeSign-Root.cer"
+    ],
     "removed": [],
     "changed": [
-      "Enterprise/api/app/main.py",
-      "Enterprise/api/app/rules.py",
-      "Enterprise/api/app/config.py",
-      "Enterprise/docker-compose.yml",
-      "Enterprise/.env.example",
-      "Enterprise/portal/index.html"
+      ".github/workflows/ci.yml"
     ],
-    "unchanged_count": 100
+    "unchanged_count": 105
   },
   "module_state": {
     "working": [
