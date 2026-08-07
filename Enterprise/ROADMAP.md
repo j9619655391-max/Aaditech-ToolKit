@@ -295,18 +295,27 @@ Each phase lands green on CI and keeps the existing toolkit untouched.
 ---
 
 ## 11. Open decisions (confirm before each phase)
-1. **mTLS now or bearer-token first?** ✅ **Decided:** bearer token first (live);
-   mTLS client certs remain a P3 flag — cert infra already built.
+1. **mTLS now or bearer-token first?** ✅ **Decided:** bearer token first (live).
+   **Remaining (optional flag):** per-agent client certs for mTLS — the local CA
+   infra from P1 is ready; flipping it on is additive, default stays bearer.
 2. **Alerts channel:** ✅ **Decided & implemented:** portal-first (P6) **+ optional
    SMTP email** (P6.1, verified) — set `SMTP_HOST` + `SMTP_TO` in `.env`; digest
    email on new alerts; `POST /api/alerts/test-email` for admin checks.
 3. **Remote command scope:** ✅ **Decided:** reboot + Wake-on-LAN + `run-script`
    allowlist behind a flag — implemented in P5.
-4. **Exe signing:** manual Authenticode, or add a code-signing cert to CI?
-   (Requires purchasing a cert.)
+4. **Exe signing:** ⬜ **Open — needs a purchased code-signing certificate.**
+   Today: manual Authenticode after CI build; with a cert you can sign inside the
+   `agent-build` job (add it to the repo secrets + one `Set-AuthenticodeSignature`
+   step). Nothing blocks the pipeline without it.
 5. **License info:** ✅ **Decided:** include but off by default — implemented in P4
    (last-5 keys only, admin-only portal panel).
 6. **Roles to ship:** ✅ **Decided:** admin / operation / monitoring — implemented in P2.
+
+### Remaining after P0–P6.1 (all optional / non-blocking)
+- **mTLS client certs** (flag on the existing CA).
+- **Code-signing cert** for the exe/MSI (requires purchase).
+- **Windows smoke run** — full agent install + collector/command round-trip on a
+  real client (CI can't run the interactive pieces; see VERSION.md smoke-run list).
 
 ---
 

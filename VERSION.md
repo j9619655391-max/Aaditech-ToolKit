@@ -1,11 +1,17 @@
 # IT-Toolkit — Version Reference
 
-**Current release:** `v1.0.0`
-**Release date:** 2026-08-06
+**Current release:** `v1.1.0`
+**Release date:** 2026-08-07
 **Branch:** `main`
 **Repository:** https://github.com/j9619655391-max/Aaditech-ToolKit
-**Remote:** `origin` (GitHub, public) — `main` + `v1.0.0` tag pushed
+**Remote:** `origin` (GitHub, public) — `main` + `v1.0.0`, `v1.1.0` tags pushed
 **CI status:** ✅ green on `windows-latest` — PowerShell validation + **agent exe/MSI build** (WiX v5) both pass end-to-end (verified 2026-08-07 via workflow_dispatch).
+
+> **v1.1.0 = the Enterprise stack is feature-complete**: setup wizard + local CA
+> (P1), team users + RBAC (P2), company agent bundle + MSI downloads (P3),
+> support-engineer collectors + fleet panels (P4), command channel (P5),
+> alerts + reports (P6), optional SMTP alert email (P6.1), and a green CI agent
+> build (P0). The MSI is built on CI with the current server endpoint baked in.
 
 ## What is this document?
 A single source of truth for the toolkit's version, module inventory, and
