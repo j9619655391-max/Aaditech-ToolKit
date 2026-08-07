@@ -1,10 +1,11 @@
 import ipaddress
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.x509.oid import NameOID
+from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 from . import config
 
@@ -114,3 +115,97 @@ def ensure_certs(host: str) -> dict:
     _write_cert(p["server_crt"], server_cert)
 
     return {k: str(v) for k, v in p.items()}
+
+
+def ensure_ca() -> dict:
+    """Ensure the CA exists (without the server host) and return cert paths.
+
+    Used by the client-cert enrollment endpoint so agents can be issued certs
+    even when the TLS server cert was generated for a different host.
+    """
+    p = _paths()
+    if p["ca_crt"].exists():
+        return {k: str(v) for k, v in p.items()}
+    return ensure_certs("localhost")
+
+
+def client_cert_paths(hostname: str) -> dict:
+    d = config.DATA_DIR / "certs" / "clients"
+    safe = hostname.replace("/", "_").replace("\\", "_")
+    return {
+        "dir": d,
+        "crt": d / f"{safe}.crt",
+        "key": d / f"{safe}.key",
+    }
+
+
+def issue_client_cert(hostname: str) -> dict:
+    """Issue (once) a client-auth cert for an agent, signed by the local CA.
+
+    Returns {crt, key, ca, pfx} — crt/key/ca are PEM, pfx is base64 PKCS#12
+    (cert + key + CA, no password) so the Windows agent can load it into an
+    X509Certificate2 for Invoke-RestMethod -Certificate. Persisted under
+    DATA_DIR/certs/clients/ so it survives restarts and is served back to the
+    same agent on re-enroll.
+    """
+    paths = client_cert_paths(hostname)
+    if paths["crt"].exists():
+        key = paths["key"].read_text(encoding="utf-8")
+        crt = paths["crt"].read_text(encoding="utf-8")
+        ca = _paths()["ca_crt"].read_text(encoding="utf-8")
+        return {
+            "crt": crt, "key": key, "ca": ca,
+            "pfx": _to_pfx(crt, key, ca),
+        }
+
+    ca = ensure_ca()
+    ca_cert = x509.load_pem_x509_certificate(Path(ca["ca_crt"]).read_bytes())
+    ca_key = serialization.load_pem_private_key(
+        Path(ca["ca_key"]).read_bytes(), password=None
+    )
+
+    now = datetime.now(timezone.utc)
+    client_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    client_cert = (
+        x509.CertificateBuilder()
+        .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, hostname)]))
+        .issuer_name(ca_cert.subject)
+        .public_key(client_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - timedelta(minutes=5))
+        .not_valid_after(now + timedelta(days=825))
+        .add_extension(
+            x509.ExtendedKeyUsage([ExtendedKeyUsageOID.CLIENT_AUTH]), critical=True
+        )
+        .sign(ca_key, hashes.SHA256())
+    )
+
+    crt_pem = client_cert.public_bytes(serialization.Encoding.PEM).decode()
+    key_pem = client_key.private_bytes(
+        serialization.Encoding.PEM,
+        serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption(),
+    ).decode()
+    ca_pem = Path(ca["ca_crt"]).read_text(encoding="utf-8")
+
+    paths["dir"].mkdir(parents=True, exist_ok=True)
+    paths["crt"].write_text(crt_pem, encoding="utf-8")
+    paths["key"].write_text(key_pem, encoding="utf-8")
+
+    return {"crt": crt_pem, "key": key_pem, "ca": ca_pem, "pfx": _to_pfx(crt_pem, key_pem, ca_pem)}
+
+
+def _to_pfx(crt_pem: str, key_pem: str, ca_pem: str) -> str:
+    """Bundle cert + key + CA into a password-less PKCS#12, base64-encoded."""
+    import base64
+
+    from cryptography.hazmat.primitives.serialization import pkcs12
+
+    cert = x509.load_pem_x509_certificate(crt_pem.encode())
+    key = serialization.load_pem_private_key(key_pem.encode(), password=None)
+    ca_certs = [x509.load_pem_x509_certificate(ca_pem.encode())]
+    data = pkcs12.serialize_key_and_certificates(
+        name=b"itk-agent", key=key, cert=cert, cas=ca_certs,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    return base64.b64encode(data).decode()

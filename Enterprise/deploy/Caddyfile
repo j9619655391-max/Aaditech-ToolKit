@@ -1,3 +1,11 @@
+{
+    # Intranet agents connect by IP (no SNI hostname). Strict SNI enforcement
+    # on client-auth sites would 421 them; we trust the mTLS CA instead.
+    servers {
+        strict_sni_host insecure_off
+    }
+}
+
 {$CADDY_HOST} {
     encode gzip
 
@@ -16,5 +24,32 @@
 
     handle {
         reverse_proxy api:8000
+    }
+}
+
+# Agent mTLS port (hardening): every agent MUST present a client cert
+# signed by the local IT-Toolkit CA before Caddy will route /ingest and the
+# command channel to the API. The CA cert is mounted into the container from
+# the api_data volume (docker-compose.yml -> caddy /agent_data). The agent
+# fetches its cert once via /api/agent/enroll (over the main port, bearer
+# token) and then presents it here.
+:9443 {
+    encode gzip
+    tls /agent_data/certs/server.crt /agent_data/certs/server.key {
+        client_auth {
+            trust_pool file /agent_data/certs/ca.crt
+        }
+    }
+
+    handle /ingest {
+        reverse_proxy api:8000
+    }
+
+    handle /api/commands/* {
+        reverse_proxy api:8000
+    }
+
+    handle {
+        respond "mTLS agent endpoint — use /ingest or /api/commands/*" 404
     }
 }

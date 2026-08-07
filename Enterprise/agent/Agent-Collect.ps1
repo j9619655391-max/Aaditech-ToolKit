@@ -50,6 +50,48 @@ function Read-AgentConfig {
     catch { throw "Invalid agent.json: $($_.Exception.Message)" }
 }
 
+# ---------------------------------------------------------------- mTLS client cert (hardening)
+# When the config carries an enroll_url, the agent fetches a client-auth cert
+# signed by the server's local CA once (bearer token auth) and then presents it
+# to the agent mTLS endpoint (port 9443). Without enroll_url the agent keeps
+# using plain bearer-token auth, so this is fully backward compatible.
+
+function Get-ClientCertPath {
+    param($Config)
+    if (-not $Config.enroll_url) { return $null }
+    $dir = Split-Path $ConfigPath -Parent
+    return Join-Path $dir 'client.pfx'
+}
+
+function Ensure-ClientCert {
+    param($Config)
+    $pfx = Get-ClientCertPath -Config $Config
+    if (-not $pfx) { return $null }
+    if (Test-Path $pfx) { return $pfx }
+
+    Write-AgentLog "Enrolling for mTLS client cert from $($Config.enroll_url)"
+    try {
+        $resp = Invoke-RestMethod -Uri $Config.enroll_url -Method Get `
+            -Headers @{ Authorization = "Bearer $($Config.token)" }
+        if (-not $resp.pfx) { throw "enroll returned no pfx" }
+        [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($resp.pfx))
+        Write-AgentLog "Client cert saved to $pfx"
+        return $pfx
+    }
+    catch {
+        Write-AgentLog "mTLS enroll failed: $($_.Exception.Message) — falling back to bearer auth"
+        return $null
+    }
+}
+
+function Get-RestCertificate {
+    param($Config)
+    $pfx = Get-ClientCertPath -Config $Config
+    if (-not $pfx -or -not (Test-Path $pfx)) { return $null }
+    try { return New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfx) }
+    catch { Write-AgentLog "Failed to load client cert: $($_.Exception.Message)"; return $null }
+}
+
 function Import-ToolkitModules {
     # Reuse existing modules unchanged.
     Import-Module (Join-Path $script:ModulesPath 'SanitizeEngine.psm1') -Force
@@ -172,7 +214,13 @@ function Send-AgentHeartbeat {
         ip            = (Get-AgentIP)
         events        = @()
     } | ConvertTo-Json -Compress
-    Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body
+    $cert = Get-RestCertificate -Config $Config
+    if ($cert) {
+        Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body -Certificate $cert
+    }
+    else {
+        Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body
+    }
 }
 
 function Send-AgentBatch {
@@ -198,7 +246,13 @@ function Send-AgentBatch {
     } | ConvertTo-Json -Compress -Depth 12
 
     try {
-        $resp = Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body
+        $cert = Get-RestCertificate -Config $Config
+        if ($cert) {
+            $resp = Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body -Certificate $cert
+        }
+        else {
+            $resp = Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body
+        }
         $ids = (@($pending | ConvertFrom-Json) | ForEach-Object { $_.id }) -join ','
         Invoke-SQLite -Query "UPDATE outbox SET status='delivered' WHERE id IN ($ids);" -DatabasePath $QueueDb | Out-Null
         Write-AgentLog "Flushed batch: $($resp.accepted) events accepted"
@@ -222,7 +276,13 @@ function Get-PendingCommands {
     $hn = [uri]::EscapeDataString((Get-AgentHostname))
     $uri = "$(Get-CommandsApiRoot)/api/commands/poll?hostname=$hn"
     try {
-        $resp = Invoke-RestMethod -Uri $uri -Method Get -Headers @{ Authorization = "Bearer $($Config.token)" }
+        $cert = Get-RestCertificate -Config $Config
+        if ($cert) {
+            $resp = Invoke-RestMethod -Uri $uri -Method Get -Headers @{ Authorization = "Bearer $($Config.token)" } -Certificate $cert
+        }
+        else {
+            $resp = Invoke-RestMethod -Uri $uri -Method Get -Headers @{ Authorization = "Bearer $($Config.token)" }
+        }
         return @($resp)
     }
     catch {
@@ -297,7 +357,13 @@ function Send-CommandResult {
         exit_code = $Result.exit_code
     } | ConvertTo-Json -Compress
     try {
-        Invoke-RestMethod -Uri $uri -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body | Out-Null
+        $cert = Get-RestCertificate -Config $Config
+        if ($cert) {
+            Invoke-RestMethod -Uri $uri -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body -Certificate $cert | Out-Null
+        }
+        else {
+            Invoke-RestMethod -Uri $uri -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body | Out-Null
+        }
         Write-AgentLog "Posted result for command $CmdId : $($Result.status)"
     }
     catch {
@@ -312,6 +378,9 @@ Initialize-Queue
 $Config = Read-AgentConfig
 
 Write-AgentLog "Agent cycle start (endpoint: $($Config.endpoint))"
+
+# mTLS: fetch the client cert once before the first endpoint call.
+$null = Ensure-ClientCert -Config $Config
 
 do {
     if (-not $FlushOnly) {

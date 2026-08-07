@@ -94,6 +94,8 @@ jobs:
         env:
           SERVER_ENDPOINT: ${{ secrets.SERVER_ENDPOINT }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
+          MTLS_ENDPOINT: ${{ secrets.MTLS_ENDPOINT }}
+          ENROLL_URL: ${{ secrets.ENROLL_URL }}
         run: |
           $endpoint = if ($env:SERVER_ENDPOINT) { $env:SERVER_ENDPOINT } else { 'http://CHANGE-ME/ingest' }
           $token = if ($env:API_TOKEN) { $env:API_TOKEN } else { 'CHANGE-ME' }
@@ -101,13 +103,20 @@ jobs:
           $features = @($manifest | ForEach-Object {
             @{ name = $_.name; script = $_.script; enabled = [bool]$_.default_enabled }
           })
-          @{
+          $cfg = [ordered]@{
             endpoint = $endpoint
             token = $token
             agent_version = '1.0.0'
             interval_minutes = 30
             features = $features
-          } | ConvertTo-Json -Depth 5 | Set-Content ./Enterprise/agent/agent-config.json
+          }
+          # Optional mTLS: when MTLS_ENDPOINT is set, agents talk to the :9443
+          # client-auth port and enroll for a client cert over the main port.
+          if ($env:MTLS_ENDPOINT) {
+            $cfg.endpoint = $env:MTLS_ENDPOINT
+            $cfg.enroll_url = if ($env:ENROLL_URL) { $env:ENROLL_URL } else { ($env:MTLS_ENDPOINT -replace '/ingest$', '/api/agent/enroll') }
+          }
+          $cfg | ConvertTo-Json -Depth 5 | Set-Content ./Enterprise/agent/agent-config.json
 
       - name: Install ps2exe
         run: Install-Module ps2exe -Force -Scope CurrentUser

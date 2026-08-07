@@ -363,6 +363,18 @@ async def download_ca(_: dict = Depends(require_role("admin", "operation"))):
     return FileResponse(path, media_type="application/x-pem-file", filename="itk-ca.crt")
 
 
+@app.get("/api/agent/enroll", dependencies=[Depends(require_token)])
+async def agent_enroll(hostname: str):
+    """Agent-facing: issue (or re-serve) a client-auth cert for this agent.
+
+    Auth is the same bearer token the agent already uses for /ingest. The
+    returned {crt, key, ca} are PEM and are what the agent presents to Caddy
+    (which enforces client-auth on the agent port). Idempotent — the same cert
+    is returned on every call for a given hostname.
+    """
+    return certs.issue_client_cert(hostname)
+
+
 @app.get("/api/agent-template", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def agent_template(_: dict = Depends(require_role("admin", "operation"))):
     pool = await db.connect()

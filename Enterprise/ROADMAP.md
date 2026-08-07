@@ -295,25 +295,34 @@ Each phase lands green on CI and keeps the existing toolkit untouched.
 ---
 
 ## 11. Open decisions (confirm before each phase)
-1. **mTLS now or bearer-token first?** ✅ **Decided:** bearer token first (live).
-   **Remaining (optional flag):** per-agent client certs for mTLS — the local CA
-   infra from P1 is ready; flipping it on is additive, default stays bearer.
+1. **mTLS now or bearer-token first?** ✅ **Decided & implemented (both):** bearer
+   token stays the default; **mTLS client certs are live** on agent port `:9443`
+   (per-agent cert from the local CA, Caddy `client_auth` enforced). Agents opt
+   in via `enroll_url` in agent.json.
 2. **Alerts channel:** ✅ **Decided & implemented:** portal-first (P6) **+ optional
    SMTP email** (P6.1, verified) — set `SMTP_HOST` + `SMTP_TO` in `.env`; digest
    email on new alerts; `POST /api/alerts/test-email` for admin checks.
 3. **Remote command scope:** ✅ **Decided:** reboot + Wake-on-LAN + `run-script`
    allowlist behind a flag — implemented in P5.
-4. **Exe signing:** ⬜ **Open — needs a purchased code-signing certificate.**
-   Today: manual Authenticode after CI build; with a cert you can sign inside the
-   `agent-build` job (add it to the repo secrets + one `Set-AuthenticodeSignature`
-   step). Nothing blocks the pipeline without it.
+4. **Exe signing:** ✅ **Decided & implemented:** **internal code-signing CA** —
+   CI signs exe/MSI with signtool; `.cer` committed for GPO "Trusted Publishers"
+   push. (Purchased cert only needed for external SmartScreen trust.)
 5. **License info:** ✅ **Decided:** include but off by default — implemented in P4
    (last-5 keys only, admin-only portal panel).
 6. **Roles to ship:** ✅ **Decided:** admin / operation / monitoring — implemented in P2.
 
 ### Remaining after P0–P6.1 (all optional / non-blocking)
-- **mTLS client certs** (flag on the existing CA).
-- **Code-signing cert** for the exe/MSI (requires purchase).
+- **mTLS client certs** — ✅ **implemented** (agent port `:9443`): `/api/agent/enroll`
+  issues a per-agent client-auth cert from the local CA; Caddy `client_auth`
+  (`trust_pool file`) requires it before `/ingest` + command channel. Agent
+  fetches its cert once over the main port, then presents it (backward
+  compatible — no `enroll_url` in agent.json keeps plain bearer auth). Verified
+  end-to-end: no cert / foreign-CA cert rejected, valid cert accepted.
+- **Internal code-signing** — ✅ **implemented**: `new-codesign-cert.ps1`
+  generates the internal code-signing CA + cert; CI signs exe/MSI with signtool
+  (`CODESIGN_PFX_B64` + `CODESIGN_PFX_PASSWORD` secrets); the `.cer` is committed
+  under `Enterprise/agent/build/codesign/` for GPO "Trusted Publishers" push.
+  External SmartScreen still needs a purchased cert (N/A for intranet-only).
 - **Windows smoke run** — full agent install + collector/command round-trip on a
   real client (CI can't run the interactive pieces; see VERSION.md smoke-run list).
 

@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-08T03:54:56+05:30",
-  "last_verified_commit": "2dea33797c87bee40d80c146d9ed9c08418c493c",
-  "last_verified_date": "2026-08-08T03:52:30+05:30",
+  "generated": "2026-08-08T04:08:06+05:30",
+  "last_verified_commit": "7c03fae1415714372aea6443dd6573d5fa49a659",
+  "last_verified_date": "2026-08-08T03:54:55+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -14,30 +14,10 @@
   "latest_delta": {
     "added": 0,
     "removed": 0,
-    "changed": 1,
-    "unchanged": 108
+    "changed": 8,
+    "unchanged": 101
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-06T23:35:53+05:30",
-      "added": [
-        "Enterprise/api/app/__pycache__/config.cpython-314.pyc"
-      ],
-      "removed": [],
-      "changed": [
-        "Enterprise/ARCHITECTURE.md",
-        "Enterprise/.env.example",
-        "Enterprise/api/app/main.py",
-        "Enterprise/api/app/__pycache__/main.cpython-314.pyc",
-        "Enterprise/docker-compose.yml",
-        "Enterprise/.env",
-        "Enterprise/agent/agent-config.json",
-        "Enterprise/api/app/config.py",
-        "Enterprise/deploy/deploy.sh",
-        "Enterprise/README.md"
-      ],
-      "unchanged_count": 88
-    },
     {
       "detected_at": "2026-08-07T02:41:19+05:30",
       "added": [],
@@ -334,6 +314,22 @@
         ".github/workflows/ci.yml"
       ],
       "unchanged_count": 108
+    },
+    {
+      "detected_at": "2026-08-08T04:08:06+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [
+        "Enterprise/api/app/certs.py",
+        "Enterprise/docker-compose.yml",
+        "Enterprise/deploy/Caddyfile",
+        ".github/workflows/ci.yml",
+        "Enterprise/api/app/main.py",
+        "Enterprise/ROADMAP.md",
+        "Enterprise/agent/Agent-Collect.ps1",
+        "Enterprise/agent/agent-config.example.json"
+      ],
+      "unchanged_count": 101
     }
   ],
   "next_recommended_tasks": [

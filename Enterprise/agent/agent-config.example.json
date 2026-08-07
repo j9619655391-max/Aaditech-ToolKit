@@ -1,5 +1,6 @@
 {
-  "endpoint": "https://CHANGE-ME/server/ingest",
+  "endpoint": "https://CHANGE-ME:9443/ingest",
+  "enroll_url": "https://CHANGE-ME/api/agent/enroll",
   "token": "CHANGE-ME",
   "agent_version": "1.0.0",
   "interval_minutes": 30,
