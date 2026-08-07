@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import auth, bundle, certs, config, db, rules
+from . import auth, bundle, certs, config, db, github, rules
 
 app = FastAPI(title="IT-Toolkit Enterprise", version="1.0.0")
 
@@ -33,7 +33,8 @@ def require_token(authorization: str = Header(default="")) -> None:
 async def require_setup_done() -> None:
     pool = await db.connect()
     done = await pool.fetchval("SELECT value FROM settings WHERE key = 'setup_complete'")
-    if not done:
+    complete = bool(done and str(done).strip() not in ("0", "", "false", "False"))
+    if not complete:
         raise HTTPException(status_code=428, detail="Setup required")
 
 
@@ -112,6 +113,16 @@ class SetupRequest(BaseModel):
     admin_password: str = Field(min_length=8, max_length=128)
     branding: dict = Field(default_factory=dict)
     smtp: SetupSmtp | None = None
+    # SaaS agent-build mode (Windows Server vs GitHub remote vs manual).
+    build_mode: str = Field(default="manual")          # local_windows | github | manual
+    github_repo: str = Field(default="", max_length=255)   # owner/repo
+    github_token: str = Field(default="", max_length=255)  # PAT (actions:write+read)
+
+
+class BuildTriggerRequest(BaseModel):
+    repo: str = Field(default="", max_length=255)
+    token: str = Field(default="", max_length=255)  # empty = use stored PAT
+    branch: str = "main"
 
 
 class LoginRequest(BaseModel):
@@ -178,9 +189,10 @@ async def shutdown():
 async def setup_status():
     pool = await db.connect()
     done = await pool.fetchval("SELECT value FROM settings WHERE key = 'setup_complete'")
-    info = {"setup_complete": bool(done)}
-    if done:
-        for key in ("company_name", "server_host", "branding"):
+    complete = bool(done and str(done).strip() not in ("0", "", "false", "False"))
+    info = {"setup_complete": complete, "default_build_mode": config.BUILD_MODE}
+    if complete:
+        for key in ("company_name", "server_host", "branding", "build_mode", "github_repo"):
             val = await pool.fetchval("SELECT value FROM settings WHERE key = $1", key)
             if key == "branding" and val:
                 val = json.loads(val)
@@ -192,7 +204,7 @@ async def setup_status():
 async def run_setup(payload: SetupRequest, response: Response):
     pool = await db.connect()
     done = await pool.fetchval("SELECT value FROM settings WHERE key = 'setup_complete'")
-    if done:
+    if done and str(done).strip() not in ("0", "", "false", "False"):
         raise HTTPException(status_code=409, detail="Setup already complete")
 
     certs.ensure_certs(payload.server_host)
@@ -203,6 +215,19 @@ async def run_setup(payload: SetupRequest, response: Response):
         ("server_host", payload.server_host),
         ("branding", branding),
         ("setup_complete", "1"),
+    ):
+        await pool.execute(
+            "INSERT INTO settings (key, value) VALUES ($1, $2) "
+            "ON CONFLICT (key) DO UPDATE SET value = $2",
+            key, value,
+        )
+
+    # SaaS build mode (how the Windows agent MSI is produced).
+    mode = payload.build_mode or config.BUILD_MODE
+    for key, value in (
+        ("build_mode", mode),
+        ("github_repo", payload.github_repo.strip()),
+        ("github_token", payload.github_token.strip()),
     ):
         await pool.execute(
             "INSERT INTO settings (key, value) VALUES ($1, $2) "
@@ -441,6 +466,97 @@ async def download_msi(_: dict = Depends(require_role("admin", "operation"))):
     if not path.exists():
         raise HTTPException(status_code=404, detail="MSI not uploaded yet — CI publishes the generic engine build (P0).")
     return FileResponse(path, media_type="application/octet-stream", filename=bundle.MSI_FILENAME)
+
+
+# ---------------------------------------------------------------- SaaS build (github remote / local_windows)
+
+async def _get_build_settings(pool) -> dict:
+    rows = await pool.fetch("SELECT key, value FROM settings WHERE key IN ('build_mode','github_repo','github_token')")
+    cfg = {"build_mode": config.BUILD_MODE, "github_repo": "", "github_token": ""}
+    for r in rows:
+        cfg[r["key"]] = r["value"] or ""
+    return cfg
+
+
+async def _try_github_sync(pool, mode: str) -> dict:
+    """If github mode is configured, refresh status + auto-fetch a finished MSI
+    artifact. Never raises — returns a status dict for the portal."""
+    cfg = await _get_build_settings(pool)
+    if mode != "github" or not cfg["github_repo"] or not cfg["github_token"]:
+        return {"mode": mode, "available": False}
+    try:
+        gh = github.status(cfg["github_repo"], cfg["github_token"])
+        if gh["conclusion"] == "success":
+            art = github.latest_artifact(cfg["github_repo"], cfg["github_token"])
+            if art and not bundle.msi_path().exists():
+                p = github.download_msi(cfg["github_repo"], cfg["github_token"], art["id"])
+                gh["msi_downloaded"] = str(p)
+        return {"mode": mode, "available": True, "github": gh}
+    except Exception as e:
+        return {"mode": mode, "available": True, "error": str(e)}
+
+
+@app.get("/api/build/status", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def build_status(user: dict = Depends(require_role("admin", "operation"))):
+    pool = await db.connect()
+    cfg = await _get_build_settings(pool)
+    info = {
+        "mode": cfg["build_mode"],
+        "github_repo": cfg["github_repo"],
+        "msi_available": bundle.msi_available(),
+        "msi_size": bundle.msi_path().stat().st_size if bundle.msi_available() else None,
+    }
+    if cfg["build_mode"] == "github":
+        info["github"] = await _try_github_sync(pool, cfg["build_mode"])
+    return info
+
+
+@app.post("/api/build/validate", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def build_validate(payload: BuildTriggerRequest, user: dict = Depends(require_role("admin", "operation"))):
+    pool = await db.connect()
+    cfg = await _get_build_settings(pool)
+    repo = payload.repo or cfg["github_repo"]
+    token = payload.token or cfg["github_token"]
+    if not repo or not token:
+        raise HTTPException(status_code=400, detail="GitHub repo + PAT not configured (set them during setup or send them in this request)")
+    try:
+        v = github.validate(repo, token)
+    except github.GitHubError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return v
+
+
+@app.post("/api/build/trigger", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def build_trigger(payload: BuildTriggerRequest, user: dict = Depends(require_role("admin", "operation"))):
+    """Fire a remote GitHub Actions build (workflow_dispatch) and persist the
+    repo+token so /api/build/status keeps polling + auto-fetching the MSI.
+
+    An empty token in the payload means "use the stored token from setup" —
+    the portal never re-displays the PAT."""
+    pool = await db.connect()
+    cfg = await _get_build_settings(pool)
+    repo = payload.repo or cfg["github_repo"]
+    token = payload.token or cfg["github_token"]
+    if not repo or not token:
+        raise HTTPException(status_code=400, detail="GitHub repo + PAT not configured (set them during setup or send them in this request)")
+    try:
+        v = github.validate(repo, token)
+        if not v["ok"]:
+            raise github.GitHubError("Repo not found or token lacks access")
+        github.trigger(repo, token, payload.branch or v.get("default_branch", "main"))
+    except github.GitHubError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    for key, value in (
+        ("build_mode", "github"),
+        ("github_repo", repo.strip()),
+        ("github_token", token.strip()),
+    ):
+        await pool.execute(
+            "INSERT INTO settings (key, value) VALUES ($1, $2) "
+            "ON CONFLICT (key) DO UPDATE SET value = $2",
+            key, value,
+        )
+    return {"dispatched": True, "repo": repo, "branch": payload.branch or "main", "permissions": v}
 
 
 # ---------------------------------------------------------------- command channel (P5)

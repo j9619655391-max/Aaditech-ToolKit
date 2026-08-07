@@ -1,24 +1,34 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-08T04:09:45+05:30",
+  "generated": "2026-08-08T05:25:49+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "80aca1456dc55badf1cbd80bd3084d94fe79ea4d",
-  "last_verified_date": "2026-08-08T04:08:06+05:30",
+  "last_verified_commit": "585f78b593e5c776dad2027089abb453e4f3847e",
+  "last_verified_date": "2026-08-08T04:09:45+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 62,
+    "commit_count": 63,
     "clean_working_tree": false,
-    "head": "80aca1456dc55badf1cbd80bd3084d94fe79ea4d"
+    "head": "585f78b593e5c776dad2027089abb453e4f3847e"
   },
   "latest_delta": {
-    "detected_at": "2026-08-08T04:09:45+05:30",
-    "added": [],
+    "detected_at": "2026-08-08T05:25:49+05:30",
+    "added": [
+      "Enterprise/deploy/deploy.ps1",
+      "Enterprise/api/app/github.py"
+    ],
     "removed": [],
     "changed": [
-      ".github/workflows/ci.yml"
+      "Enterprise/api/app/config.py",
+      "Enterprise/deploy/deploy.sh",
+      "Enterprise/api/app/bundle.py",
+      "Enterprise/portal/index.html",
+      "Enterprise/api/app/main.py",
+      "Enterprise/agent/Agent-Collect.ps1",
+      "Enterprise/ROADMAP.md",
+      "Enterprise/docker-compose.yml"
     ],
-    "unchanged_count": 108
+    "unchanged_count": 101
   },
   "module_state": {
     "working": [

@@ -82,6 +82,7 @@ function applyBranding(b) {
 
 async function start() {
   const status = await fetch('/api/setup/status').then(r => r.json()).catch(() => ({ setup_complete: false }));
+  window.__defaultBuildMode = status.default_build_mode || 'manual';
   if (!status.setup_complete) return renderSetup();
   let boot;
   try {
@@ -166,9 +167,31 @@ function renderSetup() {
         </div>
       </div>
 
+      <div style="margin-top:22px;border-top:1px solid var(--line);padding-top:8px">
+        <label style="font-size:14px;color:var(--text);font-weight:600">Agent MSI build</label>
+        <p class="muted">How the Windows agent installer gets built. Windows Server builds locally (fully automatic). A Linux server can trigger this repo's GitHub Actions and pull the signed MSI back automatically.</p>
+        <select id="build_mode" onchange="buildModeChange()">
+          <option value="local_windows">Windows Server — build locally here (automatic)</option>
+          <option value="github">GitHub Actions — remote build (Linux server)</option>
+          <option value="manual">Manual — I'll build/upload the MSI myself</option>
+        </select>
+        <div id="github_fields" style="display:none">
+          <label>GitHub repo (owner/repo)</label><input id="github_repo" placeholder="j9619655391-max/Aaditech-ToolKit" />
+          <label>Personal access token (PAT — needs actions:write + actions:read)</label><input id="github_token" type="password" placeholder="ghp_..." />
+          <p class="muted">After setup, the Agent Setup page can trigger the build and download the MSI. Create a PAT at github.com → Settings → Developer settings → Personal access tokens → fine-grained (repo + actions) with Actions: Read/Write.</p>
+        </div>
+      </div>
+
       <div class="error" id="setup_err"></div>
       <div style="margin-top:18px"><button class="action" style="width:100%" onclick="doSetup()">Finish setup</button></div>
     </div>`;
+  const sel = document.getElementById('build_mode');
+  if (sel) {
+    if (window.__defaultBuildMode && sel.querySelector(`option[value="${esc(window.__defaultBuildMode)}"]`)) {
+      sel.value = window.__defaultBuildMode;
+    }
+    buildModeChange();
+  }
 }
 
 function smtpProviderChange() {
@@ -176,6 +199,11 @@ function smtpProviderChange() {
   const custom = p === 'custom';
   document.getElementById('smtp_fields').style.display = p === 'none' ? 'none' : 'block';
   document.getElementById('smtp_custom').style.display = custom ? 'block' : 'none';
+}
+
+function buildModeChange() {
+  const m = document.getElementById('build_mode').value;
+  document.getElementById('github_fields').style.display = m === 'github' ? 'block' : 'none';
 }
 
 async function doSetup() {
@@ -203,6 +231,9 @@ async function doSetup() {
     admin_password: p1,
     branding: { color: document.getElementById('branding_color').value, logo_text: document.getElementById('company_name').value.trim() },
     smtp,
+    build_mode: document.getElementById('build_mode').value,
+    github_repo: document.getElementById('github_repo').value.trim(),
+    github_token: document.getElementById('github_token').value.trim(),
   };
   const res = await fetch('/api/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (!res.ok) { err.textContent = (await res.json()).detail || 'Setup failed'; return; }
@@ -720,7 +751,8 @@ async function renderAgentSetup() {
     ? `<a href="/api/ca.crt" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">Download CA (.crt)</a>` : '';
   const msiBlock = data.msi_available
     ? `<a href="${esc(data.msi_url)}" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">Download MSI (${(data.msi_size/1048576).toFixed(1)} MB)</a>`
-    : '<span class="badge off">MSI not published yet</span> <span class="muted">— becomes available once the CI generic build (P0) is uploaded to the server.</span>';
+    : '<span class="badge off">MSI not published yet</span> <span class="muted">— becomes available once the agent is built (Windows Server local build, or GitHub remote build below).</span>';
+  const build = await api('/api/build/status').catch(() => null);
   app.innerHTML = `
     <div class="card"><h3>Company agent package</h3>
       <p class="muted">These three files make up the company bundle. Hand them out on a USB / Intranet share, or push the MSI via Intune / GPO / SCCM and drop <code>agent.json</code> + <code>ca.crt</code> into <code>C:\\ProgramData\\ITToolkit-Agent\\</code>.</p>
@@ -736,6 +768,9 @@ async function renderAgentSetup() {
       <label>Agent token (keep secret — ships inside agent.json)</label>
       <div class="code">${esc(data.agent_json.token)}</div>
     </div>
+    <div class="card"><h3>Agent MSI build</h3>
+      ${build ? renderBuildPanel(build) : '<span class="muted">Build status unavailable.</span>'}
+    </div>
     <div class="card"><h3>install-agent.cmd (generated live)</h3>
       <p class="muted">Installs the MSI, then writes the company <code>agent.json</code> + <code>ca.crt</code> over the bundled template.</p>
       <pre>${esc(data.install_cmd)}</pre>
@@ -743,6 +778,51 @@ async function renderAgentSetup() {
     <div class="card"><h3>agent.json preview</h3>
       <pre>${esc(JSON.stringify(data.agent_json, null, 2))}</pre>
     </div>`;
+}
+
+function renderBuildPanel(build) {
+  const mode = build.mode || 'manual';
+  let body;
+  if (mode === 'local_windows') {
+    body = `<p class="muted">This server builds the agent locally (Windows Server). Run <code>pwsh ./Enterprise/deploy/deploy.ps1</code> on the server — it auto-builds, signs and publishes the MSI. If the MSI is already available above, nothing to do.</p>`;
+  } else if (mode === 'github') {
+    const gh = build.github || {};
+    const stateBadge = gh.error
+      ? `<span class="badge off">${esc(gh.error)}</span>`
+      : (gh.conclusion === 'success'
+          ? `<span class="badge ok">build succeeded</span>`
+          : (gh.conclusion === 'failure'
+              ? `<span class="badge off">build failed</span>`
+              : (gh.state === 'in_progress' || gh.state === 'queued'
+                  ? `<span class="badge">build ${esc(gh.state)}…</span>`
+                  : `<span class="badge off">no build yet</span>`)));
+    body = `
+      <p class="muted">Remote build via GitHub Actions on <code>${esc(build.github_repo || '—')}</code>.</p>
+      <p>Status: ${stateBadge} ${gh.run_number ? `#${esc(gh.run_number)}` : ''} ${gh.html_url ? `(<a href="${esc(gh.html_url)}" target="_blank">run</a>)` : ''}</p>
+      <div style="margin-top:10px">
+        <button class="action" onclick="githubBuild()">Trigger GitHub build</button>
+        <button class="action" style="background:transparent;color:var(--text);border:1px solid var(--line)" onclick="renderAgentSetup()">Refresh</button>
+      </div>
+      <p class="muted" style="margin-top:10px">Requires the repo + PAT entered at setup (repo + actions: write/read). The server fires <code>workflow_dispatch</code>, waits for success and downloads the signed MSI into the volume automatically.</p>`;
+  } else {
+    body = `<p class="muted">Build the MSI yourself (Windows machine): <code>build-agent.ps1</code> then <code>build-msi.ps1</code>, or run the CI <code>agent-build</code> workflow, then upload the MSI into the server's <code>agent_artifacts</code> volume.</p>`;
+  }
+  return body;
+}
+
+async function githubBuild() {
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = 'Triggering…';
+  try {
+    const r = await api('/api/build/status');
+    const repo = r.github_repo;
+    if (!repo) { alert('No GitHub repo configured. Edit settings or re-run setup.'); return; }
+    // validate + trigger using the stored token (never re-entered here)
+    const val = await fetch('/api/build/trigger', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ repo, token: '', branch: 'main' }) });
+    if (!val.ok) { const d = await val.json(); alert(d.detail || 'Trigger failed'); return; }
+    renderAgentSetup();
+  } catch (e) { alert('Trigger failed: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Trigger GitHub build'; }
 }
 
 start();

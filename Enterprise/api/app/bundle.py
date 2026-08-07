@@ -44,7 +44,12 @@ async def build_agent_json(pool) -> dict:
 
     return {
         "company": company,
-        "endpoint": f"{scheme_for(host)}://{host}/ingest",
+        # mTLS: agents always talk to the :9443 client-auth port (TLS via the
+        # internal CA). enroll_url goes over the MAIN port because Caddy :9443
+        # only routes /ingest and /api/commands/* (a fresh agent has no client
+        # cert yet to enroll over 9443).
+        "endpoint": f"https://{host}:9443/ingest",
+        "enroll_url": f"{scheme_for(host)}://{host}/api/agent/enroll",
         "token": config.API_TOKEN,
         "agent_version": AGENT_VERSION,
         "interval_minutes": INTERVAL_MINUTES,

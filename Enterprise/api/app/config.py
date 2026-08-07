@@ -9,6 +9,14 @@ FEATURES_FILE = os.environ.get("FEATURES_FILE", "/app/features.json")
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/data"))
 ARTIFACTS_DIR = Path(os.environ.get("ARTIFACTS_DIR", "/artifacts"))
 
+# SaaS setup: how the Windows agent MSI gets built.
+#   local_windows -> deploy.ps1 builds + signs + publishes on the Windows server
+#   github        -> the server triggers this repo's CI (workflow_dispatch) and
+#                    downloads the MSI artifact (Linux hosts)
+#   manual        -> operator builds elsewhere and uploads the MSI
+# The wizard may override this per-company at setup time (settings.build_mode).
+BUILD_MODE = os.environ.get("BUILD_MODE", "manual")
+
 # ---------------------------------------------------------------- command channel (P5)
 
 ALLOW_RUN_SCRIPT = os.environ.get("COMMANDS_RUN_SCRIPT_ALLOWED", "false").lower() in (

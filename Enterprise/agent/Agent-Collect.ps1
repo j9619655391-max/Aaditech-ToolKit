@@ -63,11 +63,44 @@ function Get-ClientCertPath {
     return Join-Path $dir 'client.pfx'
 }
 
+function Install-ServerCa {
+    # The agent talks to the mTLS endpoint (https://<host>:9443) whose server
+    # cert is signed by the server's INTERNAL CA. For Invoke-RestMethod to
+    # accept that cert, the CA must be trusted on this machine. We install it
+    # into the LocalMachine Root store (agent runs as SYSTEM) once. certutil
+    # exits non-zero if the cert is already present, which is fine.
+    param([string]$CaPem)
+    if ([string]::IsNullOrWhiteSpace($CaPem)) { return }
+    $dir = Split-Path $ConfigPath -Parent
+    $caPath = Join-Path $dir 'ca.crt'
+    try {
+        [IO.File]::WriteAllText($caPath, $CaPem)
+        & certutil.exe -addstore Root $caPath 2>&1 | Out-Null
+        Write-AgentLog "Installed IT-Toolkit CA into LocalMachine\Root (server trust)"
+    }
+    catch {
+        Write-AgentLog "CA trust install failed: $($_.Exception.Message)"
+    }
+}
+
 function Ensure-ClientCert {
     param($Config)
     $pfx = Get-ClientCertPath -Config $Config
     if (-not $pfx) { return $null }
-    if (Test-Path $pfx) { return $pfx }
+    $dir = Split-Path $ConfigPath -Parent
+    $caPath = Join-Path $dir 'ca.crt'
+
+    # If a CA was already bundled (e.g. copied by install.cmd) or previously
+    # enrolled, make sure it is trusted before the first mTLS call.
+    if (Test-Path $pfx) {
+        if (-not (Test-Path $caPath)) {
+            $dir2 = Split-Path $pfx -Parent
+            $cand = Join-Path $dir2 'ca.crt'
+            if (Test-Path $cand) { Copy-Item $cand $caPath -Force }
+        }
+        if (Test-Path $caPath) { Install-ServerCa (Get-Content $caPath -Raw) }
+        return $pfx
+    }
 
     Write-AgentLog "Enrolling for mTLS client cert from $($Config.enroll_url)"
     try {
@@ -75,6 +108,10 @@ function Ensure-ClientCert {
             -Headers @{ Authorization = "Bearer $($Config.token)" }
         if (-not $resp.pfx) { throw "enroll returned no pfx" }
         [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($resp.pfx))
+        if ($resp.ca) {
+            [IO.File]::WriteAllText($caPath, $resp.ca)
+            Install-ServerCa $resp.ca
+        }
         Write-AgentLog "Client cert saved to $pfx"
         return $pfx
     }

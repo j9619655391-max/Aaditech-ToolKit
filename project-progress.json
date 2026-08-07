@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-08T04:09:45+05:30",
-  "last_verified_commit": "80aca1456dc55badf1cbd80bd3084d94fe79ea4d",
-  "last_verified_date": "2026-08-08T04:08:06+05:30",
+  "generated": "2026-08-08T05:25:49+05:30",
+  "last_verified_commit": "585f78b593e5c776dad2027089abb453e4f3847e",
+  "last_verified_date": "2026-08-08T04:09:45+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -12,23 +12,12 @@
     "percent": 100.0
   },
   "latest_delta": {
-    "added": 0,
+    "added": 2,
     "removed": 0,
-    "changed": 1,
-    "unchanged": 108
+    "changed": 8,
+    "unchanged": 101
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-07T02:50:56+05:30",
-      "added": [
-        "Enterprise/ROADMAP.md"
-      ],
-      "removed": [],
-      "changed": [
-        "Enterprise/README.md"
-      ],
-      "unchanged_count": 98
-    },
     {
       "detected_at": "2026-08-07T03:09:26+05:30",
       "added": [],
@@ -325,6 +314,25 @@
         ".github/workflows/ci.yml"
       ],
       "unchanged_count": 108
+    },
+    {
+      "detected_at": "2026-08-08T05:25:49+05:30",
+      "added": [
+        "Enterprise/deploy/deploy.ps1",
+        "Enterprise/api/app/github.py"
+      ],
+      "removed": [],
+      "changed": [
+        "Enterprise/api/app/config.py",
+        "Enterprise/deploy/deploy.sh",
+        "Enterprise/api/app/bundle.py",
+        "Enterprise/portal/index.html",
+        "Enterprise/api/app/main.py",
+        "Enterprise/agent/Agent-Collect.ps1",
+        "Enterprise/ROADMAP.md",
+        "Enterprise/docker-compose.yml"
+      ],
+      "unchanged_count": 101
     }
   ],
   "next_recommended_tasks": [

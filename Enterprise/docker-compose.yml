@@ -40,6 +40,7 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_TO: ${SMTP_TO:-}
       SMTP_ENCRYPTION: ${SMTP_ENCRYPTION:-starttls}
+      BUILD_MODE: ${BUILD_MODE:-manual}
     volumes:
       - ./portal:/app/portal:ro
       - ./api/features.json:/app/features.json:ro

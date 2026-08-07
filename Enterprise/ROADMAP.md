@@ -6,6 +6,15 @@
 > team user management with roles (admin / operation / monitoring) and the full
 > support-engineer feature set.
 >
+> **Rev 3 — SaaS-style auto-setup (2026-08-08):** everything is auto-detected /
+> auto-generated on ANY server; the ONLY manual step is the setup wizard
+> (company / admin / SMTP). `deploy.ps1` (Windows Server, one-command) and
+> `deploy.sh` (macOS/Linux) both: detect the LAN IP, generate all secrets,
+> write the mTLS agent config, bring up the stack, auto-generate the
+> code-signing CA, build + sign + publish the MSI on the server itself — no CI,
+> no GitHub, no manual entries beyond the wizard. Agents auto-trust the
+> server CA on enroll (no manual cert install).
+>
 > Keeps the **zero-change promise**: existing toolkit files are never modified —
 > everything additive lives under `Enterprise/`.
 
@@ -14,15 +23,14 @@
 ## 0. North star (revised flow)
 
 ```
-1. Fresh server → ./deploy.sh → open http://<server>/
-2. First visit → SETUP WIZARD:
-     Company name · Server IP · Admin username + password · Branding
+1. Fresh server → one command (./deploy.sh or .\deploy\deploy.ps1) → open http://<server>/
+2. First visit → SETUP WIZARD (the ONLY manual step):
+     Company name · Admin username + password · SMTP (optional)
 3. Server auto-generates on THIS system:
-     CA certificate + server certificate (local, persisted)
-     Authentication token
-     Company-scoped agent config (endpoint + token + CA trust)
-4. NOW the agent package is built from that info:
-     one-click download → installs → fleet appears
+     LAN IP · all secrets · CA certificate + server certificate (local, persisted)
+     Authentication token · mTLS endpoint + enroll_url · code-signing CA
+4. Agent package is auto-built + auto-signed + auto-published ON the server:
+     MSI downloadable from the portal → install → fleet appears
 5. Admin adds team users (operation / monitoring) → RBAC in portal
 6. Collectors → health/inventory panels; commands; alerts; reports
 ```
@@ -323,6 +331,16 @@ Each phase lands green on CI and keeps the existing toolkit untouched.
   (`CODESIGN_PFX_B64` + `CODESIGN_PFX_PASSWORD` secrets); the `.cer` is committed
   under `Enterprise/agent/build/codesign/` for GPO "Trusted Publishers" push.
   External SmartScreen still needs a purchased cert (N/A for intranet-only).
+- **SaaS-style auto-setup** — ✅ **implemented (2026-08-08)**: `deploy.ps1` is the
+  Windows Server one-command bring-up — detects IP, generates all secrets, writes
+  the mTLS agent config (`endpoint https://<host>:9443/ingest` + `enroll_url` on
+  the main port), starts the stack, auto-generates the code-signing CA, builds +
+  signs exe/MSI ON the server, and publishes the MSI into the `agent_artifacts`
+  volume so `/api/agent-msi` serves it. `deploy.sh` updated to emit the same mTLS
+  config; `bundle.py` agent.json now carries `endpoint` (`:9443`) + `enroll_url`;
+  the agent **auto-installs the internal CA into `LocalMachine\Root`** on enroll
+  so mTLS works with zero manual cert setup. Only manual step remains the setup
+  wizard (company / admin / SMTP).
 - **Windows smoke run** — full agent install + collector/command round-trip on a
   real client (CI can't run the interactive pieces; see VERSION.md smoke-run list).
 

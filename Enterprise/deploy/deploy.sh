@@ -177,16 +177,20 @@ print(json.dumps(out))
 PY
 )"
 
+# mTLS: agents always talk to the :9443 client-auth port (TLS via internal CA).
+# enroll_url goes over the MAIN port because Caddy :9443 only routes /ingest and
+# /api/commands/* (a fresh agent has no client cert yet to enroll over 9443).
 cat > "$CONFIG_OUT" <<EOF
 {
-  "endpoint": "$SCHEME://$HOST/ingest",
+  "endpoint": "https://$HOST:9443/ingest",
+  "enroll_url": "$SCHEME://$HOST/api/agent/enroll",
   "token": "$API_TOKEN",
   "agent_version": "1.0.0",
   "interval_minutes": 30,
   "features": $FEATURES_JSON
 }
 EOF
-log "Agent config written: $CONFIG_OUT (endpoint baked: $SCHEME://$HOST/ingest)"
+log "Agent config written: $CONFIG_OUT (endpoint baked: https://$HOST:9443/ingest)"
 
 # ---------------------------------------------------------------- bring up
 
