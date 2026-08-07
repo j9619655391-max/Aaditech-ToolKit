@@ -52,11 +52,22 @@ are all derived from the setup answers.
 - **P6 done & verified live** (see §8): alerts (seeded rules + background eval
   loop + auto-resolve + ack/resolve) and reports (fleet CSV + per-agent
   JSON/CSV); Alerts + Reports portal pages, open-alert badge.
-- CI: `agent-build` job scaffolded (generic binary path, **not yet run end-to-end**).
+- **P0 done & verified (2026-08-07)**: `agent-build` CI job runs green
+  end-to-end — exe (ps2exe) + MSI (WiX v5) artifacts; MSI deployed to the
+  `agent_artifacts` volume so `/api/agent-msi` serves a real installer.
+- CI: PowerShell validation + agent build both green on `windows-latest`.
 
 ---
 
-## 2. P0 — CI builds the generic agent engine (parallel prep)
+## 2. P0 — CI builds the generic agent engine (parallel prep) ✅ DONE (2026-08-07)
+
+> **Implemented & verified end-to-end:** the `agent-build` job on
+> `windows-latest` now stages `agent-config.json` from the repo secrets
+> `SERVER_ENDPOINT` + `API_TOKEN` (set via API), installs ps2exe + WiX v5, and
+> produces `IT-Toolkit-Agent.exe` + `IT-Toolkit-Agent.msi` (WiX pinned to v5 —
+> v7 requires the OSMF EULA). Artifacts are uploaded and the MSI is copied into
+> the server's `agent_artifacts` volume; `GET /api/agent-msi` returns a valid
+> installer. Both CI jobs are green.
 
 **Why generic:** a Windows `.exe`/`.msi` can only be compiled on Windows (CI).
 The server (Linux) cannot produce the binary — but it CAN produce the
@@ -148,8 +159,8 @@ setup** by the server (P3), never inside CI.
 > `install-agent.cmd` (installs MSI then drops company `agent.json` + `ca.crt`
 > over the bundled template + sets registry overrides). Downloads:
 > `/api/agent/agent.json`, `/api/agent/install.cmd`, `/api/ca.crt`,
-> `/api/agent-msi` (404 until the generic engine MSI from P0 is uploaded into
-> the `agent_artifacts` volume). All gated to admin/operation (monitoring →
+> `/api/agent-msi` (**live since P0** — the CI-built MSI is in the
+> `agent_artifacts` volume). All gated to admin/operation (monitoring →
 > 403). Portal **Agent Setup** tab shows download buttons + live previews.
 
 Runs only after P1 so the package contains the setup answers:
@@ -253,7 +264,7 @@ new kind-specific fleet panels (disk health, battery, update compliance, offline
 
 | Phase | Scope | Depends on | Est. |
 | --- | --- | --- | --- |
-| **P0** | CI generic exe/msi build + verify artifacts | — | small |
+| **P0** | CI generic exe/msi build + verify artifacts ✅ | — | small |
 | **P1** | Setup wizard + CA/server certs + token + first admin ✅ | — | medium |
 | **P2** | Users + RBAC (admin/operation/monitoring) + portal login ✅ | P1 | medium |
 | **P3** | Agent bundle (config+CA) + download page + install-agent.cmd ✅ | P0, P1 | small |

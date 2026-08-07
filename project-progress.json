@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-07T05:19:19+05:30",
-  "last_verified_commit": "d9bd26c1b5b055b1a7c7e38ff008e7db5efbe0e1",
-  "last_verified_date": "2026-08-07T05:16:55+05:30",
+  "generated": "2026-08-07T15:12:31+05:30",
+  "last_verified_commit": "13de6376d596bea6c62501c8d6fc5533510ea987",
+  "last_verified_date": "2026-08-07T05:19:19+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -14,44 +14,10 @@
   "latest_delta": {
     "added": 0,
     "removed": 0,
-    "changed": 1,
-    "unchanged": 105
+    "changed": 5,
+    "unchanged": 101
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-06T22:33:10+05:30",
-      "added": [
-        "Enterprise/api/app/config.py",
-        "Enterprise/api/app/__pycache__/main.cpython-314.pyc",
-        "Enterprise/deploy/Caddyfile",
-        "Enterprise/api/app/main.py",
-        "Enterprise/agent/wix/Agent.wxs",
-        "Enterprise/README.md",
-        "Enterprise/agent/wix/build-msi.ps1",
-        "Enterprise/docker-compose.yml",
-        "Enterprise/agent/build/build-agent.ps1",
-        "Enterprise/api/Dockerfile",
-        "Enterprise/ARCHITECTURE.md",
-        "Enterprise/api/app/__pycache__/config.cpython-314.pyc",
-        "Enterprise/api/requirements.txt",
-        "Enterprise/api/features.json",
-        "Enterprise/api/app/db.py",
-        "Enterprise/.env.example",
-        "Enterprise/api/app/__pycache__/db.cpython-314.pyc",
-        "Enterprise/agent/agent-config.example.json",
-        "Enterprise/api/schema.sql",
-        "Enterprise/agent/Agent-Collect.ps1",
-        "Enterprise/api/app/__init__.py",
-        "Enterprise/portal/index.html",
-        "Enterprise/deploy/deploy.sh"
-      ],
-      "removed": [],
-      "changed": [
-        ".github/workflows/ci.yml",
-        ".gitignore"
-      ],
-      "unchanged_count": 72
-    },
     {
       "detected_at": "2026-08-06T22:37:37+05:30",
       "added": [],
@@ -354,6 +320,19 @@
         "Enterprise/agent/wix/build-msi.ps1"
       ],
       "unchanged_count": 105
+    },
+    {
+      "detected_at": "2026-08-07T15:12:31+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [
+        "CHANGELOG.md",
+        "VERSION.md",
+        "Enterprise/ARCHITECTURE.md",
+        "Enterprise/ROADMAP.md",
+        "Enterprise/README.md"
+      ],
+      "unchanged_count": 101
     }
   ],
   "next_recommended_tasks": [

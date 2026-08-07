@@ -74,8 +74,8 @@ run `install-agent.cmd` (or push the MSI via **Intune / GPO / SCCM** and drop
 
 The server serves these from `GET /api/agent-bundle` (+ `/api/agent/agent.json`,
 `/api/agent/install.cmd`, `/api/ca.crt`, `/api/agent-msi`) — admin/operation
-only. The MSI endpoint returns 404 until the CI-built generic engine is copied
-into the `agent_artifacts` volume:
+only. The MSI is built on CI (`agent-build` job, WiX v5) and copied into the
+`agent_artifacts` volume; re-upload after each new CI build with:
 
 ```bash
 docker compose cp IT-Toolkit-Agent.msi api:/artifacts/
@@ -135,13 +135,14 @@ end-to-end (exit 0) and regenerates the baked agent config on IP change.
 
 - Portal sessions + RBAC (admin / operation / monitoring) are live; **alerts +
   reports** shipped in P6 (portal-first; SMTP email delivery optional later).
+- **MSI is live** (P0): built by CI on `windows-latest` and uploaded to the
+  `agent_artifacts` volume — `GET /api/agent-msi` returns a valid installer.
+  The `agent-build` job needs the repo secrets `SERVER_ENDPOINT` + `API_TOKEN`
+  to bake the endpoint/token; otherwise it stages placeholders and refuses.
+- MSI/exe build runs on **Windows** (GitHub Actions `windows-latest`).
 - `wake` sends the WOL magic packet from the target's own network via the agent
   (works when the machine has a peer online); for true remote power-on you still
   need the BIOS/WoL setting enabled on the target.
-- The **MSI download is wired but empty** until the generic engine from P0 is
-  built on CI and copied into the `agent_artifacts` volume (`docker compose cp`).
-- MSI/exe build must run on **Windows** — a GitHub Actions job is provided
-  (`.github/workflows/ci.yml`).
 - Agent exe is signed manually (Authenticode) — same boundary as the existing
   smoke-run doc.
 - Collectors were verified for **syntax + JSON output** locally (pwsh); full

@@ -215,10 +215,10 @@ silently breaking the DB.
   engineer features are all shipped**: commands (P5), **alerts + reports (P6)** —
   role-governed (admin/operation; monitoring read-only). Remaining:
   **SMTP email alerts** (optional flag) and mTLS client certs (flag).
-- **MSI download endpoint is live but empty until P0 runs** — the generic
-  engine build must run on Windows/CI and be copied into the `agent_artifacts`
-  volume (`docker compose cp IT-Toolkit-Agent.msi api:/artifacts/`); the CI job
-  is scaffolded but not yet verified end-to-end.
+- **MSI download endpoint is live (P0)** — CI (`agent-build`, Windows) builds
+  the exe + MSI and the artifact is copied into the `agent_artifacts` volume
+  (`docker compose cp IT-Toolkit-Agent.msi api:/artifacts/`). The job requires
+  the repo secrets `SERVER_ENDPOINT` + `API_TOKEN`.
 - **ps2exe** is a community tool; Authenticode signing of the exe is still a
   manual Windows step (as before).
 - Live WinRM/agent round-trip still requires a real Windows client (CI can't

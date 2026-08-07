@@ -5,7 +5,7 @@
 **Branch:** `main`
 **Repository:** https://github.com/j9619655391-max/Aaditech-ToolKit
 **Remote:** `origin` (GitHub, public) — `main` + `v1.0.0` tag pushed
-**CI status:** ✅ green on `windows-latest` (all 9 steps, verified 2026-08-06)
+**CI status:** ✅ green on `windows-latest` — PowerShell validation + **agent exe/MSI build** (WiX v5) both pass end-to-end (verified 2026-08-07 via workflow_dispatch).
 
 ## What is this document?
 A single source of truth for the toolkit's version, module inventory, and
@@ -61,6 +61,8 @@ changes to the local toolkit.
 - **Commands (P5):** `commands` table; `POST /api/commands` (admin/operation), `GET /api/commands` (all roles), agent `GET /api/commands/poll` + `POST /api/commands/{id}/result` (bearer token). Kinds: reboot (delay), wake (WOL), run-script (allowlist + flag). Portal Commands page with history/audit.
 - **Alerts (P6):** `alert_rules` + `alerts` tables; seeded rules (offline 15 min, disk <10%, SMART predicted failure, battery <20%, service down, reboot-pending >7 days); background eval loop (`ALERT_EVAL_MINUTES`, default 1 min) auto-opens/resolves; ack/resolve + RBAC (admin/operation; monitoring read-only). Portal Alerts page (filter + rule admin) + open-alert badge.
 - **Reports (P6):** `GET /api/report/fleet` (CSV, one row per agent with latest hardware/health/update snapshot), `GET /api/report/agent/{id}?format=json|csv`. Portal Reports page with export links.
+- **P0 agent build (verified 2026-08-07):** CI `agent-build` job now runs green end-to-end — stages `agent-config.json` (from repo secrets `SERVER_ENDPOINT` + `API_TOKEN`), builds the exe via ps2exe, and the MSI via **WiX v5** (pinned; v7 requires OSMF EULA). Artifacts uploaded; the MSI is deployed into the server's `agent_artifacts` volume so `GET /api/agent-msi` returns a real installer.
+- **Indexer fix:** `Update-ProjectIndex.ps1` hashes only **git-tracked files** (ignores `.env`, generated `agent-config.json`, `__pycache__`), so the CI freshness check no longer drifts between local working trees and fresh clones.
 - **CI:** new `agent-build` job (windows-latest) builds `.exe` + `.msi` artifacts.
 - **Verified locally:** full Docker stack + agent→server round-trip with PII `[REDACTED-*]` sanitization (macOS smoke).
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## v3.7 UPDATES — CI agent build green end-to-end (P0) + MSI live
+
+- **NEW: `agent-build` CI job verified end-to-end** on `windows-latest`
+  (workflow_dispatch) — stages `agent-config.json` from repo secrets
+  (`SERVER_ENDPOINT`, `API_TOKEN`), builds the exe via ps2exe, and the MSI via
+  **WiX v5** (pinned because WiX v7 requires accepting the OSMF EULA). Both CI
+  jobs now green (PowerShell validation + agent build).
+- **FIX: WiX v4+ schema** — `Agent.wxs` custom actions now use the required
+  `Directory` attribute with `ExeCommand` and `Condition` attributes instead of
+  inner text (`REMOVE="ALL"`, `NOT Installed AND NOT REMOVE`).
+- **FIX: MSI staging path** — `build-msi.ps1` runs `wix build` from the WXS
+  directory (`Push-Location`), so WiX v5 resolves the relative `stage\...`
+  `Source` paths against the WXS location, not the caller's CWD.
+- **FIX: project-index freshness check** — `Update-ProjectIndex.ps1` hashes only
+  **git-tracked files**; gitignored files present only in local working trees
+  (`.env`, generated `agent-config.json`, `__pycache__`) no longer cause index
+  drift → the CI `Verify project index is up to date` step is deterministic.
+- **MSI is now live:** the CI-built `IT-Toolkit-Agent.msi` (with the live
+  endpoint + token baked in) is copied into the server's `agent_artifacts`
+  volume — `GET /api/agent-msi` returns HTTP 200 with a valid WiX installer
+  (verified). The `/api/agent-msi` "404 until P0 upload" gap is closed.
+- **NOTE:** `agent-build` requires the two repo secrets
+  `SERVER_ENDPOINT` + `API_TOKEN` (configured in GitHub repo settings).
+
 ## v3.6 UPDATES — Alerts + reporting (P6)
 
 - **NEW: `alert_rules` + `alerts` tables** (schema.sql + idempotent runtime
