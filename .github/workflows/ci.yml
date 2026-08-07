@@ -147,9 +147,16 @@ jobs:
 
           foreach ($t in $targets) {
             if (-not (Test-Path $t)) { continue }
-            & $signtool.Source sign /f $pfx /p $env:CODESIGN_PFX_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $t
-            if ($LASTEXITCODE -ne 0) { throw "signtool failed on $t" }
-            & $signtool.Source verify /pa $t
+            $signed = $false
+            # Prefer an RFC3161 timestamp so the signature outlives the CA's
+            # expiry; fall back to signing without one if the server is unreachable.
+            foreach ($ts in @('http://timestamp.digicert.com', $null)) {
+              if ($null -eq $ts) { $signed = $false }
+              & $signtool.FullName sign /f $pfx /p $env:CODESIGN_PFX_PASSWORD /fd SHA256 $(if ($ts) { @('/tr', $ts, '/td', 'SHA256') }) $t 2>$null
+              if ($LASTEXITCODE -eq 0) { $signed = $true; break }
+            }
+            if (-not $signed) { throw "signtool failed on $t" }
+            & $signtool.FullName verify /pa $t
             Write-Host "Signed: $t"
           }
 
