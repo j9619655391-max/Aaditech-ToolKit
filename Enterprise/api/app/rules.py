@@ -80,7 +80,7 @@ async def get_smtp_settings(pool) -> dict:
     Keys persisted during first-run setup: smtp_host, smtp_port, smtp_user,
     smtp_password, smtp_from, smtp_to, smtp_encryption.
     """
-    from . import config
+    from . import config, vault
 
     db = await pool.fetch("SELECT key, value FROM settings WHERE key LIKE 'smtp_%'")
     kv = {r["key"]: r["value"] for r in db}
@@ -88,7 +88,7 @@ async def get_smtp_settings(pool) -> dict:
     host = kv.get("smtp_host") or config.SMTP_HOST
     port = int(kv.get("smtp_port") or config.SMTP_PORT)
     user = kv.get("smtp_user") or config.SMTP_USER
-    password = kv.get("smtp_password") or config.SMTP_PASSWORD
+    password = vault.decrypt(kv.get("smtp_password") or "") or config.SMTP_PASSWORD
     from_addr = kv.get("smtp_from") or config.SMTP_FROM or user
     to = [
         s.strip()

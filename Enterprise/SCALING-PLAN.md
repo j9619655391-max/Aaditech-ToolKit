@@ -177,11 +177,16 @@
 
 ### B5. Secrets at rest
 - **Finding:** SMTP password + GitHub PAT plaintext in `settings`.
-- **Fix:** encrypt with a key derived from `SESSION_SECRET` (Fernet) before DB write;
-  decrypt on read; never returned by any API.
-- **Files:** new `api/app/vault.py`, `main.py` (setup/build_trigger persistence).
-- **Test gate:** row in `settings` is ciphertext; `test-email` still works; PAT still
-  used by build trigger (proves round-trip).
+- **Fix:** new `api/app/vault.py` — Fernet symmetric encryption keyed off
+  `SESSION_SECRET` (SHA-256 → urlsafe base64). `github_token` + `smtp_password`
+  are encrypted on write (setup, build_trigger), decrypted on read
+  (`_get_build_settings`, `rules.get_smtp_settings`). Legacy plaintext values
+  pass through unchanged (no migration needed), corrupt ciphertext never crashes
+  the caller. Portal never re-displays the secrets.
+- **Files:** new `api/app/vault.py`, `main.py`, `rules.py`.
+- **Test gate:** ✅ Fernet round-trip (encrypt≠plaintext, decrypt==original) in
+  the live container; ✅ stored row is ciphertext (`enc$v1$…`); ✅ legacy
+  plaintext rows still decrypt/pass-through; ✅ py_compile.
 
 ### B6. Per-agent credentials (replace the shared fleet token)
 - **Finding:** one `API_TOKEN` for all agents; leak = fleet impersonation + SYSTEM

@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import auth, bundle, certs, config, db, github, ratelimit, rules
+from . import auth, bundle, certs, config, db, github, ratelimit, rules, vault
 
 # B4: hide interactive API docs (/docs, /redoc, /openapi.json) in prod. Only
 # exposed when ENVIRONMENT=dev.
@@ -246,7 +246,7 @@ async def run_setup(payload: SetupRequest, request: Request, response: Response)
     for key, value in (
         ("build_mode", mode),
         ("github_repo", payload.github_repo.strip()),
-        ("github_token", payload.github_token.strip()),
+        ("github_token", vault.encrypt(payload.github_token.strip())),
     ):
         await pool.execute(
             "INSERT INTO settings (key, value) VALUES ($1, $2) "
@@ -271,7 +271,7 @@ async def run_setup(payload: SetupRequest, request: Request, response: Response)
             ("smtp_host", host),
             ("smtp_port", str(port)),
             ("smtp_user", smtp.email),
-            ("smtp_password", smtp.password),
+            ("smtp_password", vault.encrypt(smtp.password)),
             ("smtp_from", smtp.email),
             ("smtp_to", smtp.recipient or smtp.email),
             ("smtp_encryption", encryption),
@@ -498,7 +498,10 @@ async def _get_build_settings(pool) -> dict:
     rows = await pool.fetch("SELECT key, value FROM settings WHERE key IN ('build_mode','github_repo','github_token')")
     cfg = {"build_mode": config.BUILD_MODE, "github_repo": "", "github_token": ""}
     for r in rows:
-        cfg[r["key"]] = r["value"] or ""
+        if r["key"] == "github_token":
+            cfg[r["key"]] = vault.decrypt(r["value"] or "")
+        else:
+            cfg[r["key"]] = r["value"] or ""
     return cfg
 
 
@@ -590,7 +593,7 @@ async def build_trigger(payload: BuildTriggerRequest, user: dict = Depends(requi
     for key, value in (
         ("build_mode", "github"),
         ("github_repo", repo.strip()),
-        ("github_token", token.strip()),
+        ("github_token", vault.encrypt(token.strip())),
     ):
         await pool.execute(
             "INSERT INTO settings (key, value) VALUES ($1, $2) "
