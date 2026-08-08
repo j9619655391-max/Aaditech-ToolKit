@@ -178,6 +178,35 @@ def require_role(*roles: str):
     return _dep
 
 
+# ---------------------------------------------------------------- audit trail (D3)
+
+async def _audit(
+    pool,
+    *,
+    action: str,
+    target: str = "",
+    detail: dict | None = None,
+    user: dict | None = None,
+    ip: str = "",
+) -> None:
+    """Append one row to audit_log. Never raises: audit failures must not make
+    the primary operation fail."""
+    try:
+        await pool.execute(
+            "INSERT INTO audit_log (user_id, username, role, action, target, detail, ip) "
+            "VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            (user or {}).get("id"),
+            (user or {}).get("username", ""),
+            (user or {}).get("role", ""),
+            action,
+            target,
+            json.dumps(detail or {}),
+            ip,
+        )
+    except Exception:
+        pass
+
+
 # ---------------------------------------------------------------- agent auth (B6)
 
 async def _get_or_create_agent(pool, hostname: str) -> dict:
@@ -449,6 +478,14 @@ async def run_setup(payload: SetupRequest, request: Request, response: Response)
     # committed
     token = auth.issue_session(user["id"])
     response.set_cookie(**auth.secure_cookie(token, secure=auth.request_secure(request)))
+    await _audit(
+        pool,
+        action="setup.complete",
+        target="company",
+        detail={"company": payload.company_name, "build_mode": mode},
+        user=dict(user),
+        ip=ratelimit.client_ip(request),
+    )
     return {
         "company": payload.company_name,
         "server_host": payload.server_host,
@@ -471,10 +508,24 @@ async def login(payload: LoginRequest, request: Request, response: Response):
     ok = bool(user and user["active"] and auth.verify_password(payload.password, user["password_hash"]))
     if not ok:
         await ratelimit.record_failure(payload.username)
+        await _audit(
+            pool,
+            action="auth.login_failed",
+            target="user",
+            detail={"username": payload.username},
+            ip=ratelimit.client_ip(request),
+        )
         raise HTTPException(status_code=401, detail="Invalid credentials")
     await ratelimit.record_success(payload.username)
     token = auth.issue_session(user["id"])
     response.set_cookie(**auth.secure_cookie(token, secure=auth.request_secure(request)))
+    await _audit(
+        pool,
+        action="auth.login",
+        target=f"user:{user['username']}",
+        user=dict(user),
+        ip=ratelimit.client_ip(request),
+    )
     return {"username": user["username"], "role": user["role"]}
 
 
@@ -522,7 +573,7 @@ async def list_users(_: dict = Depends(require_role("admin"))):
 
 
 @app.post("/api/users", dependencies=[Depends(require_session)])
-async def create_user(payload: UserCreate, admin: dict = Depends(require_role("admin"))):
+async def create_user(payload: UserCreate, request: Request, admin: dict = Depends(require_role("admin"))):
     _check_role(payload.role)
     pool = await db.connect()
     try:
@@ -534,12 +585,20 @@ async def create_user(payload: UserCreate, admin: dict = Depends(require_role("a
         )
     except asyncpg.exceptions.UniqueViolationError:
         raise HTTPException(status_code=409, detail="Username already exists")
+    await _audit(
+        pool,
+        action="user.create",
+        target=f"user:{payload.username}",
+        detail={"role": payload.role},
+        user=admin,
+        ip=ratelimit.client_ip(request),
+    )
     return dict(row)
 
 
 @app.put("/api/users/{user_id}", dependencies=[Depends(require_session)])
 async def update_user(
-    user_id: int, payload: UserUpdate, admin: dict = Depends(require_role("admin"))
+    user_id: int, payload: UserUpdate, request: Request, admin: dict = Depends(require_role("admin"))
 ):
     if payload.role is not None:
         _check_role(payload.role)
@@ -558,6 +617,14 @@ async def update_user(
     await pool.execute(
         "UPDATE users SET role = $2, active = $3, password_hash = $4 WHERE id = $1",
         user_id, new_role, new_active, new_hash,
+    )
+    await _audit(
+        pool,
+        action="user.update",
+        target=f"user:{row['username']}",
+        detail={"role": new_role, "active": new_active, "password": bool(payload.password)},
+        user=admin,
+        ip=ratelimit.client_ip(request),
     )
     return {"ok": True, "id": user_id, "role": new_role, "active": new_active}
 
@@ -659,10 +726,16 @@ async def download_install_cmd(_: dict = Depends(require_role("admin", "operatio
 
 
 @app.get("/api/agent-msi", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def download_msi(_: dict = Depends(require_role("admin", "operation"))):
+async def download_msi(request: Request, user: dict = Depends(require_role("admin", "operation"))):
     path = bundle.msi_path()
     if not path.exists():
         raise HTTPException(status_code=404, detail="MSI not uploaded yet — CI publishes the generic engine build (P0).")
+    await _audit(
+        await db.connect(),
+        action="msi.download",
+        user=user,
+        ip=ratelimit.client_ip(request),
+    )
     return FileResponse(path, media_type="application/octet-stream", filename=bundle.MSI_FILENAME)
 
 
@@ -745,9 +818,9 @@ async def build_validate(payload: BuildTriggerRequest, user: dict = Depends(requ
 
 
 @app.post("/api/build/trigger", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def build_trigger(payload: BuildTriggerRequest, user: dict = Depends(require_role("admin", "operation"))):
+async def build_trigger(payload: BuildTriggerRequest, request: Request, user: dict = Depends(require_role("admin", "operation"))):
     """Fire a remote GitHub Actions build (workflow_dispatch) and persist the
-    repo+token so /api/build/status keeps polling + auto-fetching the MSI.
+    repo+token so /api/build/status keeps polling + auto-fetches the MSI.
 
     An empty token in the payload means "use the stored token from setup" —
     the portal never re-displays the PAT."""
@@ -774,6 +847,14 @@ async def build_trigger(payload: BuildTriggerRequest, user: dict = Depends(requi
             "ON CONFLICT (key) DO UPDATE SET value = $2",
             key, value,
         )
+    await _audit(
+        pool,
+        action="build.trigger",
+        target=repo,
+        detail={"branch": payload.branch or "main"},
+        user=user,
+        ip=ratelimit.client_ip(request),
+    )
     return {"dispatched": True, "repo": repo, "branch": payload.branch or "main", "permissions": v}
 
 
@@ -794,7 +875,7 @@ async def list_commands(limit: int = 100):
 
 
 @app.post("/api/commands", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def create_command(payload: CommandCreate, user: dict = Depends(require_role("admin", "operation"))):
+async def create_command(payload: CommandCreate, request: Request, user: dict = Depends(require_role("admin", "operation"))):
     if payload.kind == "run-script" and not config.ALLOW_RUN_SCRIPT:
         raise HTTPException(status_code=403, detail="run-script is disabled (COMMANDS_RUN_SCRIPT_ALLOWED=false)")
     if payload.kind == "run-script":
@@ -805,13 +886,21 @@ async def create_command(payload: CommandCreate, user: dict = Depends(require_ro
                 detail=f"Script '{script}' is not in the allowlist ({', '.join(config.RUN_SCRIPT_ALLOWLIST) or 'empty'})",
             )
     pool = await db.connect()
-    agent = await pool.fetchrow("SELECT id FROM agents WHERE id = $1", payload.agent_id)
+    agent = await pool.fetchrow("SELECT id, hostname FROM agents WHERE id = $1", payload.agent_id)
     if agent is None:
         raise HTTPException(status_code=404, detail="Agent not found")
     row = await pool.fetchrow(
         "INSERT INTO commands (agent_id, kind, payload, created_by) "
         "VALUES ($1, $2, $3, $4) RETURNING id, agent_id, kind, payload, status, created_at",
         payload.agent_id, payload.kind, payload.payload, user["id"],
+    )
+    await _audit(
+        pool,
+        action="command.create",
+        target=f"agent:{agent['hostname']}",
+        detail={"command_id": row["id"], "kind": payload.kind},
+        user=user,
+        ip=ratelimit.client_ip(request),
     )
     return dict(row)
 
@@ -913,7 +1002,7 @@ async def list_rules():
 
 
 @app.put("/api/alert-rules/{name}", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def update_rule(name: str, update: RuleUpdate, _: dict = Depends(require_role("admin"))):
+async def update_rule(name: str, update: RuleUpdate, request: Request, admin: dict = Depends(require_role("admin"))):
     pool = await db.connect()
     row = await pool.fetchrow("SELECT * FROM alert_rules WHERE name = $1", name)
     if row is None:
@@ -924,6 +1013,14 @@ async def update_rule(name: str, update: RuleUpdate, _: dict = Depends(require_r
     await pool.execute(
         "UPDATE alert_rules SET enabled = $2, severity = $3, condition = $4 WHERE name = $1",
         name, new_enabled, new_severity, new_condition,
+    )
+    await _audit(
+        pool,
+        action="alert_rule.update",
+        target=f"rule:{name}",
+        detail={"enabled": new_enabled, "severity": new_severity},
+        user=admin,
+        ip=ratelimit.client_ip(request),
     )
     return {"ok": True, "name": name}
 
@@ -1149,7 +1246,7 @@ async def agent_credential(agent_id: int, _: dict = Depends(require_role("admin"
 
 
 @app.post("/api/agents/{agent_id}/revoke", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def revoke_agent(agent_id: int, _: dict = Depends(require_role("admin"))):
+async def revoke_agent(agent_id: int, request: Request, admin: dict = Depends(require_role("admin"))):
     """Cut this agent off immediately: its per-agent token (and the shared
     token) stop being accepted for ingest/polls. Only an admin can undo it."""
     pool = await db.connect()
@@ -1158,17 +1255,31 @@ async def revoke_agent(agent_id: int, _: dict = Depends(require_role("admin"))):
     )
     if updated == "UPDATE 0":
         raise HTTPException(status_code=404, detail="Agent not found")
+    await _audit(
+        pool,
+        action="agent.revoke",
+        target=f"agent:{agent_id}",
+        user=admin,
+        ip=ratelimit.client_ip(request),
+    )
     return {"ok": True, "id": agent_id, "revoked": True}
 
 
 @app.post("/api/agents/{agent_id}/unrevoke", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def unrevoke_agent(agent_id: int, _: dict = Depends(require_role("admin"))):
+async def unrevoke_agent(agent_id: int, request: Request, admin: dict = Depends(require_role("admin"))):
     pool = await db.connect()
     updated = await pool.execute(
         "UPDATE agents SET agent_token_revoked = FALSE WHERE id = $1", agent_id
     )
     if updated == "UPDATE 0":
         raise HTTPException(status_code=404, detail="Agent not found")
+    await _audit(
+        pool,
+        action="agent.unrevoke",
+        target=f"agent:{agent_id}",
+        user=admin,
+        ip=ratelimit.client_ip(request),
+    )
     return {"ok": True, "id": agent_id, "revoked": False}
 
 
@@ -1226,7 +1337,7 @@ async def list_features():
 
 
 @app.put("/api/features/{name}", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def update_feature(name: str, update: FeatureUpdate, _: dict = Depends(require_role("admin", "operation"))):
+async def update_feature(name: str, update: FeatureUpdate, request: Request, user: dict = Depends(require_role("admin", "operation"))):
     pool = await db.connect()
     row = await pool.fetchrow("SELECT * FROM feature_configs WHERE name = $1", name)
     if row:
@@ -1243,6 +1354,14 @@ async def update_feature(name: str, update: FeatureUpdate, _: dict = Depends(req
             "INSERT INTO feature_configs (name, enabled, config) VALUES ($1, $2, $3)",
             name, new_enabled, new_config,
         )
+    await _audit(
+        pool,
+        action="feature.update",
+        target=f"feature:{name}",
+        detail={"enabled": new_enabled},
+        user=user,
+        ip=ratelimit.client_ip(request),
+    )
     return {"name": name, "enabled": new_enabled, "config": new_config}
 
 
@@ -1280,6 +1399,33 @@ async def metrics_endpoint():
 @app.get("/api/status", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def api_status(request: Request):
     return {"last_ingest_error": getattr(request.app.state, "last_ingest_error", None)}
+
+
+@app.get("/api/audit", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def list_audit(
+    limit: int = 100,
+    action: str | None = None,
+    user: str | None = None,
+    _: dict = Depends(require_role("admin")),
+):
+    """D3: admin-only audit trail. Latest first; optional action/user filters."""
+    limit = _clamp_limit(limit)
+    pool = await db.connect()
+    sql = (
+        "SELECT id, ts, username, role, action, target, detail, ip "
+        "FROM audit_log WHERE 1=1"
+    )
+    args: list = []
+    if action:
+        args.append(action)
+        sql += f" AND action = ${len(args)}"
+    if user:
+        args.append(user)
+        sql += f" AND username = ${len(args)}"
+    sql += f" ORDER BY ts DESC LIMIT ${max(len(args) + 1, 1)}"
+    args.append(limit)
+    rows = await pool.fetch(sql, *args)
+    return [dict(r) for r in rows]
 
 
 # ---------------------------------------------------------------- portal

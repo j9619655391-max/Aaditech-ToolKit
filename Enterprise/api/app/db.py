@@ -123,6 +123,26 @@ _SCHEMA_MIGRATIONS = [
     """
     ALTER TABLE agents ADD COLUMN IF NOT EXISTS agent_token_revoked BOOLEAN NOT NULL DEFAULT FALSE
     """,
+    # D3: fleet audit trail. One row per security/admin-relevant action.
+    """
+    CREATE TABLE IF NOT EXISTS audit_log (
+        id         BIGSERIAL PRIMARY KEY,
+        ts         TIMESTAMPTZ NOT NULL DEFAULT now(),
+        user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        username   TEXT,
+        role       TEXT,
+        action     TEXT NOT NULL,
+        target     TEXT,
+        detail     jsonb NOT NULL DEFAULT '{}',
+        ip         TEXT
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_audit_log_ts ON audit_log(ts DESC)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action)
+    """,
 ]
 
 

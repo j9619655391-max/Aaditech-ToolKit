@@ -381,14 +381,23 @@
   the log line and the `X-Request-ID` response header; an ingest POST produced a
   correlated access line.
 
-### D3. Fleet audit log
+### D3. Fleet audit log — DONE
 - **Finding:** no login/admin-action/token/command audit trail.
-- **Fix:** `audit_log` table (id, user, role, action, target, ip, ts, detail jsonb);
-  log logins, setup, user CRUD, feature changes, command issues, build triggers,
-  MSI downloads, token issuance. Admin-only view endpoint.
-- **Files:** `schema.sql`/`db.py` migration, `main.py`, portal Users→Audit (admin).
-- **Test gate:** perform 5 admin actions → 5 audit rows; audit endpoint returns them;
-  monitoring → 403.
+- **Fix:** `audit_log` table (bigserial id, ts, user_id→users, username, role,
+  action, target, detail jsonb, ip) provisioned in the C2 migration with ts/action
+  indexes. A `_audit()` helper in `main.py` (never raises) fires on:
+  `auth.login` (success), `auth.login_failed` (401 path), `setup.complete`,
+  `user.create`, `user.update` (role/active/password flags), `command.create`
+  (+resolved agent hostname), `agent.revoke`, `agent.unrevoke`,
+  `feature.update`, `alert_rule.update`, `build.trigger`, and
+  `msi.download`. Every admin/monitor route now receives `Request` for the client
+  IP. Admin-only `GET /api/audit?limit=&action=&user=` returns latest-first rows;
+  non-admin → 403.
+- **Files:** `db.py` (migration), `main.py` (`_audit` + hooks + endpoint).
+- **Test gate (live):** >5 real admin actions (user.create, user.update,
+  alert_rule.update, feature.update, command.create, agent.revoke/unrevoke, a
+  failed login) produced audit rows carrying correct username/role/detail/IP;
+  `?action=` filter worked; a `monitoring` user hitting `/api/audit` → 403.
 
 ---
 
