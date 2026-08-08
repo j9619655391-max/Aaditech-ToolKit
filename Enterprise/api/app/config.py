@@ -9,6 +9,11 @@ FEATURES_FILE = os.environ.get("FEATURES_FILE", "/app/features.json")
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/data"))
 ARTIFACTS_DIR = Path(os.environ.get("ARTIFACTS_DIR", "/artifacts"))
 
+# C3: bounds so a misbehaving client can't dump tables or exhaust memory.
+MAX_LIST_LIMIT = int(os.environ.get("MAX_LIST_LIMIT", "500"))   # list_* LIMIT cap
+MAX_INGEST_EVENTS = int(os.environ.get("MAX_INGEST_EVENTS", "500"))  # events/batch
+MAX_BODY_BYTES = int(os.environ.get("MAX_BODY_BYTES", str(10 * 1024 * 1024)))  # 413 threshold
+
 # SaaS setup: how the Windows agent MSI gets built.
 #   local_windows -> deploy.ps1 builds + signs + publishes on the Windows server
 #   github        -> the server triggers this repo's CI (workflow_dispatch) and

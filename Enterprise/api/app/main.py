@@ -6,6 +6,7 @@ import secrets
 import uuid
 import asyncio
 import csv
+from datetime import datetime
 from pathlib import Path
 
 import asyncpg
@@ -37,7 +38,30 @@ async def _api_burst_limit(request: Request, call_next):
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
     return await call_next(request)
 
+
+@app.middleware("http")
+async def _body_size_limit(request: Request, call_next):
+    # C3: reject oversized bodies up front instead of buffering them whole.
+    length = request.headers.get("content-length")
+    if length is not None:
+        try:
+            if int(length) > config.MAX_BODY_BYTES:
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": "Request body too large"},
+                )
+        except ValueError:
+            pass
+    return await call_next(request)
+
 ROLES = ("admin", "operation", "monitoring")
+
+
+def _clamp_limit(limit: int) -> int:
+    """C3: bound LIMIT to 1..MAX_LIST_LIMIT so limit=-1 can't dump a table."""
+    if limit <= 0:
+        return 1
+    return min(limit, config.MAX_LIST_LIMIT)
 
 
 # ---------------------------------------------------------------- deps
@@ -669,6 +693,7 @@ async def build_trigger(payload: BuildTriggerRequest, user: dict = Depends(requi
 
 @app.get("/api/commands", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def list_commands(limit: int = 100):
+    limit = _clamp_limit(limit)
     pool = await db.connect()
     rows = await pool.fetch(
         "SELECT c.id, a.hostname, c.kind, c.payload, c.status, c.result, "
@@ -749,6 +774,7 @@ class RuleUpdate(BaseModel):
 
 @app.get("/api/alerts", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def list_alerts(status: str | None = None, limit: int = 100):
+    limit = _clamp_limit(limit)
     pool = await db.connect()
     sql = (
         "SELECT al.id, a.hostname, al.severity, al.message, al.status, "
@@ -929,8 +955,36 @@ async def agent_report(
 
 # ---------------------------------------------------------------- ingest
 
+_MAX_MSG_ID_LEN = 255
+
+
+def _validate_event(ev: EventItem) -> str:
+    """C3: validate an event UP FRONT so an invalid row fails the whole batch
+    (400) instead of silently dropping part of it."""
+    if not ev.kind or not ev.kind.strip():
+        raise HTTPException(status_code=400, detail="event.kind is required")
+    msg_id = ev.client_msg_id or str(uuid.uuid4())
+    if len(msg_id) > _MAX_MSG_ID_LEN:
+        raise HTTPException(
+            status_code=400, detail=f"client_msg_id too long (> {_MAX_MSG_ID_LEN})"
+        )
+    if ev.captured_at:
+        try:
+            datetime.fromisoformat(ev.captured_at.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(
+                status_code=400, detail=f"invalid captured_at: {ev.captured_at!r}"
+            )
+    return msg_id
+
+
 @app.post("/ingest")
 async def ingest(batch: IngestBatch, request: Request, authorization: str = Header(default="")):
+    if len(batch.events) > config.MAX_INGEST_EVENTS:
+        raise HTTPException(
+            status_code=413,
+            detail=f"Too many events in batch (max {config.MAX_INGEST_EVENTS})",
+        )
     pool = await db.connect()
     agent = await require_agent_token(batch.hostname, authorization)
     agent_id = agent["id"]
@@ -939,21 +993,28 @@ async def ingest(batch: IngestBatch, request: Request, authorization: str = Head
         agent_id, batch.os, batch.agent_version, batch.ip,
     )
 
+    # C3: validate the whole batch before writing a single row. A transaction
+    # wraps all inserts so any DB error rolls the batch back (no partial write).
+    prepared = [(_validate_event(ev), ev) for ev in batch.events]
     count = 0
-    for ev in batch.events:
-        msg_id = ev.client_msg_id or str(uuid.uuid4())
-        try:
-            row = await pool.fetchrow(
-                "INSERT INTO events (agent_id, kind, payload, sanitized, client_msg_id, captured_at) "
-                "VALUES ($1, $2, $3, $4, $5, COALESCE(($6::text)::timestamptz, now())) "
-                "ON CONFLICT (client_msg_id) DO NOTHING RETURNING id",
-                agent_id, ev.kind, ev.payload, ev.sanitized, msg_id, ev.captured_at,
-            )
-            if row:
-                count += 1
-        except Exception as exc:
-            request.app.state.last_ingest_error = repr(exc)
-            continue
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                for msg_id, ev in prepared:
+                    row = await conn.fetchrow(
+                        "INSERT INTO events (agent_id, kind, payload, sanitized, "
+                        "client_msg_id, captured_at) "
+                        "VALUES ($1, $2, $3, $4, $5, "
+                        "COALESCE(($6::text)::timestamptz, now())) "
+                        "ON CONFLICT (client_msg_id) DO NOTHING RETURNING id",
+                        agent_id, ev.kind, ev.payload, ev.sanitized, msg_id,
+                        ev.captured_at,
+                    )
+                    if row:
+                        count += 1
+    except (asyncpg.DataError, asyncpg.UniqueViolationError) as exc:
+        request.app.state.last_ingest_error = repr(exc)
+        raise HTTPException(status_code=400, detail="Batch rejected: %s" % exc) from exc
 
     return {"accepted": count, "agent_id": agent_id}
 
@@ -1021,6 +1082,7 @@ async def list_events(
     limit: int = 100,
     user: dict = Depends(require_session),
 ):
+    limit = _clamp_limit(limit)
     pool = await db.connect()
     # B1: license payloads contain Windows/Office product keys — admin-only.
     # Non-admins also get licenses events stripped from broad queries.

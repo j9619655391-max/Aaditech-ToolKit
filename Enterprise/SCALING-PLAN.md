@@ -258,6 +258,17 @@
 - **Files:** `main.py` (ingest, list_*), Pydantic models.
 - **Test gate:** batch with one bad row → whole batch 400 (not silent partial);
   `limit=999999` → capped; huge body → 413.
+- **Status: DONE** — ingest validates every event upfront (`kind` required,
+  `client_msg_id` ≤ 255 chars, `captured_at` ISO-parseable) and runs all inserts
+  in a single `conn.transaction()` so a DB error rolls back the whole batch
+  (caught DataError/UniqueViolation → 400). New `config` bounds:
+  `MAX_LIST_LIMIT`/`MAX_INGEST_EVENTS`/`MAX_BODY_BYTES`; `_clamp_limit` applied to
+  `/api/events`, `/api/alerts`, `/api/commands`; `_body_size_limit` middleware
+  rejects `Content-Length` > 10MB with 413 before buffering.
+- **Live gate:** valid batch → 200 accepted 2/2; batch with one bad row → 400 and
+  zero rows persisted (no partial); `limit=-1`→1, `limit=0`→1, `limit=999999`→
+  ≤500; 21MB body → 413 "Request body too large"; 600-event batch → 413; dedupe
+  still fires (same `client_msg_id` twice → accepted 0).
 
 ### C4. Transactional setup
 - **Finding:** `run_setup` writes `setup_complete=1` before build/SMTP keys; a crash
