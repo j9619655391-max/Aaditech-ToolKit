@@ -298,34 +298,16 @@ async def run_setup(payload: SetupRequest, request: Request, response: Response)
     if done and str(done).strip() not in ("0", "", "false", "False"):
         raise HTTPException(status_code=409, detail="Setup already complete")
 
+    # C4: resolve/validate EVERYTHING before the first write so a crash can't
+    # leave a half-configured install. setup_complete is written last, inside
+    # the same transaction — any failure rolls back so setup can be retried.
+
     certs.ensure_certs(payload.server_host)
 
     branding = json.dumps(payload.branding or {})
-    for key, value in (
-        ("company_name", payload.company_name),
-        ("server_host", payload.server_host),
-        ("branding", branding),
-        ("setup_complete", "1"),
-    ):
-        await pool.execute(
-            "INSERT INTO settings (key, value) VALUES ($1, $2) "
-            "ON CONFLICT (key) DO UPDATE SET value = $2",
-            key, value,
-        )
-
-    # SaaS build mode (how the Windows agent MSI is produced).
     mode = payload.build_mode or config.BUILD_MODE
-    for key, value in (
-        ("build_mode", mode),
-        ("github_repo", payload.github_repo.strip()),
-        ("github_token", vault.encrypt(payload.github_token.strip())),
-    ):
-        await pool.execute(
-            "INSERT INTO settings (key, value) VALUES ($1, $2) "
-            "ON CONFLICT (key) DO UPDATE SET value = $2",
-            key, value,
-        )
 
+    smtp_values: list[tuple[str, str]] = []
     smtp = payload.smtp
     if smtp and smtp.email and smtp.provider != "none":
         if smtp.provider == "custom":
@@ -339,7 +321,7 @@ async def run_setup(payload: SetupRequest, request: Request, response: Response)
             raise HTTPException(status_code=422, detail="SMTP host and port are required")
         if encryption not in ("starttls", "ssl", "none"):
             raise HTTPException(status_code=422, detail="SMTP encryption must be starttls, ssl or none")
-        for key, value in (
+        smtp_values = [
             ("smtp_host", host),
             ("smtp_port", str(port)),
             ("smtp_user", smtp.email),
@@ -347,18 +329,46 @@ async def run_setup(payload: SetupRequest, request: Request, response: Response)
             ("smtp_from", smtp.email),
             ("smtp_to", smtp.recipient or smtp.email),
             ("smtp_encryption", encryption),
-        ):
-            await pool.execute(
-                "INSERT INTO settings (key, value) VALUES ($1, $2) "
-                "ON CONFLICT (key) DO UPDATE SET value = $2",
-                key, value,
-            )
+        ]
 
-    user = await pool.fetchrow(
-        "INSERT INTO users (username, password_hash, role) "
-        "VALUES ($1, $2, 'admin') RETURNING id, username, role",
-        payload.admin_username, auth.hash_password(payload.admin_password),
-    )
+    try:
+        async with pool.acquire() as conn:
+            async with conn.transaction():
+                for key, value in (
+                    ("company_name", payload.company_name),
+                    ("server_host", payload.server_host),
+                    ("branding", branding),
+                    ("build_mode", mode),
+                    ("github_repo", payload.github_repo.strip()),
+                    ("github_token", vault.encrypt(payload.github_token.strip())),
+                ):
+                    await conn.execute(
+                        "INSERT INTO settings (key, value) VALUES ($1, $2) "
+                        "ON CONFLICT (key) DO UPDATE SET value = $2",
+                        key, value,
+                    )
+                for key, value in smtp_values:
+                    await conn.execute(
+                        "INSERT INTO settings (key, value) VALUES ($1, $2) "
+                        "ON CONFLICT (key) DO UPDATE SET value = $2",
+                        key, value,
+                    )
+                # setup_complete LAST so a partial run never leaves a 409 wall.
+                await conn.execute(
+                    "INSERT INTO settings (key, value) VALUES ($1, $2) "
+                    "ON CONFLICT (key) DO UPDATE SET value = $2",
+                    "setup_complete", "1",
+                )
+                user = await conn.fetchrow(
+                    "INSERT INTO users (username, password_hash, role) "
+                    "VALUES ($1, $2, 'admin') RETURNING id, username, role",
+                    payload.admin_username, auth.hash_password(payload.admin_password),
+                )
+    except Exception:
+        # C4: transaction above rolls back automatically on any error, so a
+        # partial setup is never left behind and the wizard can be retried.
+        raise
+    # committed
     token = auth.issue_session(user["id"])
     response.set_cookie(**auth.secure_cookie(token, secure=auth.request_secure(request)))
     return {

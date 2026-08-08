@@ -276,6 +276,16 @@
 - **Fix:** wrap in one transaction; write `setup_complete` last; on failure, roll back
   so setup can be retried.
 - **Test gate:** kill setup mid-flight → `setup_status` still false → re-run succeeds.
+- **Status: DONE** — validation (SMTP provider/host/encryption, build mode) now runs
+  BEFORE any write; all settings + admin user insert inside one
+  `conn.transaction()` on a single connection; `setup_complete` written last; any
+  failure auto-rolls back (no 409 wall, wizard retryable). `certs.ensure_certs`
+  stays idempotent.
+- **Live gate:** pre-inserted a conflicting admin username to force a mid-transaction
+  UniqueViolation → HTTP 500, `setup_complete` still NULL and `settings` empty
+  (full rollback); removed conflict → re-run setup → 200, `setup_complete: true`,
+  admin user created. Also fixed a `$2`-with-no-`$1` placeholder bug in the
+  `setup_complete` upsert found during the gate.
 
 ### C5. Command channel: at-most-once + sanitized output
 - **Finding:** failed result post → 5-min re-delivery → duplicate execution; `run-script`
