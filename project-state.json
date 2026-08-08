@@ -1,30 +1,34 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-08T05:43:21+05:30",
+  "generated": "2026-08-08T20:16:42+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "8ba7c76ea9aedca8d7fe3ba2f804dae40d5851f1",
-  "last_verified_date": "2026-08-08T05:30:10+05:30",
+  "last_verified_commit": "955e1e1d3af82760beee8b257dd10cae175e7ab8",
+  "last_verified_date": "2026-08-08T05:43:20+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 65,
+    "commit_count": 66,
     "clean_working_tree": false,
-    "head": "8ba7c76ea9aedca8d7fe3ba2f804dae40d5851f1"
+    "head": "955e1e1d3af82760beee8b257dd10cae175e7ab8"
   },
   "latest_delta": {
-    "detected_at": "2026-08-08T05:43:21+05:30",
-    "added": [],
+    "detected_at": "2026-08-08T20:16:42+05:30",
+    "added": [
+      "Enterprise/SCALING-PLAN.md",
+      "Enterprise/agent/agent-version.json"
+    ],
     "removed": [],
     "changed": [
-      "Enterprise/ARCHITECTURE.md",
-      "Enterprise/.env.example",
-      "Enterprise/README.md",
-      "VERSION.md",
-      "Enterprise/ROADMAP.md",
-      "Documentation/README.md",
-      "CHANGELOG.md"
+      "Enterprise/agent/Agent-Collect.ps1",
+      "Enterprise/agent/wix/Agent.wxs",
+      ".gitignore",
+      "Enterprise/agent/wix/build-msi.ps1",
+      ".github/workflows/ci.yml",
+      "Enterprise/deploy/deploy.ps1",
+      "Enterprise/api/app/bundle.py",
+      "Enterprise/deploy/deploy.sh"
     ],
-    "unchanged_count": 104
+    "unchanged_count": 103
   },
   "module_state": {
     "working": [

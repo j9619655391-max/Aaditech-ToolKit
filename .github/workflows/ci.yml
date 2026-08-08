@@ -103,11 +103,12 @@ jobs:
           $features = @($manifest | ForEach-Object {
             @{ name = $_.name; script = $_.script; enabled = [bool]$_.default_enabled }
           })
+          $agentMeta = Get-Content ./Enterprise/agent/agent-version.json -Raw | ConvertFrom-Json
           $cfg = [ordered]@{
             endpoint = $endpoint
             token = $token
-            agent_version = '1.0.0'
-            interval_minutes = 30
+            agent_version = [string]$agentMeta.agent_version
+            interval_minutes = [int]$agentMeta.interval_minutes
             features = $features
           }
           # Optional mTLS: when MTLS_ENDPOINT is set, agents talk to the :9443

@@ -46,8 +46,21 @@ function Read-AgentConfig {
     if (-not (Test-Path $ConfigPath)) {
         throw "Agent config not found at $ConfigPath. Reinstall the MSI or run build-agent.ps1."
     }
-    try { return (Get-Content $ConfigPath -Raw | ConvertFrom-Json) }
+    try { $cfg = (Get-Content $ConfigPath -Raw | ConvertFrom-Json) }
     catch { throw "Invalid agent.json: $($_.Exception.Message)" }
+
+    # Registry override knob (A4): HKLM\SOFTWARE\ITToolkit\Agent\EndpointUrl
+    # and/or ApiToken override agent.json at startup. This is what makes the
+    # GPO/manual redirect real without a reinstall. Empty/missing values fall
+    # back to the file.
+    $regKey = 'HKLM:\SOFTWARE\ITToolkit\Agent'
+    if (Test-Path $regKey) {
+        $endpoint = (Get-ItemProperty $regKey -ErrorAction SilentlyContinue).EndpointUrl
+        $token    = (Get-ItemProperty $regKey -ErrorAction SilentlyContinue).ApiToken
+        if ($endpoint) { $cfg.endpoint = $endpoint; Write-AgentLog "Registry override: endpoint -> $endpoint" }
+        if ($token)    { $cfg.token    = $token;    Write-AgentLog 'Registry override: token applied' }
+    }
+    return $cfg
 }
 
 # ---------------------------------------------------------------- mTLS client cert (hardening)
@@ -129,8 +142,29 @@ function Get-RestCertificate {
     catch { Write-AgentLog "Failed to load client cert: $($_.Exception.Message)"; return $null }
 }
 
+function Add-BundledSqliteToPath {
+    # The MSI installs sqlite3.exe beside the agent exe so the queue works on
+    # stock Windows (no system-wide SQLite needed). Prepend that directory to
+    # PATH so the shared ToolkitData module's `sqlite3` lookup finds it.
+    $candidates = @(
+        $PSScriptRoot,
+        (Join-Path $script:RepoRoot 'Scripts\Modules')
+    ) | Select-Object -Unique
+    foreach ($dir in $candidates) {
+        $sqlite = Join-Path $dir 'sqlite3.exe'
+        if (Test-Path $sqlite) {
+            if ($env:PATH -split ';' -notcontains $dir) {
+                $env:PATH = "$dir;$env:PATH"
+            }
+            return
+        }
+    }
+    Write-AgentLog "sqlite3.exe not found beside the agent; relying on PATH"
+}
+
 function Import-ToolkitModules {
     # Reuse existing modules unchanged.
+    Add-BundledSqliteToPath
     Import-Module (Join-Path $script:ModulesPath 'SanitizeEngine.psm1') -Force
     Import-Module (Join-Path $script:ModulesPath 'ToolkitData.psm1') -Force
 }

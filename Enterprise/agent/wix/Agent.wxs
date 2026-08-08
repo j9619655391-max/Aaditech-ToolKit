@@ -20,7 +20,7 @@
 
   <Package Name="IT-Toolkit Agent"
            Manufacturer="IT Toolkit"
-           Version="1.0.0.0"
+           Version="$(var.AgentVersion)"
            UpgradeCode="B8C4F1E3-6A2D-4F9B-9E5C-1D2A3B4C5D6E"
            Scope="perMachine"
            Compressed="yes">
@@ -34,6 +34,12 @@
 
         <Component Id="AgentExe" Guid="A1B2C3D4-1111-2222-3333-444455556666">
           <File Id="AgentExeFile" Name="IT-Toolkit-Agent.exe" Source="stage\IT-Toolkit-Agent.exe" KeyPath="yes" />
+        </Component>
+
+        <!-- Bundled sqlite3.exe so the agent's outbox queue works on stock
+             Windows with no system-wide SQLite install (see build-msi.ps1). -->
+        <Component Id="SqliteBin" Guid="A1B2C3D4-1211-2222-3333-444455556677">
+          <File Id="SqliteExe" Name="sqlite3.exe" Source="stage\sqlite3.exe" KeyPath="yes" />
         </Component>
 
         <Component Id="AgentJsonLocal" Guid="A1B2C3D4-9999-8888-7777-666655554444">
@@ -124,10 +130,14 @@
     </StandardDirectory>
 
     <!-- ==================== registry override knob ==================== -->
+    <!-- GPO/manual override: set HKLM\SOFTWARE\ITToolkit\Agent\EndpointUrl
+         and/or ApiToken to redirect this agent without reinstalling. The
+         agent reads these at startup and falls back to agent.json when they
+         are absent/empty. The MSI only stamps Installed=<version> here and
+         never touches the override values, so upgrades can't clobber GPO. -->
     <Component Id="RegistryConfig" Guid="A1B2C3D4-AAAA-BBBB-CCCC-DDDDEEEEFFFF" Directory="INSTALLFOLDER">
       <RegistryKey Root="HKLM" Key="SOFTWARE\ITToolkit\Agent">
-        <RegistryValue Name="EndpointUrl" Type="string" Value="!agent.endpoint" KeyPath="yes" />
-        <RegistryValue Name="ApiToken" Type="string" Value="!agent.token" />
+        <RegistryValue Name="Installed" Type="string" Value="$(var.AgentVersion)" KeyPath="yes" />
       </RegistryKey>
     </Component>
 
@@ -137,7 +147,7 @@
                   Return="check"
                   Impersonate="no"
                   Execute="deferred"
-                  ExeCommand="&quot;[SystemFolder]schtasks.exe&quot; /create /tn ITToolkitAgent /sc minute /mo 30 /ru SYSTEM /f /tr &quot;\&quot;[INSTALLFOLDER]IT-Toolkit-Agent.exe\&quot; -LoopMinutes 30&quot;" />
+                  ExeCommand="&quot;[SystemFolder]schtasks.exe&quot; /create /tn ITToolkitAgent /sc minute /mo $(var.AgentInterval) /ru SYSTEM /f /tr &quot;\&quot;[INSTALLFOLDER]IT-Toolkit-Agent.exe\&quot; -LoopMinutes $(var.AgentInterval)&quot;" />
 
     <CustomAction Id="RemoveSchedTask"
                   Directory="INSTALLFOLDER"
@@ -154,6 +164,7 @@
     <!-- ==================== feature ==================== -->
     <Feature Id="Main" Title="IT-Toolkit Agent" Level="1">
       <ComponentRef Id="AgentExe" />
+      <ComponentRef Id="SqliteBin" />
       <ComponentRef Id="AgentJsonLocal" />
       <ComponentRef Id="ScriptQuickCheck" />
       <ComponentRef Id="ScriptEventLogs" />

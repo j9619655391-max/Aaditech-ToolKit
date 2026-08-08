@@ -104,12 +104,14 @@ if [ ! -f "$ENV_FILE" ]; then
         echo "SERVER_HOST=auto"
         echo "CADDY_HOST="
     } > "$ENV_FILE"
+    chmod 600 "$ENV_FILE"  # A7: secrets must not be world-readable
     if compose volume ls --format '{{.Name}}' 2>/dev/null | grep -q 'pgdata'; then
         die "A pgdata volume from a previous deploy already exists, but secrets were regenerated.\n   Reset it (destructive) and re-run:  docker compose -f $HERE/docker-compose.yml down -v && $0 --regen"
     fi
 else
     log ".env exists — keeping it (SERVER_HOST=$([ -f "$ENV_FILE" ] && grep '^SERVER_HOST=' "$ENV_FILE" | cut -d= -f2))"
 fi
+chmod 600 "$ENV_FILE" 2>/dev/null || true  # A7: harden even pre-existing .env
 
 # Auto-regenerate placeholder/empty secrets so a manual .env.example copy can
 # never ship with known credentials.
@@ -177,6 +179,14 @@ print(json.dumps(out))
 PY
 )"
 
+# Agent version + interval come from agent/agent-version.json (single source of
+# truth, A2). Also copy it into the api build context so the running container
+# can read the same values (bundle.py).
+AGENT_VERSION_JSON="$HERE/agent/agent-version.json"
+AGENT_VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["agent_version"])' "$AGENT_VERSION_JSON")"
+INTERVAL_MINUTES="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["interval_minutes"])' "$AGENT_VERSION_JSON")"
+cp "$AGENT_VERSION_JSON" "$HERE/api/agent-version.json"
+
 # mTLS: agents always talk to the :9443 client-auth port (TLS via internal CA).
 # enroll_url goes over the MAIN port because Caddy :9443 only routes /ingest and
 # /api/commands/* (a fresh agent has no client cert yet to enroll over 9443).
@@ -185,26 +195,56 @@ cat > "$CONFIG_OUT" <<EOF
   "endpoint": "https://$HOST:9443/ingest",
   "enroll_url": "$SCHEME://$HOST/api/agent/enroll",
   "token": "$API_TOKEN",
-  "agent_version": "1.0.0",
-  "interval_minutes": 30,
+  "agent_version": "$AGENT_VERSION",
+  "interval_minutes": $INTERVAL_MINUTES,
   "features": $FEATURES_JSON
 }
 EOF
 log "Agent config written: $CONFIG_OUT (endpoint baked: https://$HOST:9443/ingest)"
+chmod 600 "$CONFIG_OUT" 2>/dev/null || true  # A7: contains API token
 
 # ---------------------------------------------------------------- bring up
 
-log "Starting containers (db + api + caddy)"
-export CADDY_HOST
-compose up -d --build
+# A5 (Caddy cert timing): Caddy :9443 (agent mTLS) needs server.crt/ca.crt,
+# but Caddy FAILS to start when those files are missing. So we cannot start
+# Caddy before setup. Instead: bring up db+api, generate the certs inside the
+# api container (it owns /data/certs), then start Caddy. The wizard's later
+# ensure_certs() is idempotent and keeps these files (SAN matches $HOST).
 
-log "Waiting for health..."
+log "Starting containers (db + api)"
+export CADDY_HOST
+compose up -d --build db api
+
+log "Waiting for api health..."
+API_UP=0
 for i in $(seq 1 30); do
-    if curl -fsS --max-time 3 "http://localhost:80/healthz" >/dev/null 2>&1 || curl -fsS --max-time 3 "http://localhost:8000/healthz" >/dev/null 2>&1; then
-        break
+    if curl -fsS --max-time 3 "http://localhost:8000/healthz" >/dev/null 2>&1; then
+        API_UP=1; break
     fi
     sleep 2
 done
+if [ "$API_UP" != "1" ]; then
+    die "api container never became healthy after 60s — check 'docker compose -f $HERE/docker-compose.yml logs api'"
+fi
+
+log "Generating mTLS CA + server cert for $HOST (A5)"
+compose exec -T api python -c "from app.certs import ensure_certs; ensure_certs('$HOST')"
+
+log "Starting Caddy (certs now present)"
+compose up -d caddy
+
+log "Waiting for health (main + mTLS :9443)..."
+UP=0
+for i in $(seq 1 30); do
+    MAIN_OK=0; MTLS_OK=0
+    if curl -fsS --max-time 3 "http://localhost:80/healthz" >/dev/null 2>&1; then MAIN_OK=1; fi
+    if echo | openssl s_client -connect localhost:9443 -CAfile <(compose exec -T api cat /data/certs/ca.crt) 2>/dev/null | grep -q 'Verify return code: 0'; then MTLS_OK=1; fi
+    if [ "$MAIN_OK" = "1" ] && [ "$MTLS_OK" = "1" ]; then UP=1; break; fi
+    sleep 2
+done
+if [ "$UP" != "1" ]; then
+    die "server never became healthy — main:${MAIN_OK:-0} mTLS:${MTLS_OK:-0} — check 'docker compose -f $HERE/docker-compose.yml logs'"
+fi
 
 printf '\n\033[1;32m✔ Enterprise server is up!\033[0m\n'
 echo "  Portal:     $SCHEME://$HOST/"

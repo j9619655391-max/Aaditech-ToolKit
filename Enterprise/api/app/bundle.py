@@ -5,8 +5,23 @@ from pathlib import Path
 from . import config
 
 MSI_FILENAME = "IT-Toolkit-Agent.msi"
-AGENT_VERSION = "1.0.0"
-INTERVAL_MINUTES = 30
+
+
+def _agent_meta() -> dict:
+    """Single source of truth for agent version/interval lives in
+    Enterprise/agent/agent-version.json; deploy.sh/deploy.ps1 copy it into
+    the api build context (Enterprise/api/agent-version.json) before compose
+    up, so the container sees /app/agent-version.json (A2)."""
+    here = Path(__file__).resolve()
+    for root in (here.parents[1], here.parents[2] / "agent"):
+        p = root / "agent-version.json"
+        if p.exists():
+            return json.loads(p.read_text())
+    raise RuntimeError("agent-version.json not found (api build context or repo agent/ dir) — version/interval are not hardcoded here.")
+
+
+AGENT_VERSION = _agent_meta()["agent_version"]
+INTERVAL_MINUTES = int(_agent_meta()["interval_minutes"])
 
 
 def is_ip_literal(host: str) -> bool:

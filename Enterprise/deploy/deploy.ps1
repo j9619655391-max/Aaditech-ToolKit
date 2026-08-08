@@ -48,6 +48,20 @@ $RepoRoot = Split-Path -Parent $Here
 function Log  { Write-Host "[deploy] $args" -ForegroundColor Cyan }
 function Die  { Write-Host "[deploy][ERROR] $args" -ForegroundColor Red; exit 1 }
 
+# A7: restrict a secrets file to SYSTEM + Administrators (drop inherited Users
+# read). Windows analogue of chmod 600 on the Unix deploy script.
+function Set-SecretFileAcl {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return }
+    try {
+        icacls $Path /inheritance:r /grant:r "SYSTEM:(R,W)" "Administrators:(R,W)" | Out-Null
+        Log "Restricted ACL on $Path (SYSTEM + Administrators only)"
+    }
+    catch {
+        Log "WARN: could not restrict ACL on $Path : $($_.Exception.Message)"
+    }
+}
+
 # ---------------------------------------------------------------- secrets / IP
 
 function New-Secret {
@@ -152,6 +166,7 @@ else {
         }
     }
 }
+Set-SecretFileAcl $EnvFile  # A7: .env holds API token + DB password
 
 # load .env into the process so docker compose substitution works
 foreach ($line in (Get-Content $EnvFile)) {
@@ -168,6 +183,15 @@ $features = @($featuresJson.features | ForEach-Object {
     [pscustomobject]@{ name = $_.name; script = $_.script; enabled = [bool]$_.default_enabled }
 })
 
+# Agent version + interval come from agent/agent-version.json (single source of
+# truth, A2). Also copy it into the api build context so the running container
+# can read the same values (bundle.py).
+$AgentVersionJson = Join-Path $Here 'agent\agent-version.json'
+$agentMeta = Get-Content $AgentVersionJson -Raw | ConvertFrom-Json
+$AgentVersion = [string]$agentMeta.agent_version
+$IntervalMinutes = [int]$agentMeta.interval_minutes
+Copy-Item $AgentVersionJson (Join-Path $Here 'api\agent-version.json') -Force
+
 # mTLS: agents always talk to the :9443 client-auth port (TLS via internal CA).
 # enroll_url goes over the MAIN port because Caddy :9443 only routes /ingest and
 # /api/commands/* (a fresh agent has no client cert yet to enroll over 9443).
@@ -175,34 +199,81 @@ $cfg = [ordered]@{
     endpoint = "https://$HOST`:9443/ingest"
     enroll_url = "$Scheme`://$HOST/api/agent/enroll"
     token = $env:API_TOKEN
-    agent_version = '1.0.0'
-    interval_minutes = 30
+    agent_version = $AgentVersion
+    interval_minutes = $IntervalMinutes
     features = $features
 }
 $cfg | ConvertTo-Json -Depth 6 | Set-Content $ConfigOut
+Set-SecretFileAcl $ConfigOut  # A7: agent-config.json contains the API token
 Log "Agent config written: $ConfigOut"
 Log "  ingest endpoint : https://$HOST`:9443/ingest (mTLS)"
 Log "  enroll_url      : $Scheme`://$HOST/api/agent/enroll"
 
 # ---------------------------------------------------------------- bring up
 
-Log "Starting containers (db + api + caddy)"
+# A5 (Caddy cert timing): Caddy :9443 (agent mTLS) needs server.crt/ca.crt,
+# but Caddy FAILS to start when those files are missing. So we cannot start
+# Caddy before setup. Instead: bring up db+api, generate the certs inside the
+# api container (it owns /data/certs), then start Caddy. The wizard's later
+# ensure_certs() is idempotent and keeps these files (SAN matches $HOST).
+
+Log "Starting containers (db + api)"
 Push-Location $Here
 try {
-    docker compose -f $ComposeFile up -d --build
+    docker compose -f $ComposeFile up -d --build db api
 }
 finally { Pop-Location }
 
-Log "Waiting for health..."
-$healthy = $false
+Log "Waiting for api health..."
+$apiHealthy = $false
 for ($i = 0; $i -lt 30; $i++) {
     try {
-        $r = Invoke-WebRequest -Uri "http://localhost:80/healthz" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
-        if ($r.StatusCode -eq 200) { $healthy = $true; break }
+        $r = Invoke-WebRequest -Uri "http://localhost:8000/healthz" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
+        if ($r.StatusCode -eq 200) { $apiHealthy = $true; break }
     } catch { }
     Start-Sleep -Seconds 2
 }
-if (-not $healthy) { Die "Server did not become healthy in 60s. Check: docker compose -f $ComposeFile ps" }
+if (-not $apiHealthy) { Die "api container never became healthy after 60s — check: docker compose -f $ComposeFile logs api" }
+
+Log "Generating mTLS CA + server cert for $HOST (A5)"
+Push-Location $Here
+try {
+    docker compose -f $ComposeFile exec -T api python -c "from app.certs import ensure_certs; ensure_certs('$HOST')"
+}
+finally { Pop-Location }
+
+# Extract the CA to a temp file so openssl can verify the :9443 server cert.
+$CaTemp = Join-Path $env:TEMP 'itk-ca-healthcheck.crt'
+Push-Location $Here
+try {
+    docker compose -f $ComposeFile exec -T api cat /data/certs/ca.crt | Set-Content $CaTemp -NoNewline
+}
+finally { Pop-Location }
+
+Log "Starting Caddy (certs now present)"
+Push-Location $Here
+try {
+    docker compose -f $ComposeFile up -d caddy
+}
+finally { Pop-Location }
+
+Log "Waiting for health (main + mTLS :9443)..."
+$healthy = $false
+for ($i = 0; $i -lt 30; $i++) {
+    $mainOk = $false
+    try {
+        $r = Invoke-WebRequest -Uri "http://localhost:80/healthz" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
+        if ($r.StatusCode -eq 200) { $mainOk = $true }
+    } catch { }
+    $mtlsOk = $false
+    if ($mainOk) {
+        $handshake = & openssl s_client -connect localhost:9443 -CAfile $CaTemp 2>&1
+        if (($handshake -join "`n") -match 'Verify return code: 0') { $mtlsOk = $true }
+    }
+    if ($mainOk -and $mtlsOk) { $healthy = $true; break }
+    Start-Sleep -Seconds 2
+}
+if (-not $healthy) { Die "Server did not become healthy in 60s (main:$mainOk mTLS:$mtlsOk). Check: docker compose -f $ComposeFile ps" }
 
 Write-Host ""
 Write-Host "[deploy] Server is UP at $Scheme`://$HOST/" -ForegroundColor Green

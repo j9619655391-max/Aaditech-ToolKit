@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-08T05:43:21+05:30",
-  "last_verified_commit": "8ba7c76ea9aedca8d7fe3ba2f804dae40d5851f1",
-  "last_verified_date": "2026-08-08T05:30:10+05:30",
+  "generated": "2026-08-08T20:16:42+05:30",
+  "last_verified_commit": "955e1e1d3af82760beee8b257dd10cae175e7ab8",
+  "last_verified_date": "2026-08-08T05:43:20+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -12,28 +12,12 @@
     "percent": 100.0
   },
   "latest_delta": {
-    "added": 0,
+    "added": 2,
     "removed": 0,
-    "changed": 7,
-    "unchanged": 104
+    "changed": 8,
+    "unchanged": 103
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-07T03:21:10+05:30",
-      "added": [],
-      "removed": [],
-      "changed": [
-        "VERSION.md",
-        "Enterprise/api/app/__pycache__/main.cpython-314.pyc",
-        "Enterprise/portal/index.html",
-        "Enterprise/README.md",
-        "Enterprise/ARCHITECTURE.md",
-        "Enterprise/api/app/main.py",
-        "CHANGELOG.md",
-        "Enterprise/ROADMAP.md"
-      ],
-      "unchanged_count": 96
-    },
     {
       "detected_at": "2026-08-07T03:26:53+05:30",
       "added": [
@@ -320,6 +304,25 @@
         "CHANGELOG.md"
       ],
       "unchanged_count": 104
+    },
+    {
+      "detected_at": "2026-08-08T20:16:42+05:30",
+      "added": [
+        "Enterprise/SCALING-PLAN.md",
+        "Enterprise/agent/agent-version.json"
+      ],
+      "removed": [],
+      "changed": [
+        "Enterprise/agent/Agent-Collect.ps1",
+        "Enterprise/agent/wix/Agent.wxs",
+        ".gitignore",
+        "Enterprise/agent/wix/build-msi.ps1",
+        ".github/workflows/ci.yml",
+        "Enterprise/deploy/deploy.ps1",
+        "Enterprise/api/app/bundle.py",
+        "Enterprise/deploy/deploy.sh"
+      ],
+      "unchanged_count": 103
     }
   ],
   "next_recommended_tasks": [

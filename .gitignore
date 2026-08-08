@@ -18,3 +18,4 @@ Enterprise/agent/build/out/
 Enterprise/agent/wix/IT-Toolkit-Agent.exe
 Enterprise/agent/wix/agent-config.json
 Enterprise/agent/wix/*.msi
+Enterprise/api/agent-version.json
