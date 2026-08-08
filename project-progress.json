@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-09T02:08:11+05:30",
-  "last_verified_commit": "912e0dcf3966a102703d15a2338b811e30e96eb9",
-  "last_verified_date": "2026-08-09T01:56:04+05:30",
+  "generated": "2026-08-09T02:14:29+05:30",
+  "last_verified_commit": "c8b6126d148eef17996adda15a0a35daf1bb0d27",
+  "last_verified_date": "2026-08-09T02:08:11+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -14,27 +14,10 @@
   "latest_delta": {
     "added": 0,
     "removed": 0,
-    "changed": 4,
-    "unchanged": 114
+    "changed": 3,
+    "unchanged": 115
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-07T15:28:18+05:30",
-      "added": [],
-      "removed": [],
-      "changed": [
-        "Enterprise/api/app/rules.py",
-        "Enterprise/docker-compose.yml",
-        "Enterprise/api/app/main.py",
-        "Enterprise/ROADMAP.md",
-        "CHANGELOG.md",
-        "VERSION.md",
-        "Enterprise/api/app/config.py",
-        "Enterprise/README.md",
-        "Enterprise/.env.example"
-      ],
-      "unchanged_count": 97
-    },
     {
       "detected_at": "2026-08-07T15:36:48+05:30",
       "added": [],
@@ -285,6 +268,17 @@
         "Enterprise/SCALING-PLAN.md"
       ],
       "unchanged_count": 114
+    },
+    {
+      "detected_at": "2026-08-09T02:14:29+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [
+        "Enterprise/api/app/certs.py",
+        "Enterprise/agent/Agent-Collect.ps1",
+        "Enterprise/SCALING-PLAN.md"
+      ],
+      "unchanged_count": 115
     }
   ],
   "next_recommended_tasks": [

@@ -312,15 +312,27 @@
   redacts `user@example.com`/`10.0.0.5`/`CORP\user`; allowlist blocks non-listed
   script and allows listed one; both `.ps1` files parse clean.
 
-### C6. Cert lifecycle automation
-- **Finding:** client certs expire at 825 days with no renewal; mTLS "fallback" can't
-  work (Caddy requires client auth) → bricks agents.
-- **Fix:** agent re-enrolls when cert is near-expiry (or on TLS failure); server rotates
-  client certs; optional server-cert renewal hook.
-- **Files:** `Agent-Collect.ps1` (Ensure-ClientCert expiry check), `certs.py`,
-  `main.py`.
-- **Test gate:** backdate a client cert to expiring → next cycle re-enrolls → cert
-  renewed, still connected.
+### C6. Cert lifecycle automation — DONE
+- **Finding:** client certs expire at `CLIENT_CERT_DAYS=825` with no renewal; mTLS
+  "fallback" can't work (Caddy requires client auth) → bricks agents after `down -v`
+  or expiry.
+- **Fix (server):** `certs.issue_client_cert` now reuses the stored cert unless it is
+  within `RENEWAL_DAYS=45` of expiry (`_client_cert_expiring`), in which case it
+  issues a fresh 825-day cert (rotating the key). `/api/agent/enroll` is idempotent
+  and returns the same cert+token each call, so periodic re-enrollment is safe.
+- **Fix (agent):** `Ensure-ClientCert` checks `Test-ClientCertExpiry` (new, 45-day
+  window; also true on missing/unreadable pfx). When the cert is near expiry/missing
+  **OR** the per-agent token file is missing, it drops the old pfx + token and falls
+  through to the existing enroll block (runs over the *main* port with bearer auth,
+  so deleting the old cert can't strand the agent). Healthy cert → CA ensured, `$pfx`
+  returned unchanged.
+- **Files:** `Agent-Collect.ps1` (`Test-ClientCertExpiry`, `Ensure-ClientCert`),
+  `certs.py` (`RENEWAL_DAYS`, `_client_cert_expiring`, reissue path), `main.py`.
+- **Test gate (live, in api container):** fresh cert → `_client_cert_expiring=False`;
+  backdated to 20 days → True; `issue_client_cert` re-issues → new 824-day cert and
+  different pfx; expired cert → cleared+re-issued. Agent-side (pwsh + extracted fn,
+  mock pfxs): 825-day pfx → returns `$false` ("824 days left"); 20-day pfx → `$true`;
+  missing / garbage pfx → `$true`. Both `.ps1` files parse clean (`PARSE ERRORS=0`).
 
 ---
 

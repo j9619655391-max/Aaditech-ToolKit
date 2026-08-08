@@ -10,6 +10,20 @@ from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 from . import config
 
 _CA_CN = "IT-Toolkit Enterprise CA"
+# C6: a client cert is renewed (fresh key + cert) when it is within this many
+# days of expiry, so mTLS never strands an agent after cert.Expiration.
+CLIENT_CERT_DAYS = 825
+RENEWAL_DAYS = 45
+
+
+def _client_cert_expiring(crt_path: Path) -> bool:
+    """True if the stored client cert is expired or within RENEWAL_DAYS."""
+    try:
+        cert = x509.load_pem_x509_certificate(crt_path.read_bytes())
+    except Exception:
+        return True  # corrupt -> reissue
+    days_left = (cert.not_valid_after_utc - datetime.now(timezone.utc)).days
+    return days_left <= RENEWAL_DAYS
 
 
 def _paths():
@@ -140,16 +154,19 @@ def client_cert_paths(hostname: str) -> dict:
 
 
 def issue_client_cert(hostname: str) -> dict:
-    """Issue (once) a client-auth cert for an agent, signed by the local CA.
+    """Issue a client-auth cert for an agent, signed by the local CA.
 
     Returns {crt, key, ca, pfx} — crt/key/ca are PEM, pfx is base64 PKCS#12
     (cert + key + CA, no password) so the Windows agent can load it into an
     X509Certificate2 for Invoke-RestMethod -Certificate. Persisted under
-    DATA_DIR/certs/clients/ so it survives restarts and is served back to the
-    same agent on re-enroll.
+    DATA_DIR/certs/clients/.
+
+    Re-enroll is idempotent (same cert returned) UNLESS the existing cert is
+    expired or within RENEWAL_DAYS of expiry — then a fresh cert is issued so
+    agents that re-enroll close to expiry never get stranded (C6).
     """
     paths = client_cert_paths(hostname)
-    if paths["crt"].exists():
+    if paths["crt"].exists() and not _client_cert_expiring(paths["crt"]):
         key = paths["key"].read_text(encoding="utf-8")
         crt = paths["crt"].read_text(encoding="utf-8")
         ca = _paths()["ca_crt"].read_text(encoding="utf-8")
@@ -173,7 +190,7 @@ def issue_client_cert(hostname: str) -> dict:
         .public_key(client_key.public_key())
         .serial_number(x509.random_serial_number())
         .not_valid_before(now - timedelta(minutes=5))
-        .not_valid_after(now + timedelta(days=825))
+        .not_valid_after(now + timedelta(days=CLIENT_CERT_DAYS))
         .add_extension(
             x509.ExtendedKeyUsage([ExtendedKeyUsageOID.CLIENT_AUTH]), critical=True
         )

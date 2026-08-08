@@ -129,29 +129,23 @@ function Ensure-ClientCert {
     # agents have a cert but no per-agent token: re-enroll once (idempotent,
     # server keeps the same cert+token) so they get their own token too.
     if (Test-Path $pfx) {
-        if (-not (Test-Path $caPath)) {
-            $dir2 = Split-Path $pfx -Parent
-            $cand = Join-Path $dir2 'ca.crt'
-            if (Test-Path $cand) { Copy-Item $cand $caPath -Force }
+        # C6: cert exists but is near expiry / missing token -> renew. The server
+        # re-issues a fresh cert (issue_client_cert renews expiring ones), so we
+        # drop the old cert and re-enroll below.
+        if ((Test-ClientCertExpiry -PfXPath $pfx) -or (-not (Test-Path $tokenPath))) {
+            Write-AgentLog "Client cert expired/near-expiry or token missing — renewing cert (C6)"
+            Remove-Item $pfx -Force -ErrorAction SilentlyContinue
+            Remove-Item $tokenPath -Force -ErrorAction SilentlyContinue
         }
-        if (Test-Path $caPath) { Install-ServerCa (Get-Content $caPath -Raw) }
-        if (-not (Test-Path $tokenPath)) {
-            if (Test-Path $Config.enroll_url) {
-                Write-AgentLog "Existing client cert but no per-agent token — re-enrolling (B6)"
-                try {
-                    $resp = Invoke-RestMethod -Uri $Config.enroll_url -Method Get `
-                        -Headers @{ Authorization = "Bearer $($Config.token)" }
-                    if ($resp.agent_token) {
-                        [IO.File]::WriteAllText($tokenPath, [string]$resp.agent_token)
-                        Write-AgentLog "Per-agent token persisted (B6)"
-                    }
-                }
-                catch {
-                    Write-AgentLog "B6 token re-enroll failed: $($_.Exception.Message)"
-                }
+        else {
+            if (-not (Test-Path $caPath)) {
+                $dir2 = Split-Path $pfx -Parent
+                $cand = Join-Path $dir2 'ca.crt'
+                if (Test-Path $cand) { Copy-Item $cand $caPath -Force }
             }
+            if (Test-Path $caPath) { Install-ServerCa (Get-Content $caPath -Raw) }
+            return $pfx
         }
-        return $pfx
     }
 
     Write-AgentLog "Enrolling for mTLS client cert from $($Config.enroll_url)"
@@ -183,6 +177,28 @@ function Get-RestCertificate {
     if (-not $pfx -or -not (Test-Path $pfx)) { return $null }
     try { return New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($pfx) }
     catch { Write-AgentLog "Failed to load client cert: $($_.Exception.Message)"; return $null }
+}
+
+function Test-ClientCertExpiry {
+    # C6: True when the persisted client cert is already expired or within the
+    # renewal window (default 45 days). Near-expiry triggers a re-enroll so the
+    # agent never gets stranded after mTLS cert expiry (Caddy needs client auth).
+    param(
+        [string]$PfXPath,
+        [int]$RenewDays = 45
+    )
+    if (-not (Test-Path $PfXPath)) { return $true }  # missing -> (re)enroll
+    try {
+        $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($PfXPath)
+        $daysLeft = ($cert.NotAfter - (Get-Date)).TotalDays
+        Write-AgentLog ("Client cert " + $cert.NotAfter.ToString('yyyy-MM-dd') + " — " + [math]::Floor($daysLeft) + " days left")
+        return ($daysLeft -le $RenewDays)
+    }
+    catch {
+        # unreadable/corrupt -> treat as needing renewal
+        Write-AgentLog "Client cert unreadable ($($_.Exception.Message)) — will re-enroll"
+        return $true
+    }
 }
 
 function Add-BundledSqliteToPath {
