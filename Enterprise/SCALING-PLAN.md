@@ -406,12 +406,22 @@
 > **Goal:** agents behave like production software: heartbeats, bounded queues,
 > self-update, least privilege.
 
-### E1. Heartbeat + offline detection
-- **Fix:** call the existing-but-dead `Send-AgentHeartbeat` (or lightweight `POST
-  /api/agent/heartbeat`) each cycle → reliable `last_seen`; alert rule reads it.
-- **Files:** `Agent-Collect.ps1`, `main.py` (heartbeat route), `rules.py`.
-- **Test gate:** agent with empty queue still updates `last_seen`; offline alert fires
-  on a stopped agent.
+### E1. Heartbeat + offline detection — DONE
+- **Finding:** `Send-AgentHeartbeat` existed but was never invoked, so an idle
+  agent (empty queue, no commands) stopped updating `last_seen` and would be
+  wrongly flagged offline.
+- **Fix:** added a dedicated lightweight `POST /api/agent/heartbeat`
+  (agent-token auth, stores os/agent_version/ip, refreshes `last_seen`, no
+  event parsing). Caddy :9443 and the Caddyfile template now route it; the
+  general burst limiter exempts it (like `/ingest`). The agent calls
+  `Send-AgentHeartbeat` every cycle (best-effort, never aborts the loop) against
+  `…/api/agent/heartbeat`. The `agent-offline` rule already evaluated `last_seen`.
+- **Files:** `main.py` (route), `ratelimit.py`, `deploy/Caddyfile` +
+  `deploy/Caddyfile.template`, `Agent-Collect.ps1` (rewire + call per cycle).
+- **Test gate (live):** heartbeat 200 with valid token, 401 with a bad one;
+  `last_seen`+os/ip/agent_version persisted; a real idle agent aged `last_seen`
+  20 min → eval opened an `agent-offline` alert; a fresh heartbeat flipped it
+  back to `resolved`. Without the fix the idle agent stayed silently offline.
 
 ### E2. Queue pruning + backoff/jitter
 - **Fix:** delete `delivered` rows older than N days; cap outbox size; exponential

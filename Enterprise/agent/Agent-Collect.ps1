@@ -365,19 +365,22 @@ function Get-AgentIP {
 
 function Send-AgentHeartbeat {
     param($Config)
+    # E1: lightweight liveness ping on the dedicated heartbeat route (same
+    # mTLS origin as /ingest), so last_seen stays fresh even when the queue is
+    # empty and there are no pending commands to poll.
     $body = @{
         hostname      = (Get-AgentHostname)
         os            = [System.Environment]::OSVersion.VersionString
         agent_version = $Config.agent_version
         ip            = (Get-AgentIP)
-        events        = @()
     } | ConvertTo-Json -Compress
+    $uri = "$(Get-CommandsApiRoot)/api/agent/heartbeat"
     $cert = Get-RestCertificate -Config $Config
     if ($cert) {
-        Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -ContentType 'application/json' -Body $body -Certificate $cert
+        Invoke-RestMethod -Uri $uri -Method Post -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -ContentType 'application/json' -Body $body -Certificate $cert
     }
     else {
-        Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -ContentType 'application/json' -Body $body
+        Invoke-RestMethod -Uri $uri -Method Post -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -ContentType 'application/json' -Body $body
     }
 }
 
@@ -554,6 +557,11 @@ Write-AgentLog "Agent cycle start (endpoint: $($Config.endpoint))"
 $null = Ensure-ClientCert -Config $Config
 
 do {
+    # E1: heartbeat every cycle — an idle agent (empty queue, no commands)
+    # still updates last_seen, so the fleet view + agent-offline rule stay correct.
+    try { $null = Send-AgentHeartbeat -Config $Config }
+    catch { Write-AgentLog "Heartbeat failed (will retry next cycle): $($_.Exception.Message)" }
+
     if (-not $FlushOnly) {
         $ran = Invoke-AgentCollection -Config $Config
         Write-AgentLog "Collected: $($ran -join ', ')"

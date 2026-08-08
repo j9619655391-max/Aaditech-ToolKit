@@ -9,7 +9,7 @@ import time
 import uuid
 import asyncio
 import csv
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import asyncpg
@@ -1139,6 +1139,29 @@ async def agent_report(
 
 
 # ---------------------------------------------------------------- ingest
+
+class Heartbeat(BaseModel):
+    """E1: minimal liveness ping. Carries only the identity + OS/IP/version
+    fields the server stores on agents, so an idle agent (empty queue, no
+    commands) still keeps last_seen fresh."""
+    hostname: str
+    os: str = ""
+    agent_version: str = ""
+    ip: str = ""
+
+
+@app.post("/api/agent/heartbeat")
+async def agent_heartbeat(payload: Heartbeat, request: Request, authorization: str = Header(default="")):
+    """Agent-facing: refresh last_seen + store current OS/IP/version. Kept cheap
+    (no event parsing, no write amplification) and runs on the mTLS port so an
+    idle agent's liveness is observable via last_seen / the agent-offline rule."""
+    pool = await db.connect()
+    agent = await require_agent_token(payload.hostname, authorization)
+    await pool.execute(
+        "UPDATE agents SET os = $2, agent_version = $3, ip = $4 WHERE id = $1",
+        agent["id"], payload.os, payload.agent_version, payload.ip,
+    )
+    return {"ok": True, "last_seen": datetime.now(timezone.utc).isoformat()}
 
 _MAX_MSG_ID_LEN = 255
 

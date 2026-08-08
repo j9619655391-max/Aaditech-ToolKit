@@ -64,7 +64,11 @@
         reverse_proxy api:8000
     }
 
+    handle /api/agent/heartbeat {
+        reverse_proxy api:8000
+    }
+
     handle {
-        respond "mTLS agent endpoint — use /ingest or /api/commands/*" 404
+        respond "mTLS agent endpoint — use /ingest, /api/commands/* or /api/agent/heartbeat" 404
     }
 }
