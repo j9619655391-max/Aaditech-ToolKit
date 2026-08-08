@@ -488,12 +488,29 @@ async def _try_github_sync(pool, mode: str) -> dict:
         gh = github.status(cfg["github_repo"], cfg["github_token"])
         if gh["conclusion"] == "success":
             art = github.latest_artifact(cfg["github_repo"], cfg["github_token"])
-            if art and not bundle.msi_path().exists():
-                p = github.download_msi(cfg["github_repo"], cfg["github_token"], art["id"])
+            if art and _needs_msi_refresh(art):
+                p = github.download_msi(cfg["github_repo"], cfg["github_token"], art["id"], art.get("created_at"))
                 gh["msi_downloaded"] = str(p)
         return {"mode": mode, "available": True, "github": gh}
     except Exception as e:
         return {"mode": mode, "available": True, "error": str(e)}
+
+
+def _needs_msi_refresh(art: dict) -> bool:
+    """Download the artifact if we have no MSI yet, or the newest artifact is
+    newer than the one we already fetched (tracked via a stamp file)."""
+    if not bundle.msi_available():
+        return True
+    stamp_path = config.ARTIFACTS_DIR / ".msi_artifact.json"
+    if not stamp_path.exists():
+        # MSI exists but no stamp (e.g. placed manually, or downloaded before
+        # stamping existed) — can't verify freshness, so refresh once.
+        return True
+    try:
+        stamp = json.loads(stamp_path.read_text())
+    except (OSError, ValueError):
+        return True
+    return (art.get("created_at") or "") > (stamp.get("created_at") or "")
 
 
 @app.get("/api/build/status", dependencies=[Depends(require_setup_done), Depends(require_session)])

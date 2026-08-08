@@ -98,10 +98,10 @@ def trigger(repo: str, token: str, branch: str = "main") -> dict:
 
 
 def status(repo: str, token: str) -> dict:
-    """Latest workflow_dispatch run for ci.yml on this repo."""
+    """Latest run for ci.yml on this repo (push or workflow_dispatch)."""
     info = _request(
         "GET",
-        f"/repos/{repo}/actions/workflows/{_WORKFLOW}/runs?event=workflow_dispatch&per_page=1",
+        f"/repos/{repo}/actions/workflows/{_WORKFLOW}/runs?per_page=1",
         token,
     )
     runs = info.get("workflow_runs", [])
@@ -131,7 +131,7 @@ def latest_artifact(repo: str, token: str) -> dict | None:
     return None
 
 
-def download_msi(repo: str, token: str, artifact_id: int) -> Path:
+def download_msi(repo: str, token: str, artifact_id: int, created_at: str | None = None) -> Path:
     """Download the artifact zip and write IT-Toolkit-Agent.msi into the
     artifacts dir. Returns the written path. Raises GitHubError on failure.
 
@@ -141,6 +141,8 @@ def download_msi(repo: str, token: str, artifact_id: int) -> Path:
     """
     config.ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
     dest = config.ARTIFACTS_DIR / _MSI
+    stamp = config.ARTIFACTS_DIR / ".msi_artifact.json"
+    stamp.write_text(json.dumps({"artifact_id": artifact_id, "created_at": created_at}))
 
     class _RedirectSink(urllib.request.HTTPRedirectHandler):
         location: str | None = None
