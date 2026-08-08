@@ -17,6 +17,13 @@ ARTIFACTS_DIR = Path(os.environ.get("ARTIFACTS_DIR", "/artifacts"))
 # The wizard may override this per-company at setup time (settings.build_mode).
 BUILD_MODE = os.environ.get("BUILD_MODE", "manual")
 
+# ---------------------------------------------------------------- environment (B4)
+
+# "prod" (default) hides the interactive API docs (/docs, /openapi.json).
+# Set ENVIRONMENT=dev to expose them for development/debugging.
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "prod").strip().lower()
+IS_DEV = ENVIRONMENT in ("dev", "development", "test", "testing")
+
 # ---------------------------------------------------------------- command channel (P5)
 
 ALLOW_RUN_SCRIPT = os.environ.get("COMMANDS_RUN_SCRIPT_ALLOWED", "false").lower() in (

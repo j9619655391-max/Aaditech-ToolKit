@@ -103,6 +103,7 @@ if [ ! -f "$ENV_FILE" ]; then
         echo "API_TOKEN=$(generate_secret)"
         echo "SERVER_HOST=auto"
         echo "CADDY_HOST="
+        echo "ENVIRONMENT=prod"
     } > "$ENV_FILE"
     chmod 600 "$ENV_FILE"  # A7: secrets must not be world-readable
     if compose volume ls --format '{{.Name}}' 2>/dev/null | grep -q 'pgdata'; then
@@ -136,6 +137,12 @@ fix_placeholder() {
 fix_placeholder "API_TOKEN"
 fix_placeholder "POSTGRES_PASSWORD"
 
+# B4: default ENVIRONMENT=prod for pre-existing .env (idempotent).
+if ! grep -q "^ENVIRONMENT=" "$ENV_FILE"; then
+    echo "ENVIRONMENT=prod" >> "$ENV_FILE"
+    log "Added ENVIRONMENT=prod to .env (edit to 'dev' to expose API docs)"
+fi
+
 # shellcheck disable=SC1090
 set -a; source "$ENV_FILE"; set +a
 
@@ -168,6 +175,9 @@ fi
 # ACME auto-TLS on {$CADDY_HOST}; bare-IP deploys add an internal-CA TLS site on
 # :443 (for agents/browsers that trust our CA) AND keep the plain :80 HTTP site
 # so the first-time setup wizard works exactly as before the change.
+#
+# Also gates /docs + /openapi.json (B4): proxied only when ENVIRONMENT=dev,
+# otherwise blocked at the edge (defense-in-depth on top of FastAPI's gating).
 render_caddyfile() {
     local out="$HERE/deploy/Caddyfile"
     if [ "$SCHEME" = "https" ]; then
@@ -190,13 +200,24 @@ render_caddyfile() {
 }'
         log "Caddyfile: :443 (internal CA TLS) + :80 (HTTP wizard) on $HOST"
     fi
+    if [ "${ENVIRONMENT:-prod}" = "dev" ]; then
+        DOCS_RULE='    reverse_proxy /api-docs* api:8000
+    reverse_proxy /openapi.json api:8000
+    reverse_proxy /redoc api:8000
+    reverse_proxy /docs api:8000'
+    else
+        DOCS_RULE='    @docs path /docs /redoc /openapi.json /api-docs/*
+    respond @docs 404'
+        log "Caddyfile: API docs blocked (ENVIRONMENT != dev)"
+    fi
     # shellcheck disable=SC2016
     python3 -c '
 import sys
 tpl = open(sys.argv[1], encoding="utf-8").read()
 out = tpl.replace("__URL_MAIN_SITES__", sys.argv[2])
-open(sys.argv[3], "w", encoding="utf-8").write(out)
-' "$HERE/deploy/Caddyfile.template" "$MAIN_SITES" "$HERE/deploy/Caddyfile"
+out = out.replace("__DOCS_RULE__", sys.argv[3])
+open(sys.argv[4], "w", encoding="utf-8").write(out)
+' "$HERE/deploy/Caddyfile.template" "$MAIN_SITES" "$DOCS_RULE" "$out"
 }
 
 render_caddyfile

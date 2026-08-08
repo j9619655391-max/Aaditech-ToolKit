@@ -128,19 +128,18 @@ Log "Serving main portal on $Scheme`://$HOST/"
 if (-not (Test-Path $EnvFile)) {
     Log "Creating .env with generated secrets"
     @"
-POSTGRES_DB=ittoolkit
-POSTGRES_USER=ittoolkit
 POSTGRES_PASSWORD=$(New-Secret)
 API_TOKEN=$(New-Secret)
 SESSION_SECRET=$(New-Secret)
 SERVER_HOST=$HOST
 CADDY_HOST=$CaddyHost
+ENVIRONMENT=prod
 BUILD_MODE=local_windows
 "@ | Set-Content $EnvFile -Encoding utf8
 }
 else {
     # fix placeholders + ensure required keys exist
-    foreach ($key in 'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'API_TOKEN', 'SESSION_SECRET', 'SERVER_HOST', 'CADDY_HOST', 'BUILD_MODE') {
+    foreach ($key in 'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'API_TOKEN', 'SESSION_SECRET', 'SERVER_HOST', 'CADDY_HOST', 'ENVIRONMENT', 'BUILD_MODE') {
         $hit = Get-Content $EnvFile | Where-Object { $_ -like "$key=*" } | Select-Object -First 1
         if (-not $hit) {
             $val = switch ($key) {
@@ -151,6 +150,7 @@ else {
                 'SESSION_SECRET' { New-Secret }
                 'SERVER_HOST' { $HOST }
                 'CADDY_HOST' { $CaddyHost }
+                'ENVIRONMENT' { 'prod' }
                 'BUILD_MODE' { 'local_windows' }
             }
             Add-Content $EnvFile "$key=$val"
@@ -159,7 +159,7 @@ else {
         else {
             $val = $hit -replace "^$key=", ''
             if ($val -in @('', 'change-me', 'change-me-strong', 'change-me-random-token')) {
-                $new = if ($key -in @('POSTGRES_DB', 'POSTGRES_USER', 'CADDY_HOST')) { $val } else { New-Secret }
+                $new = if ($key -in @('POSTGRES_DB', 'POSTGRES_USER', 'CADDY_HOST', 'ENVIRONMENT')) { $val } else { New-Secret }
                 (Get-Content $EnvFile) -replace "^$key=.*", "$key=$new" | Set-Content $EnvFile
                 Log "Regenerated placeholder $key"
             }
@@ -208,6 +208,23 @@ else {
 }
 $caddyfile = Get-Content $CaddyfileTpl -Raw
 $caddyfile = $caddyfile.Replace('__URL_MAIN_SITES__', $mainSites)
+# B4: gate API docs at the edge — proxy only when ENVIRONMENT=dev.
+if ($env:ENVIRONMENT -eq 'dev') {
+    $docsRule = @'
+    reverse_proxy /api-docs* api:8000
+    reverse_proxy /openapi.json api:8000
+    reverse_proxy /redoc api:8000
+    reverse_proxy /docs api:8000
+'@
+}
+else {
+    $docsRule = @'
+    @docs path /docs /redoc /openapi.json /api-docs/*
+    respond @docs 404
+'@
+    Log "Caddyfile: API docs blocked (ENVIRONMENT != dev)"
+}
+$caddyfile = $caddyfile.Replace('__DOCS_RULE__', $docsRule)
 Set-Content -Path $CaddyfileOut -Value $caddyfile -Encoding utf8
 Log "Caddyfile rendered -> deploy\Caddyfile"
 

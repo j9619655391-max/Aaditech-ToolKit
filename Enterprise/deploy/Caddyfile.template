@@ -25,9 +25,7 @@
     @health path /healthz
     reverse_proxy @health api:8000
 
-    reverse_proxy /api-docs* api:8000
-    reverse_proxy /openapi.json api:8000
-    reverse_proxy /docs api:8000
+    __DOCS_RULE__
 
     handle {
         reverse_proxy api:8000

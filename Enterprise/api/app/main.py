@@ -16,7 +16,16 @@ from pydantic import BaseModel, Field
 
 from . import auth, bundle, certs, config, db, github, ratelimit, rules
 
-app = FastAPI(title="IT-Toolkit Enterprise", version="1.0.0")
+# B4: hide interactive API docs (/docs, /redoc, /openapi.json) in prod. Only
+# exposed when ENVIRONMENT=dev.
+_docs_off = not config.IS_DEV
+app = FastAPI(
+    title="IT-Toolkit Enterprise",
+    version="1.0.0",
+    docs_url="/docs" if not _docs_off else None,
+    redoc_url="/redoc" if not _docs_off else None,
+    openapi_url="/openapi.json" if not _docs_off else None,
+)
 
 
 @app.middleware("http")

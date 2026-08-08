@@ -1,33 +1,31 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-08T22:29:35+05:30",
+  "generated": "2026-08-08T22:36:10+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "e274f91968ba5afb355da38357d3ef0d10b7c19c",
-  "last_verified_date": "2026-08-08T20:16:41+05:30",
+  "last_verified_commit": "b74b8a06fc1e48abd193a4fb60e00be6cba8a600",
+  "last_verified_date": "2026-08-08T22:29:35+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 67,
+    "commit_count": 68,
     "clean_working_tree": false,
-    "head": "e274f91968ba5afb355da38357d3ef0d10b7c19c"
+    "head": "b74b8a06fc1e48abd193a4fb60e00be6cba8a600"
   },
   "latest_delta": {
-    "detected_at": "2026-08-08T22:29:35+05:30",
-    "added": [
-      "Enterprise/api/app/ratelimit.py",
-      "Enterprise/deploy/Caddyfile.template"
-    ],
+    "detected_at": "2026-08-08T22:36:10+05:30",
+    "added": [],
     "removed": [],
     "changed": [
-      "Enterprise/deploy/Caddyfile",
+      "Enterprise/docker-compose.yml",
+      "Enterprise/api/app/config.py",
+      "Enterprise/deploy/Caddyfile.template",
       "Enterprise/api/app/main.py",
       "Enterprise/deploy/deploy.sh",
+      "Enterprise/deploy/Caddyfile",
       "Enterprise/deploy/deploy.ps1",
-      "Enterprise/portal/index.html",
-      "Enterprise/SCALING-PLAN.md",
-      "Enterprise/api/app/auth.py"
+      "Enterprise/SCALING-PLAN.md"
     ],
-    "unchanged_count": 106
+    "unchanged_count": 107
   },
   "module_state": {
     "working": [

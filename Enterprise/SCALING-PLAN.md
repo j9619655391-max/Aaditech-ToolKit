@@ -165,8 +165,15 @@
 
 ### B4. Hide / disable public API docs
 - **Finding:** `/docs`, `/openapi.json`, `/api-docs*` proxied unauthenticated.
-- **Fix:** enable docs only when `ENVIRONMENT=dev`; Caddy blocks otherwise.
-- **Test gate:** prod → `/docs` → 403/404; dev → 200.
+- **Fix:** docs/redoc/openapi disabled at the FastAPI level unless
+  `ENVIRONMENT=dev` (`config.IS_DEV`); Caddy also blocks the paths at the edge
+  (`__DOCS_RULE__` → `respond 404`) in prod, proxied only in dev. `ENVIRONMENT`
+  defaults to `prod` and is written to `.env` + passed to the api/caddy containers.
+- **Files:** `config.py`, `main.py`, `Caddyfile.template`, `deploy.sh`/`deploy.ps1`,
+  `docker-compose.yml`.
+- **Test gate:** ✅ prod → `/docs` + `/openapi.json` → 404 at both edge and API;
+  ✅ `/`, `/healthz`, `/setup/status` still 200; ✅ `IS_DEV` True for dev/development,
+  False for prod; ✅ `caddy adapt` OK both modes.
 
 ### B5. Secrets at rest
 - **Finding:** SMTP password + GitHub PAT plaintext in `settings`.
