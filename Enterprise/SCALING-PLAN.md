@@ -221,6 +221,15 @@
   file in a `backups/` volume; cron/notes; restore verified.
 - **Test gate:** backup → `docker compose down -v` → restore → agents/events/alerts
   present again.
+- **Status: DONE** — `backup.sh` streams a dated custom-format dump to the HOST
+  `deploy/backups/` (survives `down -v`), `BACKUP_KEEP` pruning; `restore.sh`
+  stops writers, `pg_restore --clean --if-exists`, then **regenerates the mTLS
+  CA + server cert** (Caddy cannot start without them after `down -v`, A5) and
+  brings api+caddy back.
+- **Live gate (full round-trip):** backup → `down -v` (all volumes wiped) →
+  restore → agents=2, events=2, alert_rules=7 all present; portal `/healthz`
+  200; `:9443` openssl Verify return code 0; `BACKUP_KEEP=1` pruning keeps only
+  newest. Reliability note: `uploads`/`publish/restore` remain on host as well.
 
 ### C2. Self-contained + startup-only migrations
 - **Finding:** `db.py:8-69` omits `agents`/`events`/`feature_configs` + unique index
