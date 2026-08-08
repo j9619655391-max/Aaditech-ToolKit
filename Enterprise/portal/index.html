@@ -766,9 +766,16 @@ async function renderAgentSetup() {
       </div>
       <p class="muted" style="margin-top:10px">Company: <code>${esc(data.company)}</code> · Server: <code>${esc(data.server_host)}</code> · Scheme: <code>${esc(data.scheme)}</code></p>
       <label>Endpoint</label>
+      <label>Endpoint</label>
       <div class="code">${esc(data.agent_json.endpoint)}</div>
       <label>Agent token (keep secret — ships inside agent.json)</label>
       <div class="code">${esc(data.agent_json.token)}</div>
+      <label>Self-update: rollout target version (empty = bundled ${esc(data.agent_json.agent_version)})</label>
+      <div class="row" style="margin-top:4px">
+        <input id="agent-rollout" type="text" value="${esc(data.rollout_target || '')}" placeholder="e.g. 1.1.0" style="flex:1;margin-right:8px">
+        <button class="action" onclick="setRolloutTarget()">Save target</button>
+      </div>
+      <p class="muted" style="margin-top:6px">Agents with a lower installed version will silently upgrade on their next cycle.</p>
     </div>
     <div class="card"><h3>Agent MSI build</h3>
       ${build ? renderBuildPanel(build) : '<span class="muted">Build status unavailable.</span>'}
@@ -780,6 +787,12 @@ async function renderAgentSetup() {
     <div class="card"><h3>agent.json preview</h3>
       <pre>${esc(JSON.stringify(data.agent_json, null, 2))}</pre>
     </div>`;
+}
+
+async function setRolloutTarget() {
+  const v = document.getElementById('agent-rollout')?.value?.trim() || '';
+  const r = await api('/api/agent/update-target', { method: 'PUT', body: JSON.stringify({ target_version: v }) });
+  if (r) renderAgentSetup();
 }
 
 function renderBuildPanel(build) {

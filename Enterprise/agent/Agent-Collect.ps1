@@ -371,7 +371,7 @@ function Send-AgentHeartbeat {
     $body = @{
         hostname      = (Get-AgentHostname)
         os            = [System.Environment]::OSVersion.VersionString
-        agent_version = $Config.agent_version
+        agent_version = (Get-InstalledAgentVersion)
         ip            = (Get-AgentIP)
     } | ConvertTo-Json -Compress
     $uri = "$(Get-CommandsApiRoot)/api/agent/heartbeat"
@@ -401,7 +401,7 @@ function Send-AgentBatch {
     $body = @{
         hostname      = (Get-AgentHostname)
         os            = [System.Environment]::OSVersion.VersionString
-        agent_version = $Config.agent_version
+        agent_version = (Get-InstalledAgentVersion)
         ip            = (Get-AgentIP)
         events        = @($events)
     } | ConvertTo-Json -Compress -Depth 12
@@ -489,7 +489,90 @@ function Invoke-QueueSleep {
     }
 }
 
-# ------------------------------------------------------------------ commands (P2)
+# ------------------------------------------------------------------ self-update (E3)
+
+function Get-InstalledAgentVersion {
+    # Source of truth: HKLM stamp the MSI wrote at install time. Falls back to
+    # the bundled config (pre-E3 agents / non-MSI installs).
+    $v = $Config.agent_version
+    try {
+        $regKey = 'HKLM:\SOFTWARE\ITToolkit\Agent'
+        if (Test-Path $regKey) {
+            $stamp = (Get-ItemProperty $regKey -ErrorAction SilentlyContinue).Installed
+            if ($stamp) { $v = [string]$stamp }
+        }
+    }
+    catch { }
+    return $v
+}
+
+function Get-AgentUpdateInfo {
+    param($Config)
+    $hn = [uri]::EscapeDataString((Get-AgentHostname))
+    $uri = "$(Get-CommandsApiRoot)/api/agent/update?hostname=$hn"
+    try {
+        $cert = Get-RestCertificate -Config $Config
+        if ($cert) {
+            return Invoke-RestMethod -Uri $uri -Method Get -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -Certificate $cert
+        }
+        else {
+            return Invoke-RestMethod -Uri $uri -Method Get -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" }
+        }
+    }
+    catch {
+        Write-AgentLog "Update check failed: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+function Update-AgentIfNeeded {
+    param($Config)
+    $info = Get-AgentUpdateInfo -Config $Config
+    if ($null -eq $info) { return $false }
+    $current = Get-InstalledAgentVersion
+    if (-not $info.update_available) {
+        Write-AgentLog "Agent is current ($current = $($info.target_version))"
+        return $false
+    }
+    Write-AgentLog "Update available: $current -> $($info.target_version)"
+
+    # Download the MSI (agent bearer token + client cert, same mTLS channel).
+    $hn = [uri]::EscapeDataString((Get-AgentHostname))
+    $uri = "$(Get-CommandsApiRoot)/api/agent/msi?hostname=$hn"
+    $tmp = Join-Path $env:TEMP 'IT-Toolkit-Agent-update.msi'
+    try {
+        $cert = Get-RestCertificate -Config $Config
+        if ($cert) {
+            Invoke-WebRequest -Uri $uri -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -OutFile $tmp -UseBasicParsing -Certificate $cert
+        }
+        else {
+            Invoke-WebRequest -Uri $uri -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -OutFile $tmp -UseBasicParsing
+        }
+        $size = (Get-Item $tmp).Length
+        if ($size -lt 1KB) { throw "Download too small ($size bytes) — likely not an MSI" }
+        Write-AgentLog "Downloaded $([math]::Round($size/1KB)) KB MSI -> $tmp"
+    }
+    catch {
+        Write-AgentLog "MSI download failed: $($_.Exception.Message)"
+        return $false
+    }
+
+    # Silent in-place upgrade. The task GUID/install folder are stable, so the
+    # scheduled task keeps pointing at the same exe after the MSI is replaced.
+    try {
+        $p = Start-Process msiexec.exe -ArgumentList "/i `"$tmp`" /qn /norestart" -Wait -PassThru
+        Write-AgentLog "msiexec exit code: $($p.ExitCode)"
+        Remove-Item $tmp -ErrorAction SilentlyContinue
+        return ($p.ExitCode -eq 0)
+    }
+    catch {
+        Write-AgentLog "MSI install failed: $($_.Exception.Message)"
+        Remove-Item $tmp -ErrorAction SilentlyContinue
+        return $false
+    }
+}
+
+# ------------------------------------------------------------------ commands (P5)
 
 function Get-CommandsApiRoot {
     # same origin as the ingest endpoint, minus the /ingest suffix
@@ -628,6 +711,12 @@ do {
     # still updates last_seen, so the fleet view + agent-offline rule stay correct.
     try { $null = Send-AgentHeartbeat -Config $Config }
     catch { Write-AgentLog "Heartbeat failed (will retry next cycle): $($_.Exception.Message)" }
+
+    # E3: staged self-upgrade. Runs best-effort each cycle; skips network work
+    # when the server reports the installed version is already current.
+    if (-not $CollectOnly -and -not $FlushOnly) {
+        $null = Update-AgentIfNeeded -Config $Config
+    }
 
     if (-not $FlushOnly) {
         $ran = Invoke-AgentCollection -Config $Config

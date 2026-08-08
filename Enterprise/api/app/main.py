@@ -688,11 +688,13 @@ async def agent_bundle(_: dict = Depends(require_role("admin", "operation"))):
     ca_path = Path(config.DATA_DIR) / "certs" / "ca.crt"
     ca_present = ca_path.exists()
     msi = bundle.msi_path()
+    rollout_target = await pool.fetchval("SELECT value FROM settings WHERE key = 'agent_target_version'") or None
     return {
         "company": agent_json["company"],
         "server_host": (await pool.fetchval("SELECT value FROM settings WHERE key = 'server_host'")),
         "scheme": agent_json["endpoint"].split("://")[0],
         "agent_json": agent_json,
+        "rollout_target": rollout_target,
         "ca_cert": ca_path.read_text() if ca_present else None,
         "install_cmd": bundle.build_install_cmd(agent_json, ca_present),
         "msi_available": msi.exists(),
@@ -1162,6 +1164,66 @@ async def agent_heartbeat(payload: Heartbeat, request: Request, authorization: s
         agent["id"], payload.os, payload.agent_version, payload.ip,
     )
     return {"ok": True, "last_seen": datetime.now(timezone.utc).isoformat()}
+
+
+@app.get("/api/agent/update")
+async def agent_update_info(hostname: str, request: Request, authorization: str = Header(default="")):
+    """E3: agent-facing self-update check. Returns the shipped agent version,
+    the rollout target (from settings, defaulting to the bundled version), and
+    whether an MSI upgrade is available. Auth = agent bearer token."""
+    pool = await db.connect()
+    agent = await require_agent_token(hostname, authorization)
+    target = await pool.fetchval("SELECT value FROM settings WHERE key = 'agent_target_version'")
+    target_version = target or bundle.AGENT_VERSION
+    return {
+        "agent_id": agent["id"],
+        "current_version": bundle.AGENT_VERSION,
+        "target_version": target_version,
+        "update_available": target_version != bundle.AGENT_VERSION and bundle.msi_available(),
+        "msi_url": "/api/agent/msi",
+    }
+
+
+@app.get("/api/agent/msi")
+async def agent_msi_download(hostname: str, authorization: str = Header(default="")):
+    """E3: agent-facing MSI binary download (mTLS + per-agent token). Unlike the
+    portal's /api/agent-msi (session auth) this is meant to be fetched by the
+    agent itself during a silent self-upgrade."""
+    pool = await db.connect()
+    await require_agent_token(hostname, authorization)
+    path = bundle.msi_path()
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="MSI not uploaded yet")
+    return FileResponse(path, media_type="application/octet-stream", filename=bundle.MSI_FILENAME)
+
+
+class AgentRolloutUpdate(BaseModel):
+    """E3: admin sets the staged rollout target version. Empty/None clears the
+    override so agents roll back to the bundled version."""
+    target_version: str = ""
+
+
+@app.put("/api/agent/update-target", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def set_agent_update_target(payload: AgentRolloutUpdate, request: Request, admin: dict = Depends(require_role("admin"))):
+    pool = await db.connect()
+    target = payload.target_version.strip()
+    if target:
+        await pool.execute(
+            "INSERT INTO settings (key, value) VALUES ('agent_target_version', $1) "
+            "ON CONFLICT (key) DO UPDATE SET value = $1",
+            target,
+        )
+    else:
+        await pool.execute("DELETE FROM settings WHERE key = 'agent_target_version'")
+    await _audit(
+        pool,
+        action="agent.rollout.set",
+        target=f"version:{target or 'bundled'}",
+        detail={"target_version": target},
+        user=admin,
+        ip=ratelimit.client_ip(request),
+    )
+    return {"target_version": target, "current_version": bundle.AGENT_VERSION, "cleared": not target}
 
 _MAX_MSG_ID_LEN = 255
 

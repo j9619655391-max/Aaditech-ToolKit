@@ -70,7 +70,9 @@ async def enforce_api_burst(request: Request) -> None:
     the agent command channel are exempt so legitimate fleet traffic isn't
     throttled."""
     path = request.url.path
-    if path == "/healthz" or path.startswith("/ingest") or path.startswith("/api/commands") or path.startswith("/api/agent/heartbeat"):
+    if path == "/healthz" or path.startswith("/ingest") or path.startswith("/api/commands") \
+        or path.startswith("/api/agent/heartbeat") or path.startswith("/api/agent/update") \
+        or path.startswith("/api/agent/msi") or path == "/api/agent/enroll":
         return
     ip = client_ip(request)
     if not await _ip.hit(f"api:{ip}", API_MAX, API_WINDOW):

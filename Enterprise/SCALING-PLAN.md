@@ -442,12 +442,29 @@
   (run1≈30s … run6=900s cap), run-0 = 0, and run-5 samples spread 345–621 s
   (jitter present) across 20 draws.
 
-### E3. Agent auto-update
-- **Fix:** agent checks `/api/agent/update` (version + MSI URL) each cycle; optional
-  staged rollout (server marks per-company target version); silent MSI upgrade.
-- **Files:** `main.py`, `bundle.py`, `Agent-Collect.ps1`, `Agent.wxs`, portal Agent Setup.
-- **Test gate:** bump target version → agent downloads + installs new MSI → reports new
-  `agent_version`; rollback flag → old version reinstalled.
+### E3. Agent auto-update — DONE
+- **Finding:** the only way to change agent behavior was to build + hand-push a
+  new MSI per box; there was no rollout control or self-upgrade path.
+- **Fix:** agent-facing `GET /api/agent/update` (per-agent token) returns
+  `current_version`/`target_version`/`update_available`/`msi_url`, with the
+  target sourced from a new `agent_target_version` setting (operation-set via
+  `PUT /api/agent/update-target`, audited). `GET /api/agent/msi` (agent token
+  auth) streams the MSI over the mTLS channel. The agent checks each cycle, and
+  on a mismatch downloads the MSI and runs `msiexec /i … /qn /norestart`
+  silently (in-place; the stable task GUID keeps the schedule pointing at the
+  same exe). Reported `agent_version` now comes from the `Installed` registry
+  stamp the MSI writes (real per-box version) with config fallback. Portal
+  Agent Setup gained a "rollout target" input.
+- **Files:** `main.py` (update endpoint, msi endpoint, update-target admin,
+  bundle rollout_target), `bundle.py` (build_agent_json), `ratelimit.py`,
+  `deploy/Caddyfile` + `.template` (route), `Agent-Collect.ps1`
+  (`Get-InstalledAgentVersion`, `Get-AgentUpdateInfo`, `Update-AgentIfNeeded`),
+  `portal/index.html` (rollout input + `setRolloutTarget`).
+- **Test gate (live):** `/api/agent/update` 200 with valid token / 401 invalid;
+  `update_available=false` when target==bundled; set target `2.0.0` →
+  `update_available=true` + `agent-bundle.rollout_target=2.0.0`; `/api/agent/msi`
+  streamed a MSI (agent bearer); clearing the target → back to `false`
+  (rollback path); rollout admin writes an `agent.rollout.set` audit row.
 
 ### E4. Least-privilege agent task + file ACLs
 - **Fix:** scheduled task runs as `NETWORK SERVICE` (not SYSTEM); collectors that need
