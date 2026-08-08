@@ -76,6 +76,26 @@ function Get-ClientCertPath {
     return Join-Path $dir 'client.pfx'
 }
 
+function Get-AgentTokenPath {
+    # B6: after enrolling, the agent stores its OWN per-agent token beside the
+    # cert. That token replaces the shared fleet token for ingest/commands, so a
+    # leaked fleet token can't impersonate every box.
+    $dir = Split-Path $ConfigPath -Parent
+    return Join-Path $dir 'agent.token'
+}
+
+function Get-AgentToken {
+    # Prefer the per-agent token from enroll (B6); fall back to the shared
+    # config token (bootstrap / pre-B6 agents).
+    param($Config)
+    $path = Get-AgentTokenPath
+    if (Test-Path $path) {
+        $tok = (Get-Content $path -Raw -ErrorAction SilentlyContinue).Trim()
+        if ($tok) { return $tok }
+    }
+    return $Config.token
+}
+
 function Install-ServerCa {
     # The agent talks to the mTLS endpoint (https://<host>:9443) whose server
     # cert is signed by the server's INTERNAL CA. For Invoke-RestMethod to
@@ -102,9 +122,12 @@ function Ensure-ClientCert {
     if (-not $pfx) { return $null }
     $dir = Split-Path $ConfigPath -Parent
     $caPath = Join-Path $dir 'ca.crt'
+    $tokenPath = Get-AgentTokenPath
 
     # If a CA was already bundled (e.g. copied by install.cmd) or previously
-    # enrolled, make sure it is trusted before the first mTLS call.
+    # enrolled, make sure it is trusted before the first mTLS call. Pre-B6
+    # agents have a cert but no per-agent token: re-enroll once (idempotent,
+    # server keeps the same cert+token) so they get their own token too.
     if (Test-Path $pfx) {
         if (-not (Test-Path $caPath)) {
             $dir2 = Split-Path $pfx -Parent
@@ -112,6 +135,22 @@ function Ensure-ClientCert {
             if (Test-Path $cand) { Copy-Item $cand $caPath -Force }
         }
         if (Test-Path $caPath) { Install-ServerCa (Get-Content $caPath -Raw) }
+        if (-not (Test-Path $tokenPath)) {
+            if (Test-Path $Config.enroll_url) {
+                Write-AgentLog "Existing client cert but no per-agent token — re-enrolling (B6)"
+                try {
+                    $resp = Invoke-RestMethod -Uri $Config.enroll_url -Method Get `
+                        -Headers @{ Authorization = "Bearer $($Config.token)" }
+                    if ($resp.agent_token) {
+                        [IO.File]::WriteAllText($tokenPath, [string]$resp.agent_token)
+                        Write-AgentLog "Per-agent token persisted (B6)"
+                    }
+                }
+                catch {
+                    Write-AgentLog "B6 token re-enroll failed: $($_.Exception.Message)"
+                }
+            }
+        }
         return $pfx
     }
 
@@ -121,6 +160,10 @@ function Ensure-ClientCert {
             -Headers @{ Authorization = "Bearer $($Config.token)" }
         if (-not $resp.pfx) { throw "enroll returned no pfx" }
         [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($resp.pfx))
+        if ($resp.agent_token) {
+            [IO.File]::WriteAllText($tokenPath, [string]$resp.agent_token)
+            Write-AgentLog "Per-agent token persisted (B6)"
+        }
         if ($resp.ca) {
             [IO.File]::WriteAllText($caPath, $resp.ca)
             Install-ServerCa $resp.ca
@@ -287,10 +330,10 @@ function Send-AgentHeartbeat {
     } | ConvertTo-Json -Compress
     $cert = Get-RestCertificate -Config $Config
     if ($cert) {
-        Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body -Certificate $cert
+        Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -ContentType 'application/json' -Body $body -Certificate $cert
     }
     else {
-        Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body
+        Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -ContentType 'application/json' -Body $body
     }
 }
 
@@ -319,10 +362,10 @@ function Send-AgentBatch {
     try {
         $cert = Get-RestCertificate -Config $Config
         if ($cert) {
-            $resp = Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body -Certificate $cert
+            $resp = Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -ContentType 'application/json' -Body $body -Certificate $cert
         }
         else {
-            $resp = Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body
+            $resp = Invoke-RestMethod -Uri $Config.endpoint -Method Post -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -ContentType 'application/json' -Body $body
         }
         $ids = (@($pending | ConvertFrom-Json) | ForEach-Object { $_.id }) -join ','
         Invoke-SQLite -Query "UPDATE outbox SET status='delivered' WHERE id IN ($ids);" -DatabasePath $QueueDb | Out-Null
@@ -349,10 +392,10 @@ function Get-PendingCommands {
     try {
         $cert = Get-RestCertificate -Config $Config
         if ($cert) {
-            $resp = Invoke-RestMethod -Uri $uri -Method Get -Headers @{ Authorization = "Bearer $($Config.token)" } -Certificate $cert
+            $resp = Invoke-RestMethod -Uri $uri -Method Get -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -Certificate $cert
         }
         else {
-            $resp = Invoke-RestMethod -Uri $uri -Method Get -Headers @{ Authorization = "Bearer $($Config.token)" }
+            $resp = Invoke-RestMethod -Uri $uri -Method Get -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" }
         }
         return @($resp)
     }
@@ -430,10 +473,10 @@ function Send-CommandResult {
     try {
         $cert = Get-RestCertificate -Config $Config
         if ($cert) {
-            Invoke-RestMethod -Uri $uri -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body -Certificate $cert | Out-Null
+            Invoke-RestMethod -Uri $uri -Method Post -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -ContentType 'application/json' -Body $body -Certificate $cert | Out-Null
         }
         else {
-            Invoke-RestMethod -Uri $uri -Method Post -Headers @{ Authorization = "Bearer $($Config.token)" } -ContentType 'application/json' -Body $body | Out-Null
+            Invoke-RestMethod -Uri $uri -Method Post -Headers @{ Authorization = "Bearer $(Get-AgentToken -Config $Config)" } -ContentType 'application/json' -Body $body | Out-Null
         }
         Write-AgentLog "Posted result for command $CmdId : $($Result.status)"
     }

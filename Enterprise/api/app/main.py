@@ -42,13 +42,6 @@ ROLES = ("admin", "operation", "monitoring")
 
 # ---------------------------------------------------------------- deps
 
-def require_token(authorization: str = Header(default="")) -> None:
-    """Agent bearer token (used by /ingest)."""
-    expected = f"Bearer {config.API_TOKEN}"
-    if not hmac.compare_digest(authorization.strip(), expected):
-        raise HTTPException(status_code=401, detail="Invalid or missing token")
-
-
 async def require_setup_done() -> None:
     pool = await db.connect()
     done = await pool.fetchval("SELECT value FROM settings WHERE key = 'setup_complete'")
@@ -83,13 +76,67 @@ def require_role(*roles: str):
     return _dep
 
 
-async def get_agent_id(pool, hostname: str) -> int:
+# ---------------------------------------------------------------- agent auth (B6)
+
+async def _get_or_create_agent(pool, hostname: str) -> dict:
     row = await pool.fetchrow(
         "INSERT INTO agents (hostname) VALUES ($1) "
-        "ON CONFLICT (hostname) DO UPDATE SET last_seen = now() RETURNING id",
+        "ON CONFLICT (hostname) DO UPDATE SET last_seen = now() "
+        "RETURNING id, hostname, agent_token, agent_token_revoked",
         hostname,
     )
-    return row["id"]
+    return dict(row)
+
+
+async def issue_agent_token(pool, agent_id: int) -> str:
+    """One-time: mint and persist a per-agent token. Re-runs keep the existing
+    token so the agent doesn't get a new identity on every re-enroll."""
+    existing = await pool.fetchval(
+        "SELECT agent_token FROM agents WHERE id = $1", agent_id
+    )
+    if existing:
+        return existing
+    token = secrets.token_urlsafe(32)
+    await pool.execute(
+        "UPDATE agents SET agent_token = $2 WHERE id = $1", agent_id, token
+    )
+    return token
+
+
+def _bearer_token(authorization: str) -> str:
+    authorization = authorization.strip()
+    if not authorization.startswith("Bearer "):
+        return ""
+    return authorization[len("Bearer "):].strip()
+
+
+async def require_agent_token(hostname: str, authorization: str) -> dict:
+    """Authorize an agent-facing call (ingest, command poll/result).
+
+    Priority:
+      1. A per-agent token that matches this agent's stored agent_token.
+      2. The shared fleet API_TOKEN — still accepted for backwards compat, but
+         only until the agent has enrolled (enroll rotates it off).
+    Rejects revoked agents (agent_token_revoked) even with the right token.
+    """
+    pool = await db.connect()
+    agent = await _get_or_create_agent(pool, hostname)
+    if agent["agent_token_revoked"]:
+        raise HTTPException(status_code=403, detail="Agent revoked")
+
+    supplied = _bearer_token(authorization)
+    if not supplied:
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+
+    if agent["agent_token"]:
+        if not hmac.compare_digest(supplied, agent["agent_token"]):
+            raise HTTPException(status_code=401, detail="Invalid agent token")
+        return agent
+
+    if hmac.compare_digest(supplied, config.API_TOKEN):
+        return agent
+
+    raise HTTPException(status_code=401, detail="Invalid or missing token")
 
 
 # ---------------------------------------------------------------- models
@@ -412,16 +459,30 @@ async def download_ca(_: dict = Depends(require_role("admin", "operation"))):
     return FileResponse(path, media_type="application/x-pem-file", filename="itk-ca.crt")
 
 
-@app.get("/api/agent/enroll", dependencies=[Depends(require_token)])
-async def agent_enroll(hostname: str):
-    """Agent-facing: issue (or re-serve) a client-auth cert for this agent.
+@app.get("/api/agent/enroll")
+async def agent_enroll(hostname: str, request: Request, authorization: str = Header(default="")):
+    """Agent-facing: issue (or re-serve) a client-auth cert for this agent AND
+    mint a per-agent token.
 
-    Auth is the same bearer token the agent already uses for /ingest. The
-    returned {crt, key, ca} are PEM and are what the agent presents to Caddy
-    (which enforces client-auth on the agent port). Idempotent — the same cert
-    is returned on every call for a given hostname.
+    Auth: the shared fleet token, OR this agent's already-issued per-agent
+    token (so a re-enrolling agent isn't forced to share the fleet secret).
+    Returned {crt, key, ca, pfx} + agent_token. Idempotent — the same cert and
+    token are returned on every call for a given hostname.
     """
-    return certs.issue_client_cert(hostname)
+    pool = await db.connect()
+    supplied = _bearer_token(authorization)
+    agent = await _get_or_create_agent(pool, hostname)
+    if agent["agent_token_revoked"]:
+        raise HTTPException(status_code=403, detail="Agent revoked")
+    is_fleet = hmac.compare_digest(supplied, config.API_TOKEN)
+    is_own = bool(agent["agent_token"]) and hmac.compare_digest(supplied, agent["agent_token"])
+    if not (is_fleet or is_own):
+        raise HTTPException(status_code=401, detail="Invalid or missing token")
+
+    agent_token = await issue_agent_token(pool, agent["id"])
+    creds = certs.issue_client_cert(hostname)
+    creds["agent_token"] = agent_token
+    return creds
 
 
 @app.get("/api/agent-template", dependencies=[Depends(require_setup_done), Depends(require_session)])
@@ -641,14 +702,12 @@ async def create_command(payload: CommandCreate, user: dict = Depends(require_ro
     return dict(row)
 
 
-@app.get("/api/commands/poll", dependencies=[Depends(require_token)])
-async def poll_commands(hostname: str, request: Request):
-    """Agent-facing: return pending commands for this host (bearer token auth).
+@app.get("/api/commands/poll")
+async def poll_commands(hostname: str, request: Request, authorization: str = Header(default="")):
+    """Agent-facing: return pending commands for this host (per-agent token auth).
     Marks them picked_up so the portal shows they were delivered."""
     pool = await db.connect()
-    agent = await pool.fetchrow("SELECT id FROM agents WHERE hostname = $1", hostname)
-    if agent is None:
-        return []
+    agent = await require_agent_token(hostname, authorization)
     rows = await pool.fetch(
         "SELECT id, kind, payload FROM commands "
         "WHERE agent_id = $1 AND status IN ('pending', 'picked_up') "
@@ -664,12 +723,10 @@ async def poll_commands(hostname: str, request: Request):
     return [dict(r) for r in rows]
 
 
-@app.post("/api/commands/{command_id}/result", dependencies=[Depends(require_token)])
-async def command_result(command_id: int, result: CommandResult):
+@app.post("/api/commands/{command_id}/result")
+async def command_result(command_id: int, result: CommandResult, request: Request, authorization: str = Header(default="")):
     pool = await db.connect()
-    agent = await pool.fetchrow("SELECT id FROM agents WHERE hostname = $1", result.hostname)
-    if agent is None:
-        raise HTTPException(status_code=404, detail="Agent not found")
+    agent = await require_agent_token(result.hostname, authorization)
     updated = await pool.execute(
         "UPDATE commands SET status = $2, result = $3, completed_at = now() "
         "WHERE id = $1 AND agent_id = $4",
@@ -872,9 +929,10 @@ async def agent_report(
 # ---------------------------------------------------------------- ingest
 
 @app.post("/ingest")
-async def ingest(batch: IngestBatch, request: Request, _: None = Depends(require_token)):
+async def ingest(batch: IngestBatch, request: Request, authorization: str = Header(default="")):
     pool = await db.connect()
-    agent_id = await get_agent_id(pool, batch.hostname)
+    agent = await require_agent_token(batch.hostname, authorization)
+    agent_id = agent["id"]
     await pool.execute(
         "UPDATE agents SET os = $2, agent_version = $3, ip = $4 WHERE id = $1",
         agent_id, batch.os, batch.agent_version, batch.ip,
@@ -909,6 +967,50 @@ async def list_agents():
         "FROM agents ORDER BY last_seen DESC"
     )
     return [dict(r) for r in rows]
+
+
+# B6: per-agent credential lifecycle (admin).
+
+@app.get("/api/agents/{agent_id}/token", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def agent_credential(agent_id: int, _: dict = Depends(require_role("admin"))):
+    """Return whether this agent uses a per-agent token and whether it is
+    revoked. Never reveals the token itself."""
+    pool = await db.connect()
+    row = await pool.fetchrow(
+        "SELECT hostname, agent_token, agent_token_revoked FROM agents WHERE id = $1",
+        agent_id,
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return {
+        "hostname": row["hostname"],
+        "has_per_agent_token": bool(row["agent_token"]),
+        "revoked": row["agent_token_revoked"],
+    }
+
+
+@app.post("/api/agents/{agent_id}/revoke", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def revoke_agent(agent_id: int, _: dict = Depends(require_role("admin"))):
+    """Cut this agent off immediately: its per-agent token (and the shared
+    token) stop being accepted for ingest/polls. Only an admin can undo it."""
+    pool = await db.connect()
+    updated = await pool.execute(
+        "UPDATE agents SET agent_token_revoked = TRUE WHERE id = $1", agent_id
+    )
+    if updated == "UPDATE 0":
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return {"ok": True, "id": agent_id, "revoked": True}
+
+
+@app.post("/api/agents/{agent_id}/unrevoke", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def unrevoke_agent(agent_id: int, _: dict = Depends(require_role("admin"))):
+    pool = await db.connect()
+    updated = await pool.execute(
+        "UPDATE agents SET agent_token_revoked = FALSE WHERE id = $1", agent_id
+    )
+    if updated == "UPDATE 0":
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return {"ok": True, "id": agent_id, "revoked": False}
 
 
 @app.get("/api/events", dependencies=[Depends(require_setup_done), Depends(require_session)])

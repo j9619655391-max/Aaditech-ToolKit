@@ -66,6 +66,12 @@ _SCHEMA_MIGRATIONS = [
     """
     CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status)
     """,
+    """
+    ALTER TABLE agents ADD COLUMN IF NOT EXISTS agent_token TEXT
+    """,
+    """
+    ALTER TABLE agents ADD COLUMN IF NOT EXISTS agent_token_revoked BOOLEAN NOT NULL DEFAULT FALSE
+    """,
 ]
 
 

@@ -1,11 +1,13 @@
 CREATE TABLE IF NOT EXISTS agents (
-    id             SERIAL PRIMARY KEY,
-    hostname       TEXT NOT NULL UNIQUE,
-    os             TEXT NOT NULL DEFAULT '',
-    agent_version  TEXT NOT NULL DEFAULT '',
-    ip             TEXT NOT NULL DEFAULT '',
-    registered_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    last_seen      TIMESTAMPTZ NOT NULL DEFAULT now()
+    id                    SERIAL PRIMARY KEY,
+    hostname              TEXT NOT NULL UNIQUE,
+    os                    TEXT NOT NULL DEFAULT '',
+    agent_version         TEXT NOT NULL DEFAULT '',
+    ip                    TEXT NOT NULL DEFAULT '',
+    agent_token           TEXT,
+    agent_token_revoked   BOOLEAN NOT NULL DEFAULT FALSE,
+    registered_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_seen             TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS events (

@@ -196,8 +196,17 @@
   Server validates token ↔ hostname binding.
 - **Files:** `certs.py`, `main.py` (enroll, ingest, poll auth), `bundle.py`,
   `Agent-Collect.ps1`, Caddyfile.
+- **Status: DONE** — implements `_get_or_create_agent`/`issue_agent_token`/
+  `require_agent_token`, admin endpoints `GET /api/agents/{id}/token`,
+  `POST /api/agents/{id}/revoke|unrevoke`; `Agent-Collect.ps1` persists its own
+  token beside the cert and re-enrolls once if the token file is missing.
 - **Test gate:** two agents → two distinct tokens; using agent A's token as hostname B
   → 401; revoke one → only that agent blocked.
+  **Result (live stack):** 14/14 pass — distinct tokens per hostname ✓, re-enroll
+  is idempotent (same token) ✓, hostname↔token binding (A on B → 401) ✓, shared
+  token rejected once a per-agent token exists ✓, no token → 401 ✓, ingest OK ✓,
+  token detail ✓, revoke → 403 on ingest (both own + shared) ✓, PC-B unaffected ✓,
+  unrevoke → 200 ✓. `require_token`/`get_agent_id` dead helpers removed.
 
 ---
 
