@@ -253,6 +253,8 @@ $cfg = [ordered]@{
     token = $env:API_TOKEN
     agent_version = $AgentVersion
     interval_minutes = $IntervalMinutes
+    # C5: agent-side run-script allowlist (mirror of RUN_SCRIPT_ALLOWLIST).
+    run_script_allowlist = @($env:RUN_SCRIPT_ALLOWLIST -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
     features = $features
 }
 $cfg | ConvertTo-Json -Depth 6 | Set-Content $ConfigOut

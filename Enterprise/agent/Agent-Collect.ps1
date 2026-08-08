@@ -225,8 +225,36 @@ CREATE TABLE IF NOT EXISTS outbox (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   status TEXT NOT NULL DEFAULT 'pending'
 );
+CREATE TABLE IF NOT EXISTS executed_commands (
+  command_id   INTEGER PRIMARY KEY,
+  status       TEXT NOT NULL,
+  output       TEXT NOT NULL DEFAULT '',
+  exit_code    INTEGER NOT NULL DEFAULT 0,
+  executed_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
 "@
     Invoke-SQLite -Query $schema -DatabasePath $QueueDb | Out-Null
+}
+
+# C5: at-most-once command execution. Once a command's result is computed it is
+# recorded here; a re-delivered copy (poll window/5-min) is skipped — the agent
+# re-posts the saved result instead of re-running it.
+function Get-ExecutedCommand {
+    param($CommandId)
+    $json = Invoke-SQLite -Query "SELECT command_id, status, output, exit_code FROM executed_commands WHERE command_id = $CommandId;" -DatabasePath $QueueDb -AsJson 2>$null
+    if ([string]::IsNullOrWhiteSpace($json)) { return $null }
+    $rows = @($json | ConvertFrom-Json)
+    if ($rows.Count -eq 0) { return $null }
+    return $rows[0]
+}
+
+function Record-ExecutedCommand {
+    param([int]$CommandId, $Result)
+    $esc = $Result.output.Replace("'", "''")
+    Invoke-SQLite -Query @"
+INSERT INTO executed_commands (command_id, status, output, exit_code) VALUES ($CommandId, '$($Result.status)', '$esc', $([int]$Result.exit_code))
+ON CONFLICT(command_id) DO UPDATE SET status = excluded.status, output = excluded.output, exit_code = excluded.exit_code;
+"@ -DatabasePath $QueueDb | Out-Null
 }
 
 function ConvertFrom-CollectorOutput {
@@ -447,6 +475,13 @@ function Invoke-RemoteCommand {
         'run-script' {
             $script = $payload.script
             if (-not $script) { return @{ status = 'failed'; output = 'No script specified'; exit_code = 1 } }
+            # C5: agent-side allowlist defense-in-depth. Even if a rogue server
+            # (or a replayed/mutated command) asks for a script, only scripts the
+            # operator allowlisted at deploy time run here.
+            $allow = @($Config.run_script_allowlist | Where-Object { $_ })
+            if ($allow.Count -gt 0 -and $allow -notcontains $script) {
+                return @{ status = 'failed'; output = "Script '$script' is not in the agent allowlist"; exit_code = 1 }
+            }
             $path = Join-Path $script:RepoRoot $script
             if (-not (Test-Path $path)) { return @{ status = 'failed'; output = "Script not found: $script"; exit_code = 1 } }
             try {
@@ -463,11 +498,17 @@ function Invoke-RemoteCommand {
 
 function Send-CommandResult {
     param($Config, $CmdId, $Result)
+    # C5: sanitize command output before it leaves the box (run-script output
+    # can contain PII/keys). The SanitizeEngine module is already imported.
+    $cleanOutput = $Result.output
+    if (-not [string]::IsNullOrEmpty($cleanOutput)) {
+        $cleanOutput = ConvertTo-SanitizedText -Text ([string]$cleanOutput)
+    }
     $uri = "$(Get-CommandsApiRoot)/api/commands/$CmdId/result"
     $body = @{
         hostname  = (Get-AgentHostname)
         status    = $Result.status
-        output    = $Result.output
+        output    = $cleanOutput
         exit_code = $Result.exit_code
     } | ConvertTo-Json -Compress
     try {
@@ -510,8 +551,15 @@ do {
     if (-not $FlushOnly -and -not $CollectOnly) {
         $cmds = Get-PendingCommands -Config $Config
         foreach ($cmd in $cmds) {
+            if ($null -ne $cmd.id -and (Get-ExecutedCommand -CommandId $cmd.id)) {
+                # C5: already ran on a previous cycle (poll re-delivered it while
+                # the result post was in flight). Skip re-execution entirely.
+                Write-AgentLog "Command $($cmd.id) already executed — skipping re-run (at-most-once)"
+                continue
+            }
             Write-AgentLog "Executing command $($cmd.id) kind=$($cmd.kind)"
             $result = Invoke-RemoteCommand -Config $Config -Cmd $cmd
+            if ($null -ne $cmd.id) { Record-ExecutedCommand -CommandId $cmd.id -Result $result }
             Send-CommandResult -Config $Config -CmdId $cmd.id -Result $result
         }
         if (@($cmds).Count -gt 0) { Write-AgentLog "Executed $($cmds.Count) command(s)" }

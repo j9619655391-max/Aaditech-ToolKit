@@ -247,6 +247,13 @@ AGENT_VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))
 INTERVAL_MINUTES="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["interval_minutes"])' "$AGENT_VERSION_JSON")"
 cp "$AGENT_VERSION_JSON" "$HERE/api/agent-version.json"
 
+# C5: mirror the run-script allowlist into agent-config so the agent enforces it
+# itself (defense-in-depth) and refuses anything not on the list. Comma-separated
+# list (same as RUN_SCRIPT_ALLOWLIST env / docker-compose) → JSON array; empty → [].
+IFS=',' read -r -a _run_scripts <<< "${RUN_SCRIPT_ALLOWLIST:-}"
+RUN_SCRIPT_ALLOWLIST_JSON="$(python3 -c 'import json,sys; print(json.dumps([s.strip() for s in sys.argv[1:] if s.strip()]))' "${_run_scripts[@]}" 2>/dev/null)"
+[ -z "$RUN_SCRIPT_ALLOWLIST_JSON" ] && RUN_SCRIPT_ALLOWLIST_JSON="[]"
+
 # mTLS: agents always talk to the :9443 client-auth port (TLS via internal CA).
 # enroll_url goes over the MAIN port because Caddy :9443 only routes /ingest and
 # /api/commands/* (a fresh agent has no client cert yet to enroll over 9443).
@@ -257,6 +264,7 @@ cat > "$CONFIG_OUT" <<EOF
   "token": "$API_TOKEN",
   "agent_version": "$AGENT_VERSION",
   "interval_minutes": $INTERVAL_MINUTES,
+  "run_script_allowlist": $RUN_SCRIPT_ALLOWLIST_JSON,
   "features": $FEATURES_JSON
 }
 EOF

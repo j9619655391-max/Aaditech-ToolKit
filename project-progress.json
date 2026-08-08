@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-09T01:56:05+05:30",
-  "last_verified_commit": "b95f87581cea9cd182945a98374f22feaf46c4dd",
-  "last_verified_date": "2026-08-09T01:51:30+05:30",
+  "generated": "2026-08-09T02:08:11+05:30",
+  "last_verified_commit": "912e0dcf3966a102703d15a2338b811e30e96eb9",
+  "last_verified_date": "2026-08-09T01:56:04+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -14,23 +14,10 @@
   "latest_delta": {
     "added": 0,
     "removed": 0,
-    "changed": 2,
-    "unchanged": 116
+    "changed": 4,
+    "unchanged": 114
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-07T15:12:31+05:30",
-      "added": [],
-      "removed": [],
-      "changed": [
-        "CHANGELOG.md",
-        "VERSION.md",
-        "Enterprise/ARCHITECTURE.md",
-        "Enterprise/ROADMAP.md",
-        "Enterprise/README.md"
-      ],
-      "unchanged_count": 101
-    },
     {
       "detected_at": "2026-08-07T15:28:18+05:30",
       "added": [],
@@ -286,6 +273,18 @@
         "Enterprise/SCALING-PLAN.md"
       ],
       "unchanged_count": 116
+    },
+    {
+      "detected_at": "2026-08-09T02:08:11+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [
+        "Enterprise/deploy/deploy.ps1",
+        "Enterprise/deploy/deploy.sh",
+        "Enterprise/agent/Agent-Collect.ps1",
+        "Enterprise/SCALING-PLAN.md"
+      ],
+      "unchanged_count": 114
     }
   ],
   "next_recommended_tasks": [

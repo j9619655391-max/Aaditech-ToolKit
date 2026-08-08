@@ -1,25 +1,27 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-09T01:56:05+05:30",
+  "generated": "2026-08-09T02:08:11+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "b95f87581cea9cd182945a98374f22feaf46c4dd",
-  "last_verified_date": "2026-08-09T01:51:30+05:30",
+  "last_verified_commit": "912e0dcf3966a102703d15a2338b811e30e96eb9",
+  "last_verified_date": "2026-08-09T01:56:04+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 74,
+    "commit_count": 75,
     "clean_working_tree": false,
-    "head": "b95f87581cea9cd182945a98374f22feaf46c4dd"
+    "head": "912e0dcf3966a102703d15a2338b811e30e96eb9"
   },
   "latest_delta": {
-    "detected_at": "2026-08-09T01:56:05+05:30",
+    "detected_at": "2026-08-09T02:08:11+05:30",
     "added": [],
     "removed": [],
     "changed": [
-      "Enterprise/api/app/main.py",
+      "Enterprise/deploy/deploy.ps1",
+      "Enterprise/deploy/deploy.sh",
+      "Enterprise/agent/Agent-Collect.ps1",
       "Enterprise/SCALING-PLAN.md"
     ],
-    "unchanged_count": 116
+    "unchanged_count": 114
   },
   "module_state": {
     "working": [

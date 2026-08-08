@@ -296,6 +296,21 @@
 - **Files:** `Agent-Collect.ps1`, `main.py` (poll window), `Agent.wxs` (task identity).
 - **Test gate:** kill result post → command executes once (agent-side dedupe log);
   script output contains PII → sanitized in result payload.
+- **Status: DONE (agent-side; task identity deferred)** —
+  - At-most-once: new `executed_commands` SQLite table (`command_id` PK);
+    `Get-ExecutedCommand`/`Record-ExecutedCommand` (idempotent upsert); main loop
+    skips re-run when a re-delivered command was already executed.
+  - Sanitize: `Send-CommandResult` runs output through `ConvertTo-SanitizedText`
+    (SanitizeEngine) before POSTing.
+  - Agent-side allowlist: `run_script_allowlist` baked into `agent-config.json`
+    (mirrors `RUN_SCRIPT_ALLOWLIST`, comma-separated, both `deploy.sh`+`deploy.ps1`);
+    `run-script` refuses anything not on it even if a rogue/mutated command arrives.
+  - Task identity (SYSTEM→low-privilege) in `Agent.wxs` still pending real-Windows
+    validation (would change which users can run reboot/WoL); tracked as follow-up.
+- **Live gate (pwsh, native macOS pwsh + sqlite3):** executed-commands record is
+  present, unknown id returns null, re-record upserts without PK error; sanitizer
+  redacts `user@example.com`/`10.0.0.5`/`CORP\user`; allowlist blocks non-listed
+  script and allows listed one; both `.ps1` files parse clean.
 
 ### C6. Cert lifecycle automation
 - **Finding:** client certs expire at 825 days with no renewal; mTLS "fallback" can't
