@@ -239,6 +239,16 @@
 - **Files:** `db.py`, `main.py` (startup), `schema.sql` (canonical).
 - **Test gate:** fresh volume → `/ingest` dedupe works (ON CONFLICT fires); perf: no
   DDL in logs after startup.
+- **Status: DONE** — `_SCHEMA_MIGRATIONS` now mirrors the whole canonical schema:
+  `agents` + per-agent credential columns, `events` + `uq_events_client_msg`,
+  `feature_configs`, all secondary indexes, in dependency order (idempotent).
+  `migrate()` runs once per process under `asyncio.Lock`; startup calls it
+  explicitly and `connect()` lazily awaits the no-op'd fast path so any worker
+  provisions correctly. Fixed a start-up deadlock found in review (migrate↔connect
+  mutual recursion) by routing both through a raw `_get_pool()`.
+- **Live gate:** fresh restore → all 8 tables + events unique index present;
+  `/ingest` with the same `client_msg_id` twice → accepted 1 then 0 (ON CONFLICT
+  dedupe fires); app healthy, no DDL emitted after startup.
 
 ### C3. Ingest batch transaction + bounded limits
 - **Finding:** events inserted one-by-one (partial on crash); `limit` params uncapped

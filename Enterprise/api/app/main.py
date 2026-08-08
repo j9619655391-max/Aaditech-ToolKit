@@ -225,6 +225,7 @@ class CommandResult(BaseModel):
 
 @app.on_event("startup")
 async def startup():
+    await db.migrate()  # C2: single guarded startup migration (provisions all tables)
     await db.connect()
     _alert_task = asyncio.create_task(rules.alert_loop())
     app.state.alert_task = _alert_task
