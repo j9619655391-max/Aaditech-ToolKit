@@ -168,14 +168,16 @@ Complete guide to all documentation files and resources in the toolkit.
 **Purpose:** Centralized agent → server → web-portal layer. Additive, zero changes to the existing toolkit.
 
 **Docs:**
-- `Enterprise/README.md` — quick start (intranet/LAN deploy, agent + MSI build)
+- `Enterprise/README.md` — quick start (intranet/LAN deploy, agent + MSI build, SaaS auto-setup, GitHub remote build)
 - `Enterprise/ARCHITECTURE.md` — full blueprint (zero-change guarantee, data model, security, migration)
+- `Enterprise/ROADMAP.md` — phased plan + status (P0–P6 done, Rev 3 SaaS auto-setup)
 
 **Covers:**
 - `Enterprise/deploy/deploy.sh` — one-command bring-up, **LAN-first**, `--regen` / `--public`
-- `Enterprise/agent/Agent-Collect.ps1` → `.exe` (ps2exe) + `.msi` (WiX)
-- `Enterprise/api/` (FastAPI: `/ingest`, `/api/*`) + `docker-compose.yml` (db+api+caddy, one DB)
-- `Enterprise/portal/` — admin UI (Agents / Events / Feature config editor)
+- `Enterprise/deploy/deploy.ps1` — Windows Server bring-up **+ local MSI build/sign/publish** (`BUILD_MODE=local_windows`)
+- `Enterprise/agent/Agent-Collect.ps1` → `.exe` (ps2exe) + `.msi` (WiX); auto-installs the server CA into `LocalMachine\Root`
+- `Enterprise/api/` (FastAPI: `/ingest`, `/api/*`, `/api/build/*` for remote GitHub builds) + `docker-compose.yml` (db+api+caddy, one DB)
+- `Enterprise/portal/` — admin UI (Agents / Events / Feature config editor / Agent Setup with build panel)
 - Auto-generated secrets (API token + Postgres password) — no manual setup
 
 **When to use:** Before/introducing fleet telemetry, remote log collection, or web-based admin.
@@ -340,6 +342,8 @@ Config/
 | Software links | 2.0 | ✓ Verified | 2026-07-09 |
 | Windows-Smoke-Run.md | 1.0.0 | ✓ Added (release gate) | 2026-08-06 |
 | Release (v1.0.0) | 1.0.0 | ✓ Pushed to GitHub, CI green | 2026-08-06 |
+| Release (v1.1.0) | 1.1.0 | ✓ Enterprise stack feature-complete | 2026-08-07 |
+| Release (v1.2.0) | 1.2.0 | ✓ SaaS auto-setup + GitHub remote build | 2026-08-08 |
 
 ---
 

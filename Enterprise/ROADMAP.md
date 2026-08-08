@@ -8,12 +8,16 @@
 >
 > **Rev 3 — SaaS-style auto-setup (2026-08-08):** everything is auto-detected /
 > auto-generated on ANY server; the ONLY manual step is the setup wizard
-> (company / admin / SMTP). `deploy.ps1` (Windows Server, one-command) and
-> `deploy.sh` (macOS/Linux) both: detect the LAN IP, generate all secrets,
-> write the mTLS agent config, bring up the stack, auto-generate the
-> code-signing CA, build + sign + publish the MSI on the server itself — no CI,
-> no GitHub, no manual entries beyond the wizard. Agents auto-trust the
-> server CA on enroll (no manual cert install).
+> (company / admin / SMTP / build mode). `deploy.ps1` (Windows Server,
+> one-command) and `deploy.sh` (macOS/Linux) both: detect the LAN IP, generate
+> all secrets, write the mTLS agent config, bring up the stack, auto-generate
+> the code-signing CA, build + sign + publish the MSI on the server itself — no
+> CI, no GitHub, no manual entries beyond the wizard. On a **Linux server**
+> (where a Windows binary can't be compiled), the wizard offers a **GitHub
+> remote-build mode**: supply a repo + PAT once, and the portal triggers
+> `ci.yml` via `workflow_dispatch` and auto-downloads the signed MSI artifact
+> (`/api/build/*` + `github.py`). Agents auto-trust the server CA on enroll (no
+> manual cert install).
 >
 > Keeps the **zero-change promise**: existing toolkit files are never modified —
 > everything additive lives under `Enterprise/`.
@@ -25,11 +29,13 @@
 ```
 1. Fresh server → one command (./deploy.sh or .\deploy\deploy.ps1) → open http://<server>/
 2. First visit → SETUP WIZARD (the ONLY manual step):
-     Company name · Admin username + password · SMTP (optional)
+     Company name · Admin username + password · SMTP (optional) · Build mode
 3. Server auto-generates on THIS system:
      LAN IP · all secrets · CA certificate + server certificate (local, persisted)
      Authentication token · mTLS endpoint + enroll_url · code-signing CA
-4. Agent package is auto-built + auto-signed + auto-published ON the server:
+4. Agent package is auto-built + auto-signed + auto-published (choose ONE):
+     a. Windows Server: built + signed locally by deploy.ps1 → MSI in the volume
+     b. Linux + GitHub: portal triggers ci.yml (workflow_dispatch) + pulls the MSI
      MSI downloadable from the portal → install → fleet appears
 5. Admin adds team users (operation / monitoring) → RBAC in portal
 6. Collectors → health/inventory panels; commands; alerts; reports
@@ -81,14 +87,17 @@ are all derived from the setup answers.
 > the server's `agent_artifacts` volume; `GET /api/agent-msi` returns a valid
 > installer. Both CI jobs are green.
 
-**Why generic:** a Windows `.exe`/`.msi` can only be compiled on Windows (CI).
-The server (Linux) cannot produce the binary — but it CAN produce the
-**per-company package** that wraps it. So:
+**Why generic:** a Windows `.exe`/`.msi` can only be compiled on Windows (CI or
+a Windows Server). The server (Linux) cannot produce the binary — but it CAN
+produce the **per-company package** that wraps it, and it can **trigger the CI
+build remotely** (GitHub remote-build mode, Rev 3) and pull the artifact back.
+So:
 
 - `agent-build` job (windows-latest) builds a **generic** exe + msi:
   no endpoint, no token, no company — just the agent engine.
 - CI publishes the generic artifacts (release/artifact), uploaded to the server
-  volume `agent_artifacts` (or downloaded by `deploy.sh`/admin).
+  volume `agent_artifacts` (or downloaded automatically by `/api/build/status`
+  after a `workflow_dispatch`, or copied manually by `deploy.sh`/admin).
 - **Verify:** artifact contains exe + msi + template config; all CI checks green.
 
 The *company-specific* agent (step 4 of the north star) is assembled **after
@@ -114,6 +123,7 @@ setup** by the server (P3), never inside CI.
 | Company name | ✅ | Used in branding + agent config |
 | Server IP / host | ✅ | Pre-filled from detection; admin confirms/overrides |
 | Admin username + password | ✅ | First admin account |
+| Build mode | ⬜ | `local_windows` (default when running `deploy.ps1`) / `github` / `manual`; for `github` also repo (`owner/repo`) + PAT (`Actions: Read/Write`) |
 | Branding | ⬜ | Header text/title; optional theme color; optional logo file |
 
 ### 3.2 On submit — everything generated on this system
@@ -341,6 +351,16 @@ Each phase lands green on CI and keeps the existing toolkit untouched.
   the agent **auto-installs the internal CA into `LocalMachine\Root`** on enroll
   so mTLS works with zero manual cert setup. Only manual step remains the setup
   wizard (company / admin / SMTP).
+- **GitHub remote-build mode** — ✅ **implemented (2026-08-08)**: `api/app/github.py`
+  + `POST /api/build/trigger` + `GET /api/build/status` + `POST /api/build/validate`.
+  The setup wizard's build-mode selector stores `build_mode` (`local_windows` |
+  `github` | `manual`) + `github_repo` + `github_token` in `settings`; the Agent
+  Setup page has a build panel (trigger button + status + auto MSI download).
+  Verified live end-to-end: setup → validate → trigger → poll (push **and**
+  `workflow_dispatch` runs) → artifact download (handles the signed-CDN redirect
+  without forwarding the Bearer header) → MSI served by `/api/agent-msi`. The
+  auto-sync refreshes the MSI when a newer successful artifact appears (stamped
+  by artifact id/created_at).
 - **Windows smoke run** — full agent install + collector/command round-trip on a
   real client (CI can't run the interactive pieces; see VERSION.md smoke-run list).
 
@@ -353,4 +373,6 @@ admin creates an "operation" teammate → one-click download installs on a real
 Windows box → fleet row appears → hardware/health panels populate → a simulated
 disk-low triggers an alert → a remote reboot is issued and result visible →
 monitoring-role user sees dashboards but cannot send commands. All without
-editing a single existing toolkit file.
+editing a single existing toolkit file. (On a Linux server, the same flow works
+with **GitHub remote-build**: repo + PAT in the wizard → Agent Setup page
+triggers the build and serves the MSI once CI succeeds.)

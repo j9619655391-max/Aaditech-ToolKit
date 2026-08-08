@@ -1,5 +1,39 @@
 # Changelog
 
+## v3.9 UPDATES — SaaS auto-setup + GitHub remote build (Rev 3)
+
+- **NEW: `Enterprise/deploy/deploy.ps1`** — one-command Windows Server bring-up:
+  detects the LAN IP, auto-generates all `.env` secrets, writes the mTLS
+  `agent-config.json` (`endpoint https://<host>:9443/ingest` + `enroll_url`),
+  starts `db + api + caddy`, auto-generates a **code-signing CA**, builds the
+  agent `.exe` (ps2exe) + `.msi` (WiX) **on the server**, signs them, and
+  publishes the MSI into the `agent_artifacts` volume — `BUILD_MODE=local_windows`.
+  Flags: `-Public`, `-Regen`, `-SkipBuild`.
+- **NEW: GitHub remote-build mode** — `Enterprise/api/app/github.py` (stdlib-only
+  GitHub client) + `GET /api/build/status`, `POST /api/build/validate`,
+  `POST /api/build/trigger`. The setup wizard's **build-mode selector** stores
+  `build_mode` / `github_repo` / `github_token` in `settings`; the Agent Setup
+  page gained a **build panel** (trigger button + status + MSI availability).
+  `/api/build/status` polls the latest `ci.yml` run (push **or**
+  `workflow_dispatch`) and auto-downloads the newest successful MSI artifact.
+  Verified live end-to-end: setup → validate → trigger → poll → download →
+  `/api/agent-msi` serves a valid installer.
+- **FIX: artifact download redirect** — GitHub's artifact API 302s to a signed
+  CDN URL; the Bearer header must not be forwarded there (401). `download_msi`
+  now captures the `Location` and re-issues the GET without auth headers.
+- **FIX: `bool("0")` setup guards** — `setup_status`, `run_setup` (409 gate) and
+  `require_setup_done` (428 gate) treated the string `"0"` as truthy; all three
+  now parse `0`/empty/`false` correctly.
+- **FIX: `github.validate` permissions** — the repo-info response has no
+  `actions` key; `actions_write` now counts `admin`/`maintain` (was wrongly
+  `False` for owners). `build_validate` also falls back to the stored PAT.
+- **FIX: MSI auto-refresh** — the downloaded artifact is stamped
+  (`.msi_artifact.json`); `_needs_msi_refresh` re-fetches when a newer
+  successful artifact exists (previously only when no MSI was present).
+- **deploy.sh + bundle.py** — now emit the mTLS `endpoint` (`:9443/ingest`) +
+  `enroll_url` on the main port (fixes a latent `enroll_url` pointing at the
+  TLS port Caddy doesn't serve on bare IPs).
+
 ## v3.8 UPDATES — SMTP alert email (P6.1)
 
 - **NEW: optional alert email** — `rules.py` sends a digest email when the eval

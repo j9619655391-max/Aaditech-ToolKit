@@ -1,17 +1,18 @@
 # IT-Toolkit — Version Reference
 
-**Current release:** `v1.1.0`
-**Release date:** 2026-08-07
+**Current release:** `v1.2.0`
+**Release date:** 2026-08-08
 **Branch:** `main`
 **Repository:** https://github.com/j9619655391-max/Aaditech-ToolKit
 **Remote:** `origin` (GitHub, public) — `main` + `v1.0.0`, `v1.1.0` tags pushed
-**CI status:** ✅ green on `windows-latest` — PowerShell validation + **agent exe/MSI build** (WiX v5) both pass end-to-end (verified 2026-08-07 via workflow_dispatch).
+**CI status:** ✅ green on `windows-latest` — PowerShell validation + **agent exe/MSI build** (WiX v5) both pass end-to-end (verified 2026-08-08 via push + workflow_dispatch).
 
-> **v1.1.0 = the Enterprise stack is feature-complete**: setup wizard + local CA
-> (P1), team users + RBAC (P2), company agent bundle + MSI downloads (P3),
-> support-engineer collectors + fleet panels (P4), command channel (P5),
-> alerts + reports (P6), optional SMTP alert email (P6.1), and a green CI agent
-> build (P0). The MSI is built on CI with the current server endpoint baked in.
+> **v1.2.0 = SaaS-style auto-setup (Rev 3)**: everything is auto-detected /
+> auto-generated on ANY server; the only manual step is the setup wizard
+> (company / admin / SMTP / build mode). `deploy.ps1` (Windows Server) builds +
+> signs + publishes the MSI locally; `deploy.sh` (macOS/Linux) + the setup
+> wizard's **GitHub remote-build mode** trigger `ci.yml` via `workflow_dispatch`
+> and auto-download the signed MSI. Agents auto-trust the server CA on enroll.
 
 ## What is this document?
 A single source of truth for the toolkit's version, module inventory, and

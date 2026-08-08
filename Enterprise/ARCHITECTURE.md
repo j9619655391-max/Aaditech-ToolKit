@@ -133,6 +133,11 @@ IT-Toolkit-Agent.exe
 - P5 commands: `GET/POST /api/commands`, agent `GET /api/commands/poll`, `POST /api/commands/{id}/result`
 - P6 alerts: `GET /api/alerts?status=&limit=`, `GET /api/alerts/open`, `POST /api/alerts/{id}/ack|resolve`, `GET/PUT /api/alert-rules`; eval loop background task (`ALERT_EVAL_MINUTES`)
 - P6 reports: `GET /api/report/fleet` (CSV), `GET /api/report/agent/{id}?format=json|csv`
+- P1 setup: `GET /api/setup/status`, `POST /api/setup` (company / admin / SMTP /
+  **build mode** + optional `github_repo`/`github_token`), login/session + RBAC
+- Rev 3 GitHub remote build: `GET /api/build/status` (latest `ci.yml` run +
+  auto-download newest MSI), `POST /api/build/validate`, `POST /api/build/trigger`
+  (`workflow_dispatch`; empty token = use stored PAT)
 
 ### Web portal (served from the API container, same origin)
 Single-page HTML+JS (no build step): session login (P2) → **Agents**, **Fleet**,
@@ -150,7 +155,10 @@ cd Enterprise/deploy
 ./deploy.sh                 # LAN/intranet mode (default) — auto-detects LAN IP
 ./deploy.sh --regen         # new machine/network → regenerate .env with fresh IP
 ./deploy.sh --public        # internet clients (public IP) instead of LAN
-# then build agent on Windows (or CI):
+# on a Windows Server the same bring-up additionally builds the agent:
+.\deploy.ps1                # + code-sign CA, ps2exe exe + WiX msi, sign, publish
+.\deploy.ps1 -SkipBuild     # server only (bring up without building the agent)
+# then build agent on Windows (or CI, or trigger it from the portal):
 ./Enterprise/agent/build/build-agent.ps1    # → .exe
 ./Enterprise/agent/wix/build-msi.ps1        # → .msi
 # push the MSI to Intune/GPO/SCCM; the LAN endpoint is already baked in.
@@ -167,6 +175,14 @@ re-points automatically.
 containers; the data volume persists. If secrets are regenerated while an old
 `pgdata` volume still exists, it aborts with a clear reset command instead of
 silently breaking the DB.
+
+**Agent build paths (pick one at setup-wizard time, stored as `BUILD_MODE`):**
+
+| Mode | How the MSI gets produced | Where |
+| --- | --- | --- |
+| `local_windows` | `deploy.ps1` auto-generates a code-signing CA, builds exe (ps2exe) + MSI (WiX) on the server, signs, publishes to `agent_artifacts` | Windows Server |
+| `github` | portal fires `workflow_dispatch` on `ci.yml` (repo + PAT from setup); `GET /api/build/status` polls and auto-downloads the newest signed MSI artifact | Linux (or any) server |
+| `manual` | you build (`build-agent.ps1` / `build-msi.ps1`) or source the MSI and copy it into the `agent_artifacts` volume | anywhere |
 
 ---
 
@@ -215,11 +231,13 @@ silently breaking the DB.
   engineer features are all shipped**: commands (P5), **alerts + reports (P6)** —
   role-governed (admin/operation; monitoring read-only). Remaining:
   **SMTP email alerts** (optional flag) and mTLS client certs (flag).
-- **MSI download endpoint is live (P0)** — CI (`agent-build`, Windows) builds
-  the exe + MSI and the artifact is copied into the `agent_artifacts` volume
-  (`docker compose cp IT-Toolkit-Agent.msi api:/artifacts/`). The job requires
-  the repo secrets `SERVER_ENDPOINT` + `API_TOKEN`.
+- **MSI delivery is live** — three paths (Rev 3): CI (`agent-build`, Windows)
+  artifacts auto-pulled by `/api/build/status` (**github** mode), built + signed
+  on a Windows Server by `deploy.ps1` (**local_windows** mode), or copied
+  manually (`docker compose cp IT-Toolkit-Agent.msi api:/artifacts/`). The CI
+  job requires the repo secrets `SERVER_ENDPOINT` + `API_TOKEN`.
 - **ps2exe** is a community tool; Authenticode signing of the exe is still a
-  manual Windows step (as before).
+  manual Windows step (as before) unless using `deploy.ps1`, which signs with an
+  auto-generated internal code-signing CA.
 - Live WinRM/agent round-trip still requires a real Windows client (CI can't
   run the interactive pieces) — same boundary as the existing smoke-run.

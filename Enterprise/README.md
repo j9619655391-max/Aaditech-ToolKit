@@ -18,18 +18,28 @@ Windows clients                        Server (Docker, one host)
 
 ```bash
 cd Enterprise/deploy
-./deploy.sh          # default = LAN mode (no internet needed)
+./deploy.sh          # default = LAN mode (no internet needed)  — macOS / Linux
 ./deploy.sh --regen  # new machine / network: regenerate .env with fresh IP
+
+# Windows Server (also builds + signs the agent installer locally):
+.\deploy.ps1                 # one-command bring-up + local MSI build
+.\deploy.ps1 -SkipBuild      # server only (skip the agent build)
+.\deploy.ps1 -Regen          # new machine / network
 ```
 
 That one command:
-- detects this machine's **LAN IP** (macOS + Linux, prefers en0/en1/eth0 so
-  VPN interfaces don't win) — clients on the same intranet use this address,
+- detects this machine's **LAN IP** (macOS/Linux prefers en0/en1/eth0, Windows
+  prefers the Ethernet/Wi-Fi adapter; VPN interfaces never win) — clients on
+  the same intranet use this address,
 - **auto-generates** `.env` secrets (API token + Postgres password) — placeholders
   in a hand-copied `.env` are auto-regenerated, never used as-is,
 - **writes `agent/agent-config.json` with the LAN endpoint + token baked in**
   (this is what flows into the exe/msi),
 - starts `db + api + caddy` via `docker compose`,
+- on Windows Server (`deploy.ps1`): additionally auto-generates the
+  **code-signing CA**, builds the agent `.exe` (ps2exe) + `.msi` (WiX) **on the
+  server itself**, signs them, and publishes the MSI into the `agent_artifacts`
+  volume — no CI, no GitHub required,
 - prints the portal URL + token.
 
 > **Token safety net:** if the API ever boots with no `API_TOKEN` set, it
@@ -41,7 +51,15 @@ That one command:
 Open the printed URL → a **setup wizard** appears (only until configured):
 
 1. Enter **company name**, confirm the **server address**, create the **first
-   admin account**, pick a **brand color**.
+   admin account**, pick a **brand color**, and choose **how the agent
+   installer gets built**:
+   - **Windows Server — build locally (automatic)** → the server builds + signs
+     the MSI itself (see `deploy.ps1`).
+   - **GitHub Actions — remote build (Linux server)** → enter a **GitHub repo
+     (`owner/repo`)** + a **PAT** (fine-grained, `Actions: Read/Write`); the
+     portal triggers `ci.yml` via `workflow_dispatch` and downloads the signed
+     MSI artifact back automatically.
+   - **Manual** → you build/upload the MSI yourself.
 2. The server then generates everything locally on that machine:
    - a **local CA + server certificate** (persisted in `api_data` under
      `certs/`; `ca.key` stays server-only),
@@ -50,14 +68,32 @@ Open the printed URL → a **setup wizard** appears (only until configured):
 3. You land in the branded portal, logged in as admin. On the **Users** page
    (admin-only) create team accounts with roles — **operation** (view + act,
    no user management) or **monitoring** (read-only). The **Agent Setup** tab
-   shows the server host, agent token and CA download you'll bake into the
-   company MSI in P3. Monitoring users see dashboards but no config controls.
+   shows the server host, agent token, CA download, and the **build panel**
+   (build mode, trigger-a-GitHub-build button, MSI download). Monitoring users
+   see dashboards but no config controls.
 
 Public-IP deployment (internet clients): `./deploy.sh --public`, or pin a
 fixed address/domain in `.env` (`SERVER_HOST=192.168.1.50` or `SERVER_HOST=it.example.com`).
 Moving the server to a different machine later = just re-run `./deploy.sh --regen`.
 
-## Quick start (agent + MSI) — run on Windows or a CI runner
+### Remote GitHub build (Linux server mode)
+
+The API talks to GitHub entirely from the server — the portal never needs your
+PAT again after setup (it's stored in the `settings` table and used as the
+fallback for `/api/build/*`):
+
+- `GET /api/build/status` — build mode, stored repo, MSI availability, and the
+  latest `ci.yml` run (push **or** `workflow_dispatch`); auto-downloads the MSI
+  when the newest successful artifact is newer than the one on disk.
+- `POST /api/build/validate` — check the repo is reachable + the PAT has access
+  (`actions_write` = repo `admin`/`maintain`).
+- `POST /api/build/trigger` — fire `workflow_dispatch` on `main` (empty token in
+  the body falls back to the stored PAT).
+- The download handles GitHub's signed-CDN redirect correctly (no auth header
+  forwarded to the CDN), and the MSI is served to agents via
+  `GET /api/agent-msi`.
+
+## Quick start (agent + MSI) — build on Windows or a CI runner
 
 ```powershell
 .\Enterprise\agent\build\build-agent.ps1     # → build/out/IT-Toolkit-Agent.exe
@@ -74,8 +110,13 @@ run `install-agent.cmd` (or push the MSI via **Intune / GPO / SCCM** and drop
 
 The server serves these from `GET /api/agent-bundle` (+ `/api/agent/agent.json`,
 `/api/agent/install.cmd`, `/api/ca.crt`, `/api/agent-msi`) — admin/operation
-only. The MSI is built on CI (`agent-build` job, WiX v5) and copied into the
-`agent_artifacts` volume; re-upload after each new CI build with:
+only. Where the MSI comes from depends on your setup-wizard choice:
+
+- **local_windows** (`deploy.ps1`) → built + signed on the server, auto-published
+  to the `agent_artifacts` volume.
+- **github** → built by the `agent-build` CI job on `windows-latest` (WiX v5),
+  pulled back by `/api/build/status` into the `agent_artifacts` volume.
+- **manual** → copy your own MSI into the volume with:
 
 ```bash
 docker compose cp IT-Toolkit-Agent.msi api:/artifacts/
@@ -88,9 +129,11 @@ docker compose cp IT-Toolkit-Agent.msi api:/artifacts/
 | `ARCHITECTURE.md` | Full blueprint (zero-change guarantee, data model, security, migration) |
 | `ROADMAP.md` | **Next-steps plan**: CI agent delivery, first-time setup wizard, support-engineer features |
 | `docker-compose.yml` | One-host stack: `db` (Postgres) + `api` + `caddy` (+ `agent_artifacts` volume for the MSI) |
-| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), agent bundle (`/api/agent-bundle`, downloads), alerts + reports (P6), `/healthz`; serves portal |
-| `portal/` | Setup wizard + login + single-page admin UI (Agents / Fleet / Events / Commands / Alerts / Reports / Feature toggles / Users / Agent Setup) |
-| `agent/` | `Agent-Collect.ps1` (worker — collects, parses structured JSON, flushes, polls + executes commands), ps2exe + WiX MSI packaging |
+| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), agent bundle (`/api/agent-bundle`, downloads), GitHub remote build (`/api/build/*`), alerts + reports (P6), `/healthz`; serves portal |
+| `deploy/deploy.sh` | One-command bring-up (macOS/Linux): auto-IP detection + secrets + mTLS agent config |
+| `deploy/deploy.ps1` | One-command bring-up (Windows Server): same as `deploy.sh` **plus** local code-sign CA + ps2exe/WiX MSI build + sign + publish (`BUILD_MODE=local_windows`) |
+| `portal/` | Setup wizard + login + single-page admin UI (Agents / Fleet / Events / Commands / Alerts / Reports / Feature toggles / Users / Agent Setup with build panel) |
+| `agent/` | `Agent-Collect.ps1` (worker — collects, parses structured JSON, flushes, polls + executes commands; **auto-installs the server CA into `LocalMachine\Root`**), ps2exe + WiX MSI packaging |
 | `agent/collectors/` | 7 support-engineer collectors (hardware, software, diskhealth, health, bitlocker, updatecompliance, licenses) |
 
 ## Remote commands (P5)
@@ -133,6 +176,9 @@ The full stack was smoke-tested locally with Docker:
 ingest (with idempotent dedupe), auth (401 on bad token), agents/events
 queries, feature enable/disable, and the portal all pass. `deploy.sh` runs
 end-to-end (exit 0) and regenerates the baked agent config on IP change.
+The SaaS auto-setup flow (setup wizard → GitHub remote build → MSI download +
+serve) was verified live end-to-end, and CI stayed green after both feature
+commits.
 
 ## Honest boundaries
 
@@ -150,3 +196,8 @@ end-to-end (exit 0) and regenerates the baked agent config on IP change.
   smoke-run doc.
 - Collectors were verified for **syntax + JSON output** locally (pwsh); full
   Windows-only data (CIM/SMART/BitLocker/WU) needs the Windows smoke run.
+- **SaaS auto-setup (Rev 3)**: the setup wizard + `deploy.sh`/`deploy.ps1` +
+  GitHub remote-build path are **verified live end-to-end** (setup → trigger →
+  poll → auto-download MSI → serve via `/api/agent-msi`). The `deploy.ps1`
+  local-Windows build+sign path is written and PowerShell-parse-verified but
+  still needs a real Windows Server smoke run.
