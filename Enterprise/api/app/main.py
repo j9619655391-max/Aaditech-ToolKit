@@ -2,7 +2,9 @@ import hashlib
 import hmac
 import io
 import json
+import re
 import secrets
+import time
 import uuid
 import asyncio
 import csv
@@ -15,7 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import auth, bundle, certs, config, db, github, ratelimit, rules, vault
+from . import auth, bundle, certs, config, db, github, metrics, ratelimit, rules, vault
 
 # B4: hide interactive API docs (/docs, /redoc, /openapi.json) in prod. Only
 # exposed when ENVIRONMENT=dev.
@@ -53,6 +55,41 @@ async def _body_size_limit(request: Request, call_next):
         except ValueError:
             pass
     return await call_next(request)
+
+
+@app.middleware("http")
+async def _observe_http(request: Request, call_next):
+    # D1: per-request latency histogram + request/status counter. Runs first so
+    # every response (success or middleware rejection) is observed.
+    start = time.perf_counter()
+    try:
+        response = await call_next(request)
+    except Exception:
+        # record 500-category responses as observed, then re-raise
+        metrics.http_duration.observe(time.perf_counter() - start, labels={"route": _route_for(request)})
+        metrics.http_requests.inc(
+            labels={"method": request.method, "route": _route_for(request), "status": "500"}
+        )
+        raise
+    metrics.http_duration.observe(
+        time.perf_counter() - start,
+        {"route": _route_for(request)},
+    )
+    metrics.http_requests.inc(
+        labels={"method": request.method, "route": _route_for(request), "status": str(response.status_code)}
+    )
+    return response
+
+
+def _route_for(request: Request) -> str:
+    """Stable route label: prefer the matched route template, fall back to a
+    bare path so dynamic segments (ids) don't explode label cardinality."""
+    route = getattr(request, "route", None) or request.scope.get("route")
+    path = getattr(route, "path", None)
+    if not path:
+        path = request.url.path
+    # D1: collapse trailing ids / numeric path segments
+    return re.sub(r"/[0-9]+(\?|$)", r"/{id}\1", path) or path
 
 ROLES = ("admin", "operation", "monitoring")
 
@@ -991,6 +1028,7 @@ def _validate_event(ev: EventItem) -> str:
 @app.post("/ingest")
 async def ingest(batch: IngestBatch, request: Request, authorization: str = Header(default="")):
     if len(batch.events) > config.MAX_INGEST_EVENTS:
+        metrics.ingest_batches.inc(labels={"outcome": "rejected"})
         raise HTTPException(
             status_code=413,
             detail=f"Too many events in batch (max {config.MAX_INGEST_EVENTS})",
@@ -1007,6 +1045,7 @@ async def ingest(batch: IngestBatch, request: Request, authorization: str = Head
     # wraps all inserts so any DB error rolls the batch back (no partial write).
     prepared = [(_validate_event(ev), ev) for ev in batch.events]
     count = 0
+    duplicated = 0
     try:
         async with pool.acquire() as conn:
             async with conn.transaction():
@@ -1022,10 +1061,17 @@ async def ingest(batch: IngestBatch, request: Request, authorization: str = Head
                     )
                     if row:
                         count += 1
+                    else:
+                        duplicated += 1
     except (asyncpg.DataError, asyncpg.UniqueViolationError) as exc:
         request.app.state.last_ingest_error = repr(exc)
+        metrics.ingest_batches.inc(labels={"outcome": "rejected"})
+        metrics.ingest_events.inc(amount=len(batch.events), labels={"outcome": "rejected"})
         raise HTTPException(status_code=400, detail="Batch rejected: %s" % exc) from exc
 
+    metrics.ingest_batches.inc(labels={"outcome": "accepted"})
+    metrics.ingest_events.inc(amount=count, labels={"outcome": "accepted"})
+    metrics.ingest_events.inc(amount=duplicated, labels={"outcome": "deduplicated"})
     return {"accepted": count, "agent_id": agent_id}
 
 
@@ -1162,6 +1208,32 @@ async def update_feature(name: str, update: FeatureUpdate, _: dict = Depends(req
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
+
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics_endpoint():
+    # D1: Prometheus text exposition. Scrape-only (no session secrets); DB gauges
+    # are refreshed on each scrape. Pool is shared app-wide (like everywhere).
+    pool = await db.connect()
+    metrics.agents_total.set(
+        await pool.fetchval("SELECT count(*) FROM agents") or 0
+    )
+    metrics.agents_online.set(
+        await pool.fetchval(
+            "SELECT count(*) FROM agents WHERE last_seen > now() - interval '15 minutes'"
+        ) or 0
+    )
+    metrics.alerts_open.set(
+        await pool.fetchval(
+            "SELECT count(*) FROM alerts WHERE status IN ('open', 'acknowledged')"
+        ) or 0
+    )
+    metrics.pending_commands.set(
+        await pool.fetchval(
+            "SELECT count(*) FROM commands WHERE status NOT IN ('completed', 'failed', 'cancelled')"
+        ) or 0
+    )
+    return Response(content=metrics.render_all(), media_type="text/plain; version=0.0.4")
 
 
 @app.get("/api/status", dependencies=[Depends(require_setup_done), Depends(require_session)])

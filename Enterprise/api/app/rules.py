@@ -215,6 +215,8 @@ async def _send_alert_email(pool, opened_alerts: list[dict]) -> bool:
 
 async def evaluate_rules(pool) -> int:
     """Evaluate all enabled rules; return number of alerts opened this run."""
+    from . import metrics
+
     opened = 0
     opened_alerts: list[dict] = []
     rules = await pool.fetch("SELECT * FROM alert_rules WHERE enabled = TRUE")
@@ -234,6 +236,7 @@ async def evaluate_rules(pool) -> int:
                         rule["id"], agent["id"], rule["severity"], message,
                     )
                     opened += 1
+                    metrics.alerts_opened.inc()
                     opened_alerts.append(
                         {"hostname": agent["hostname"], "severity": row["severity"], "message": row["message"]},
                     )

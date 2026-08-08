@@ -340,12 +340,28 @@
 
 > **Goal:** the platform is observable, debuggable, and auditable.
 
-### D1. Prometheus metrics + `/metrics`
-- **Fix:** expose counters/gauges (ingest accepted/rejected, agents online, alert
-  opens, api latency, queue depth proxy). FastAPI app + a `/metrics` route (no new
-  infra beyond scraping).
-- **Files:** new `api/app/metrics.py`, `main.py`.
-- **Test gate:** `/metrics` returns Prometheus text; counters move after an ingest.
+### D1. Prometheus metrics + `/metrics` — DONE
+- **Fix:** zero-dependency Prometheus text-format exporter in
+  `api/app/metrics.py` (Counter/Gauge/Histogram, hand-rolled exposition) + a
+  `/metrics` route that refreshes DB-backed gauges per scrape. Middleware
+  observes every request (even middleware-rejected 413/429) into
+  `ittoolkit_http_requests_total{method,route,status}` and
+  `ittoolkit_http_request_duration_seconds{route}`, with dynamic-id segments
+  collapsed to `/{id}` so label cardinality stays bounded. Ingest counters
+  (`ittoolkit_ingest_batches_total`, `ittoolkit_ingest_events_total`{accepted/
+  deduplicated/rejected}) and alert-opened counter
+  (`ittoolkit_alerts_opened_total`) hook into the hot paths; stale
+  gauges at scrape: `agents_online` (15-min window), `agents_total`,
+  `alerts_open`, `pending_commands`.
+- **Files:** `api/app/metrics.py` (new), `main.py` (middleware + route + ingest
+  hooks), `rules.py` (alert-opened counter).
+- **Test gate (live):** `/metrics` returned a well-formed exposition
+  (`# HELP/# TYPE`, cumulative histogram buckets, `le="+Inf"`, `_sum`/`_count`);
+  a real ingest → `ing_batches_total{accepted}` 0→1 and `ing_events_total
+  {accepted}` 0→1; replays → `deduplicated` incremented; a 600-event batch →
+  HTTP 413, `ing_batches_total{rejected}` +1 and `http_requests_total
+  {status="413"}` +1; `agents_online` reflected the just-ingested host; DB
+  gauges returned 2/2/0/…
 
 ### D2. Structured logs + request-id
 - **Fix:** `logging` JSON formatter with `request_id` middleware; wire uvicorn access
