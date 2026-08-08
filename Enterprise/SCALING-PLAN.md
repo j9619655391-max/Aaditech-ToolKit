@@ -423,12 +423,24 @@
   20 min → eval opened an `agent-offline` alert; a fresh heartbeat flipped it
   back to `resolved`. Without the fix the idle agent stayed silently offline.
 
-### E2. Queue pruning + backoff/jitter
-- **Fix:** delete `delivered` rows older than N days; cap outbox size; exponential
-  backoff with jitter on flush failure (thundering-herd prevention).
-- **Files:** `Agent-Collect.ps1`.
-- **Test gate:** 1000 delivered rows → pruned to retention; 5 agents start together →
-  flush times spread; failed server → retries back off.
+### E2. Queue pruning + backoff/jitter — DONE
+- **Finding:** the outbox only ever grew (`delivered` rows never removed, no
+  size cap) and every flush failed retried at exactly the same interval — a
+  synchronized hammer on a down/overloaded endpoint.
+- **Fix:** `Prune-Queue()` in the agent runs once per cycle: deletes `delivered`
+  rows older than `queue_retention_days` (default 7, JSON-tunable) and, when the
+  table exceeds `max_outbox_rows` (default 5000), drops the oldest rows.
+  Flush failure increments a persistent `FlushBackoff` counter and sleeps
+  exponentially (`30s · 2^(n−1)`, capped 15 min, ±30% jitter) before the next
+  retry; success resets it. Inter-cycle sleep also gets ±15% jitter so agents
+  that boot together desynchronize.
+- **Files:** `Agent-Collect.ps1` (Prune-Queue, backoff math, jittered sleep,
+  loop wiring).
+- **Test gate (harness):** retention prune removed all 10 `delivered` rows dated
+  10 days back while keeping pending; with `max_outbox_rows=4` the queue shrank
+  13→4 (oldest dropped); backoff sequence was strictly non-decreasing
+  (run1≈30s … run6=900s cap), run-0 = 0, and run-5 samples spread 345–621 s
+  (jitter present) across 20 draws.
 
 ### E3. Agent auto-update
 - **Fix:** agent checks `/api/agent/update` (version + MSI URL) each cycle; optional

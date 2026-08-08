@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-09T02:39:39+05:30",
-  "last_verified_commit": "67beb0e4e6d571c2d6b7165b3ca6234f765d2d5f",
-  "last_verified_date": "2026-08-09T02:34:07+05:30",
+  "generated": "2026-08-09T02:43:05+05:30",
+  "last_verified_commit": "2d9cf44e4212dd11a20124c9d39e6d2f974371e0",
+  "last_verified_date": "2026-08-09T02:39:39+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -14,26 +14,10 @@
   "latest_delta": {
     "added": 0,
     "removed": 0,
-    "changed": 6,
-    "unchanged": 114
+    "changed": 2,
+    "unchanged": 118
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-08T04:08:06+05:30",
-      "added": [],
-      "removed": [],
-      "changed": [
-        "Enterprise/api/app/certs.py",
-        "Enterprise/docker-compose.yml",
-        "Enterprise/deploy/Caddyfile",
-        ".github/workflows/ci.yml",
-        "Enterprise/api/app/main.py",
-        "Enterprise/ROADMAP.md",
-        "Enterprise/agent/Agent-Collect.ps1",
-        "Enterprise/agent/agent-config.example.json"
-      ],
-      "unchanged_count": 101
-    },
     {
       "detected_at": "2026-08-08T04:09:45+05:30",
       "added": [],
@@ -283,6 +267,16 @@
         "Enterprise/SCALING-PLAN.md"
       ],
       "unchanged_count": 114
+    },
+    {
+      "detected_at": "2026-08-09T02:43:05+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [
+        "Enterprise/SCALING-PLAN.md",
+        "Enterprise/agent/Agent-Collect.ps1"
+      ],
+      "unchanged_count": 118
     }
   ],
   "next_recommended_tasks": [

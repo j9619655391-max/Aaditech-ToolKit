@@ -416,16 +416,80 @@ function Send-AgentBatch {
         }
         $ids = (@($pending | ConvertFrom-Json) | ForEach-Object { $_.id }) -join ','
         Invoke-SQLite -Query "UPDATE outbox SET status='delivered' WHERE id IN ($ids);" -DatabasePath $QueueDb | Out-Null
+        $script:FlushBackoff = 0
         Write-AgentLog "Flushed batch: $($resp.accepted) events accepted"
         return $resp.accepted
     }
     catch {
-        Write-AgentLog "Flush failed (will retry next cycle): $($_.Exception.Message)"
+        $script:FlushBackoff++
+        $wait = Get-NextBackoffSleepSeconds -FailedConsecutive $script:FlushBackoff
+        Write-AgentLog "Flush failed ($($_.Exception.Message)) — backoff run $($script:FlushBackoff); next retry in ~$wait s"
+        Invoke-QueueSleep -SleepSeconds ([Math]::Min($wait, 15))
         return 0
     }
 }
 
-# ------------------------------------------------------------------ commands (P5)
+# ---------------------------------------------------------------- queue hygiene (E2)
+
+# Bounded outbox no matter what the collectors enqueue. Delivery is
+# best-effort: rows that age out while delivered keep the DB small, and a
+# runaway collector can't grow the queue without bound. Retention/caps are read
+# lazily so agent.json overrides (queue_retention_days, max_outbox_rows) apply
+# even though they ship after $Config is loaded.
+
+function Get-QueueRetentionDays {
+    if ($Config.queue_retention_days) { return [int]$Config.queue_retention_days }
+    return 7
+}
+
+function Get-MaxOutboxRows {
+    if ($Config.max_outbox_rows) { return [int]$Config.max_outbox_rows }
+    return 5000
+}
+
+function Prune-Queue {
+    # E2: drop delivered rows past retention + cap total rows (oldest first).
+    try {
+        $retention = Get-QueueRetentionDays
+        Invoke-SQLite -Query "DELETE FROM outbox WHERE status='delivered' AND created_at < datetime('now', '-$retention days');" -DatabasePath $QueueDb | Out-Null
+        $count = Invoke-SQLite -Query "SELECT COUNT(*) AS n FROM outbox;" -DatabasePath $QueueDb -AsJson 2>$null
+        $total = 0
+        if ($count -and $count.Trim()) { $total = [int]((($count | ConvertFrom-Json) | Select-Object -First 1).n) }
+        $max = Get-MaxOutboxRows
+        if ($total -gt $max) {
+            $excess = $total - $max
+            Invoke-SQLite -Query "DELETE FROM outbox WHERE id IN (SELECT id FROM outbox ORDER BY id ASC LIMIT $excess);" -DatabasePath $QueueDb | Out-Null
+            Write-AgentLog "Outbox size cap: pruned $excess oldest rows (total was $total)"
+        }
+    }
+    catch { Write-AgentLog "Queue prune skipped: $($_.Exception.Message)" }
+}
+
+# Exponential backoff w/ jitter. State persists across cycles within one agent
+# process; the server's per-agent outbox is unbounded so the client pacing here
+# is what stops a thundering herd when the endpoint is degraded or down.
+$script:FlushBackoff = 0
+
+function Get-NextBackoffSleepSeconds {
+    param([int]$FailedConsecutive)
+    $base = 30          # seconds
+    $cap  = 900         # 15 min
+    if ($FailedConsecutive -lt 1) { return 0 }
+    $exp = [Math]::Min($base * [Math]::Pow(2, $FailedConsecutive - 1), $cap)
+    # jitter ±30% so many agents with the same failure don't stay synchronized.
+    $jit = 0.7 + (Get-Random -Minimum 0 -Maximum 100) / 100.0 * 0.6
+    return [Math]::Min([Math]::Round($exp * $jit), $cap)
+}
+
+function Invoke-QueueSleep {
+    param($SleepSeconds)
+    if ($SleepSeconds -gt 0) {
+        Write-AgentLog "Backing off $SleepSeconds s after failure"
+        Start-Sleep -Seconds $SleepSeconds
+    }
+}
+
+# ------------------------------------------------------------------ commands (P2)
 
 function Get-CommandsApiRoot {
     # same origin as the ingest endpoint, minus the /ingest suffix
@@ -557,6 +621,9 @@ Write-AgentLog "Agent cycle start (endpoint: $($Config.endpoint))"
 $null = Ensure-ClientCert -Config $Config
 
 do {
+    # E2: keep the outbox bounded (retention + size cap) once per cycle.
+    Prune-Queue
+
     # E1: heartbeat every cycle — an idle agent (empty queue, no commands)
     # still updates last_seen, so the fleet view + agent-offline rule stay correct.
     try { $null = Send-AgentHeartbeat -Config $Config }
@@ -592,6 +659,11 @@ do {
     Write-AgentLog "Agent cycle complete"
 
     if ($LoopMinutes -gt 0) {
-        Start-Sleep -Seconds ($LoopMinutes * 60)
+        # E2: jitter the inter-cycle sleep (±15%) so agents that boot together or
+        # share an interval don't stay synchronized (thundering-herd prevention).
+        $base = $LoopMinutes * 60
+        $jitterPct = (Get-Random -Minimum -15 -Maximum 15) / 100.0
+        $cycle = [Math]::Max(1, [Math]::Round($base * (1 + $jitterPct)))
+        Start-Sleep -Seconds $cycle
     }
 } while ($LoopMinutes -gt 0)
