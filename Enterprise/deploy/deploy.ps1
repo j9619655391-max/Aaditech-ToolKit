@@ -176,6 +176,41 @@ foreach ($line in (Get-Content $EnvFile)) {
 }
 $env:CADDY_HOST = $CaddyHost
 
+# ---------------------------------------------------------------- Caddyfile (B3)
+# Render the per-mode Caddyfile from the template. Hostname/public deploys keep
+# ACME auto-TLS on {$CADDY_HOST}; bare-IP deploys add an internal-CA TLS site on
+# :443 (for agents/browsers that trust our CA) AND keep the plain :80 HTTP site
+# so the first-time setup wizard works exactly as before the change.
+$CaddyfileTpl = Join-Path $Here 'deploy\Caddyfile.template'
+$CaddyfileOut = Join-Path $Here 'deploy\Caddyfile'
+$mainSites = if ($Scheme -eq 'https') {
+    Log "Caddyfile: ACME auto-TLS on $HOST (hostname mode)"
+    '{0} {{
+    encode gzip
+
+    import main_routes
+}}' -f '{$CADDY_HOST}'
+}
+else {
+    Log "Caddyfile: :443 (internal CA TLS) + :80 (HTTP wizard) on $HOST"
+    @'
+:443 {
+    encode gzip
+    tls /agent_data/certs/server.crt /agent_data/certs/server.key
+    import main_routes
+}
+
+:80 {
+    encode gzip
+    import main_routes
+}
+'@
+}
+$caddyfile = Get-Content $CaddyfileTpl -Raw
+$caddyfile = $caddyfile.Replace('__URL_MAIN_SITES__', $mainSites)
+Set-Content -Path $CaddyfileOut -Value $caddyfile -Encoding utf8
+Log "Caddyfile rendered -> deploy\Caddyfile"
+
 # ---------------------------------------------------------------- agent config
 
 $featuresJson = Get-Content (Join-Path $Here 'api\features.json') -Raw | ConvertFrom-Json

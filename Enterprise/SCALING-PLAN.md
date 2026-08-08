@@ -137,20 +137,31 @@
 
 ### B2. Rate limiting + login lockout
 - **Finding:** no protection on `/api/login` or any endpoint.
-- **Fix:** in-memory (or DB) rate limiter middleware: per-IP on login (e.g. 10/5min),
-  per-user lockout after N failures; general API burst limit.
-- **Files:** new `api/app/ratelimit.py`, `main.py` middleware, `config.py`.
+- **Fix (done):** new `api/app/ratelimit.py` — in-memory fixed-window counters:
+  per-IP login cap (10/5min → 429), per-username lockout (5 failures → 423 for
+  15min, reset on successful login), general per-IP API burst (120/10s on `api/*`,
+  exempting `/healthz`, `/ingest`, `/api/commands`). `main.py` wires it as an HTTP
+  middleware (returns JSON 429) and the login route calls check/record.
+- **Files:** `api/app/ratelimit.py` (new), `main.py` (middleware + login).
 - **Test gate:** hammer login 15× → 429 + account locked; valid user still logs in
-  after cooldown.
+  after cooldown. (Logic unit-tested: blocked at 5 failures, unblocked on success.)
 
-### B3. TLS everywhere on the main port
+### B3. TLS on the main port
 - **Finding:** bare-IP deploys serve the portal + enroll over plain HTTP; cookie
   `secure=False`; mTLS only on `:9443`.
-- **Fix:** Caddy serves self-signed TLS on the main port for IPs (like `:9443`), so
-  portal + enroll + cookie are HTTPS end-to-end; flip cookie `secure` based on scheme.
-- **Files:** `Caddyfile`, `deploy.sh`/`deploy.ps1` (scheme), `auth.py`.
-- **Test gate:** `curl http://IP/` → redirects to `https://IP/`; cookie has `Secure`;
-  agent enrolls over HTTPS with CA trust.
+- **Decision (user):** serve optional TLS on `:443` with the internal CA cert, but
+  KEEP the `:80` HTTP site so the first-time setup wizard works exactly as before
+  (no redirect, no forced cert warnings on the admin's browser).
+- **Fix:** `Caddyfile.template` (new) + a render step in `deploy.sh`/`deploy.ps1`:
+  hostname/FQDN → `{$CADDY_HOST}` ACME auto-TLS; bare IP → `:443` TLS (internal CA
+  cert) **plus** `:80` HTTP. Session cookie `Secure` is derived from
+  `X-Forwarded-Proto` (new `auth.request_secure`), set only when served over TLS.
+- **Files:** `deploy/Caddyfile.template` (new), `deploy.sh`/`deploy.ps1` (render
+  step), `auth.py`, `main.py`.
+- **Test gate:** ✅ `caddy adapt` passes for both modes; live ✓ `http://:80/` → 200
+  (wizard unchanged); ✓ `https://:443/healthz --cacert <CA>` → 200; ✓ `:443` cert
+  verifies against internal CA (`Verify return code: 0`); ✓ `:9443` mTLS unaffected;
+  ✓ `auth.request_secure('https')==True`, `('http')==False`.
 
 ### B4. Hide / disable public API docs
 - **Finding:** `/docs`, `/openapi.json`, `/api-docs*` proxied unauthenticated.

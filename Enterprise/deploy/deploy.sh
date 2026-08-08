@@ -162,6 +162,45 @@ if ! grep -q "^CADDY_HOST=" "$ENV_FILE"; then
     echo "CADDY_HOST=$CADDY_HOST" >> "$ENV_FILE"
 fi
 
+# ---------------------------------------------------------------- Caddyfile (B3)
+
+# Render the per-mode Caddyfile from the template. Hostname/public deploys keep
+# ACME auto-TLS on {$CADDY_HOST}; bare-IP deploys add an internal-CA TLS site on
+# :443 (for agents/browsers that trust our CA) AND keep the plain :80 HTTP site
+# so the first-time setup wizard works exactly as before the change.
+render_caddyfile() {
+    local out="$HERE/deploy/Caddyfile"
+    if [ "$SCHEME" = "https" ]; then
+        MAIN_SITES='{$CADDY_HOST} {
+    encode gzip
+
+    import main_routes
+}'
+        log "Caddyfile: ACME auto-TLS on $HOST (hostname mode)"
+    else
+        MAIN_SITES=':443 {
+    encode gzip
+    tls /agent_data/certs/server.crt /agent_data/certs/server.key
+    import main_routes
+}
+
+:80 {
+    encode gzip
+    import main_routes
+}'
+        log "Caddyfile: :443 (internal CA TLS) + :80 (HTTP wizard) on $HOST"
+    fi
+    # shellcheck disable=SC2016
+    python3 -c '
+import sys
+tpl = open(sys.argv[1], encoding="utf-8").read()
+out = tpl.replace("__URL_MAIN_SITES__", sys.argv[2])
+open(sys.argv[3], "w", encoding="utf-8").write(out)
+' "$HERE/deploy/Caddyfile.template" "$MAIN_SITES" "$HERE/deploy/Caddyfile"
+}
+
+render_caddyfile
+
 # Feature list comes from api/features.json (single source of truth) so the
 # deploy-time agent-config.json never drifts from the portal manifest.
 FEATURES_JSON="$(python3 - "$HERE/api/features.json" <<'PY'
@@ -211,23 +250,11 @@ chmod 600 "$CONFIG_OUT" 2>/dev/null || true  # A7: contains API token
 # api container (it owns /data/certs), then start Caddy. The wizard's later
 # ensure_certs() is idempotent and keeps these files (SAN matches $HOST).
 
-log "Starting containers (db + api)"
+log "Starting containers (db + api) and waiting for health"
 export CADDY_HOST
-compose up -d --build db api
+compose up -d --build --wait --wait-timeout 120 db api
 
-log "Waiting for api health..."
-API_UP=0
-for i in $(seq 1 30); do
-    if curl -fsS --max-time 3 "http://localhost:8000/healthz" >/dev/null 2>&1; then
-        API_UP=1; break
-    fi
-    sleep 2
-done
-if [ "$API_UP" != "1" ]; then
-    die "api container never became healthy after 60s — check 'docker compose -f $HERE/docker-compose.yml logs api'"
-fi
-
-log "Generating mTLS CA + server cert for $HOST (A5)"
+log "api healthy — generating mTLS CA + server cert for $HOST (A5)"
 compose exec -T api python -c "from app.certs import ensure_certs; ensure_certs('$HOST')"
 
 log "Starting Caddy (certs now present)"

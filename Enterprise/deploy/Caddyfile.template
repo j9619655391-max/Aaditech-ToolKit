@@ -34,16 +34,7 @@
     }
 }
 
-:443 {
-    encode gzip
-    tls /agent_data/certs/server.crt /agent_data/certs/server.key
-    import main_routes
-}
-
-:80 {
-    encode gzip
-    import main_routes
-}
+__URL_MAIN_SITES__
 
 # Agent mTLS port (binding): every agent MUST present a client certificate
 # signed by the local IT-Toolkit CA before Caddy will route /ingest and the

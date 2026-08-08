@@ -1,34 +1,33 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-08T20:16:42+05:30",
+  "generated": "2026-08-08T22:29:35+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "955e1e1d3af82760beee8b257dd10cae175e7ab8",
-  "last_verified_date": "2026-08-08T05:43:20+05:30",
+  "last_verified_commit": "e274f91968ba5afb355da38357d3ef0d10b7c19c",
+  "last_verified_date": "2026-08-08T20:16:41+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 66,
+    "commit_count": 67,
     "clean_working_tree": false,
-    "head": "955e1e1d3af82760beee8b257dd10cae175e7ab8"
+    "head": "e274f91968ba5afb355da38357d3ef0d10b7c19c"
   },
   "latest_delta": {
-    "detected_at": "2026-08-08T20:16:42+05:30",
+    "detected_at": "2026-08-08T22:29:35+05:30",
     "added": [
-      "Enterprise/SCALING-PLAN.md",
-      "Enterprise/agent/agent-version.json"
+      "Enterprise/api/app/ratelimit.py",
+      "Enterprise/deploy/Caddyfile.template"
     ],
     "removed": [],
     "changed": [
-      "Enterprise/agent/Agent-Collect.ps1",
-      "Enterprise/agent/wix/Agent.wxs",
-      ".gitignore",
-      "Enterprise/agent/wix/build-msi.ps1",
-      ".github/workflows/ci.yml",
+      "Enterprise/deploy/Caddyfile",
+      "Enterprise/api/app/main.py",
+      "Enterprise/deploy/deploy.sh",
       "Enterprise/deploy/deploy.ps1",
-      "Enterprise/api/app/bundle.py",
-      "Enterprise/deploy/deploy.sh"
+      "Enterprise/portal/index.html",
+      "Enterprise/SCALING-PLAN.md",
+      "Enterprise/api/app/auth.py"
     ],
-    "unchanged_count": 103
+    "unchanged_count": 106
   },
   "module_state": {
     "working": [

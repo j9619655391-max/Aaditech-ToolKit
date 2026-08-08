@@ -10,13 +10,23 @@ from pathlib import Path
 
 import asyncpg
 from fastapi import FastAPI, Depends, Header, HTTPException, Request, Response
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import auth, bundle, certs, config, db, github, rules
+from . import auth, bundle, certs, config, db, github, ratelimit, rules
 
 app = FastAPI(title="IT-Toolkit Enterprise", version="1.0.0")
+
+
+@app.middleware("http")
+async def _api_burst_limit(request: Request, call_next):
+    # B2: general per-IP burst limiter. Exempts healthz/ingest/command channel.
+    try:
+        await ratelimit.enforce_api_burst(request)
+    except HTTPException as exc:
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    return await call_next(request)
 
 ROLES = ("admin", "operation", "monitoring")
 
@@ -201,7 +211,7 @@ async def setup_status():
 
 
 @app.post("/api/setup")
-async def run_setup(payload: SetupRequest, response: Response):
+async def run_setup(payload: SetupRequest, request: Request, response: Response):
     pool = await db.connect()
     done = await pool.fetchval("SELECT value FROM settings WHERE key = 'setup_complete'")
     if done and str(done).strip() not in ("0", "", "false", "False"):
@@ -269,7 +279,7 @@ async def run_setup(payload: SetupRequest, response: Response):
         payload.admin_username, auth.hash_password(payload.admin_password),
     )
     token = auth.issue_session(user["id"])
-    response.set_cookie(**auth.secure_cookie(token))
+    response.set_cookie(**auth.secure_cookie(token, secure=auth.request_secure(request)))
     return {
         "company": payload.company_name,
         "server_host": payload.server_host,
@@ -280,17 +290,22 @@ async def run_setup(payload: SetupRequest, response: Response):
 # ---------------------------------------------------------------- sessions
 
 @app.post("/api/login")
-async def login(payload: LoginRequest, response: Response):
+async def login(payload: LoginRequest, request: Request, response: Response):
     await require_setup_done()
+    # B2: per-IP login cap + per-user lockout before credential check.
+    await ratelimit.check_login(ratelimit.client_ip(request), payload.username)
     pool = await db.connect()
     user = await pool.fetchrow(
         "SELECT id, username, password_hash, role, active FROM users WHERE username = $1",
         payload.username,
     )
-    if user is None or not user["active"] or not auth.verify_password(payload.password, user["password_hash"]):
+    ok = bool(user and user["active"] and auth.verify_password(payload.password, user["password_hash"]))
+    if not ok:
+        await ratelimit.record_failure(payload.username)
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    await ratelimit.record_success(payload.username)
     token = auth.issue_session(user["id"])
-    response.set_cookie(**auth.secure_cookie(token))
+    response.set_cookie(**auth.secure_cookie(token, secure=auth.request_secure(request)))
     return {"username": user["username"], "role": user["role"]}
 
 
@@ -811,14 +826,21 @@ async def fleet_report():
 
 
 @app.get("/api/report/agent/{agent_id}", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def agent_report(agent_id: int, format: str = "json"):
+async def agent_report(
+    agent_id: int,
+    format: str = "json",
+    user: dict = Depends(require_session),
+):
     pool = await db.connect()
     agent = await pool.fetchrow("SELECT * FROM agents WHERE id = $1", agent_id)
     if agent is None:
         raise HTTPException(status_code=404, detail="Agent not found")
+    # B1: license payloads contain product keys — admin-only. Non-admins get
+    # them stripped from reports too.
+    license_filter = "" if user["role"] == "admin" else " AND kind <> 'licenses'"
     events = await pool.fetch(
-        "SELECT id, kind, payload, sanitized, captured_at FROM events "
-        "WHERE agent_id = $1 ORDER BY captured_at DESC",
+        f"SELECT id, kind, payload, sanitized, captured_at FROM events "
+        f"WHERE agent_id = $1{license_filter} ORDER BY captured_at DESC",
         agent_id,
     )
     if format == "csv":
@@ -878,8 +900,17 @@ async def list_agents():
 
 
 @app.get("/api/events", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def list_events(agent: str | None = None, kind: str | None = None, limit: int = 100):
+async def list_events(
+    agent: str | None = None,
+    kind: str | None = None,
+    limit: int = 100,
+    user: dict = Depends(require_session),
+):
     pool = await db.connect()
+    # B1: license payloads contain Windows/Office product keys — admin-only.
+    # Non-admins also get licenses events stripped from broad queries.
+    if kind == "licenses" and user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Forbidden for this role")
     sql = (
         "SELECT e.id, e.kind, e.payload, e.sanitized, e.captured_at, a.hostname "
         "FROM events e JOIN agents a ON a.id = e.agent_id WHERE 1=1"
@@ -891,6 +922,8 @@ async def list_events(agent: str | None = None, kind: str | None = None, limit: 
     if kind:
         sql += f" AND e.kind = ${len(args) + 1}"
         args.append(kind)
+    if kind != "licenses" and user["role"] != "admin":
+        sql += f" AND e.kind <> 'licenses'"
     sql += f" ORDER BY e.captured_at DESC LIMIT ${max(len(args) + 1, 1)}"
     args.append(limit)
     rows = await pool.fetch(sql, *args)

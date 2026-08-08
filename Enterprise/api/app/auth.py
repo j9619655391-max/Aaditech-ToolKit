@@ -61,12 +61,21 @@ def verify_session(token: str) -> int | None:
     return user_id
 
 
-def secure_cookie(token: str) -> dict:
+def secure_cookie(token: str, secure: bool = False) -> dict:
     return {
         "key": SESSION_COOKIE,
         "value": token,
         "httponly": True,
         "samesite": "lax",
-        "secure": False,  # LAN http by default; flip when TLS terminated
+        "secure": secure,  # True only when the request came in over TLS
         "max_age": int(SESSION_TTL.total_seconds()),
     }
+
+
+def request_secure(request) -> bool:
+    """True when the client reached us over HTTPS. Uvicorn runs behind Caddy
+    (HTTP internally), so honour the X-Forwarded-Proto header Caddy sets."""
+    proto = request.headers.get("x-forwarded-proto", "")
+    if proto:
+        return proto.strip().lower() == "https"
+    return request.url.scheme == "https"

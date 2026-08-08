@@ -114,8 +114,10 @@ async function refreshAlertBadge() {
 
 function setupNav() {
   const isAdmin = window.user && window.user.role === 'admin';
+  const canAgentSetup = window.user && (window.user.role === 'admin' || window.user.role === 'operation');
   document.querySelectorAll('nav button').forEach(b => {
     if (b.dataset.view === 'users') b.style.display = isAdmin ? '' : 'none';
+    if (b.dataset.view === 'agent') b.style.display = canAgentSetup ? '' : 'none';
   });
 }
 
