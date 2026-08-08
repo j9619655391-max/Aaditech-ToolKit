@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import io
 import json
+import logging as _logging
 import re
 import secrets
 import time
@@ -17,7 +18,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import auth, bundle, certs, config, db, github, metrics, ratelimit, rules, vault
+from . import auth, bundle, certs, config, db, github, logging_setup, metrics, ratelimit, rules, vault
+
+# D2: replace default uvicorn/formatter logs with our JSON line format before
+# any request is served.
+logging_setup.configure()
 
 # B4: hide interactive API docs (/docs, /redoc, /openapi.json) in prod. Only
 # exposed when ENVIRONMENT=dev.
@@ -29,6 +34,9 @@ app = FastAPI(
     redoc_url="/redoc" if not _docs_off else None,
     openapi_url="/openapi.json" if not _docs_off else None,
 )
+
+# D2: middleware-emitted structured access line (uvicorn's own is suppressed).
+_access_log = _logging.getLogger("ittoolkit.access")
 
 
 @app.middleware("http")
@@ -58,6 +66,22 @@ async def _body_size_limit(request: Request, call_next):
 
 
 @app.middleware("http")
+async def _request_id_middleware(request: Request, call_next):
+    # D2: assign a request_id (honoring an inbound X-Request-ID if present, so a
+    # fleet operator can correlate agent batches to their logs), tag every log
+    # line in this request, and return it on the response header. We do NOT reset
+    # the contextvar here: uvicorn's access line is emitted in the same task
+    # after the response finishes, so it must still see this request's id; each
+    # new request sets its own.
+    rid = request.headers.get("X-Request-ID", "").strip() or uuid.uuid4().hex[:16]
+    logging_setup.set_request_id(rid)
+    request.state.request_id = rid
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = rid
+    return response
+
+
+@app.middleware("http")
 async def _observe_http(request: Request, call_next):
     # D1: per-request latency histogram + request/status counter. Runs first so
     # every response (success or middleware rejection) is observed.
@@ -70,7 +94,11 @@ async def _observe_http(request: Request, call_next):
         metrics.http_requests.inc(
             labels={"method": request.method, "route": _route_for(request), "status": "500"}
         )
+        _access_log.error(
+            "", extra=_access_fields(request, 500, start)
+        )
         raise
+    dur_ms = (time.perf_counter() - start) * 1000.0
     metrics.http_duration.observe(
         time.perf_counter() - start,
         {"route": _route_for(request)},
@@ -78,7 +106,20 @@ async def _observe_http(request: Request, call_next):
     metrics.http_requests.inc(
         labels={"method": request.method, "route": _route_for(request), "status": str(response.status_code)}
     )
+    _access_log.info("", extra=_access_fields(request, response.status_code, start))
     return response
+
+
+def _access_fields(request: Request, status_code: int, started_at: float) -> dict:
+    """Structured access-log fields for the request (request_id lives in the
+    contextvar filled by _request_id_middleware)."""
+    return {
+        "request_id": getattr(request.state, "request_id", ""),
+        "path": _route_for(request),
+        "method": request.method,
+        "status": status_code,
+        "dur_ms": round((time.perf_counter() - started_at) * 1000.0, 2),
+    }
 
 
 def _route_for(request: Request) -> str:

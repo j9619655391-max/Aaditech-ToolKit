@@ -363,11 +363,23 @@
   {status="413"}` +1; `agents_online` reflected the just-ingested host; DB
   gauges returned 2/2/0/…
 
-### D2. Structured logs + request-id
-- **Fix:** `logging` JSON formatter with `request_id` middleware; wire uvicorn access
-  logs through it; add `request_id` on agent batches.
-- **Files:** new `api/app/logging_setup.py`, middleware in `main.py`.
-- **Test gate:** every log line has request_id + path + status; ingest batch tagged.
+### D2. Structured logs + request-id — DONE
+- **Fix:** `api/app/logging_setup.py` (new) replaces uvicorn's plaintext logging
+  with a JSON line formatter (ts/level/logger/request_id/message [+extras]) on
+  `uvicorn.error`, root, and `uvicorn.access`. A `request_id` contextvar +
+  `ittoolkit.access` logger carry correlation; a middleware assigns a
+  request_id per request (honoring an inbound `X-Request-ID`, else UUID), tags
+  every log line in that request, and echoes it on the `X-Request-ID` response
+  header. The access line (method/path/status/`dur_ms`) is emitted from the
+  middleware wrapper so it carries the request_id + duration; uvicorn's own
+  access line is silenced to avoid duplication.
+- **Files:** `logging_setup.py` (new), `main.py` (middleware + `_access_fields`).
+- **Test gate (live):** `docker logs` shows only single-line JSON objects; a
+  request with `X-Request-ID: rid-corp-0001` produced an
+  `ittoolkit.access` line carrying `request_id`+`path`+`method`+`status`+`dur_ms`;
+  a request without the header got an auto-generated 16-hex request_id on both
+  the log line and the `X-Request-ID` response header; an ingest POST produced a
+  correlated access line.
 
 ### D3. Fleet audit log
 - **Finding:** no login/admin-action/token/command audit trail.
