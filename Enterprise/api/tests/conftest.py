@@ -34,6 +34,12 @@ TEST_URL = f"{_M.group(1)}/{TEST_DB}" if _M else BASE_URL
 # Isolate DATA_DIR + secrets so the suite never touches the live volume.
 TEST_DATA_DIR = "/tmp/ittk-test-data"
 
+# Point config.PORTAL_DIR / FEATURES_FILE at the checkout rather than the
+# container layout (/app/...) so the same suite runs in Docker and CI.
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+TEST_PORTAL_DIR = os.path.join(_REPO_ROOT, "Enterprise", "portal")
+TEST_FEATURES_FILE = os.path.join(_REPO_ROOT, "Enterprise", "api", "features.json")
+
 
 def _admin_connect() -> asyncpg.Connection:
     # connect to the maintenance DB (same server) to create/drop the test DB
@@ -63,6 +69,8 @@ def _test_db():
 # ---- point the app at the test DB BEFORE importing it ----------------------
 os.environ["DATABASE_URL"] = TEST_URL
 os.environ["DATA_DIR"] = TEST_DATA_DIR
+os.environ["PORTAL_DIR"] = TEST_PORTAL_DIR
+os.environ["FEATURES_FILE"] = TEST_FEATURES_FILE
 os.environ["API_TOKEN"] = "test-shared-fleet-token-0001"
 os.environ["SESSION_SECRET"] = "test-session-secret-0001"
 os.environ["ENVIRONMENT"] = "prod"  # B4: docs gated by default in tests
