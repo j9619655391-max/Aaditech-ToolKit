@@ -10,7 +10,8 @@ param(
     [string]$QueueDb = "$env:ProgramData\ITToolkit-Agent\queue.sqlite3",
     [int]$LoopMinutes = 0,
     [switch]$CollectOnly,
-    [switch]$FlushOnly
+    [switch]$FlushOnly,
+    [switch]$ElevatedOnce
 )
 
 $ErrorActionPreference = 'Stop'
@@ -40,6 +41,57 @@ function Write-AgentLog {
     $line = "[{0}] {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message
     Add-Content -Path (Join-Path $logDir 'agent.log') -Value $line -ErrorAction SilentlyContinue
     Write-Verbose $line
+}
+
+# E4: whether THIS process is running with an elevated (admin) token. The
+# routine scheduled task runs as NETWORK SERVICE (least privilege), so elevated
+# collectors (bitlocker, licenses, printer-fix, user inventory…) only run under
+# the on-demand elevated task; they are opt-in here and skipped otherwise.
+function Test-IsElevated {
+    try {
+        $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+        return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+    catch { return $false }
+}
+
+function Get-ElevatedTaskRequestPath {
+    return (Join-Path (Split-Path $ConfigPath -Parent) 'elevated-job.json')
+}
+
+# E4: hand an admin-required operation (msiexec self-upgrade, reboot) to the
+# on-demand elevated task (ITToolkitAgentElevated). The main task is unprivileged,
+# so any action that needs SYSTEM is staged as a small JSON request file and the
+# elevated task is asked to run it once. Returns $true when the request was
+# staged and the elevated task is available.
+function Request-ElevatedJob {
+    param(
+        [string]$Action,
+        [hashtable]$Payload = @{}
+    )
+    try {
+        $req = [ordered]@{ action = $Action; requested = (Get-Date).ToString('o') } + $Payload
+        ($req | ConvertTo-Json -Compress -Depth 6) | Set-Content (Get-ElevatedTaskRequestPath) -ErrorAction Stop
+        # Ask the Task Scheduler for a one-time run of the elevated task. The
+        # task is registered by the MSI as SYSTEM/Highest; if it is missing
+        # (manual/dev installs) the request file alone keeps the operation
+        # visible to any later elevated pass.
+        try {
+            (& schtasks.exe /run /tn ITToolkitAgentElevated 2>&1 | Out-Null)
+            Write-AgentLog "Elevated task triggered for $Action"
+        }
+        catch { Write-AgentLog "Elevated task not triggered ($($_.Exception.Message)); request kept for next elevated pass" }
+        return $true
+    }
+    catch {
+        Write-AgentLog "Could not stage elevated request ($Action): $($_.Exception.Message)"
+        return $false
+    }
+}
+
+function Clear-ElevatedRequest {
+    $p = Get-ElevatedTaskRequestPath
+    if (Test-Path $p) { Remove-Item $p -Force -ErrorAction SilentlyContinue }
 }
 
 function Read-AgentConfig {
@@ -302,6 +354,14 @@ function Invoke-AgentCollection {
 
     foreach ($feature in $Config.features) {
         if (-not $feature.enabled) { continue }
+        # E4: collectors needing elevation are opt-in. Under the least-privilege
+        # NETWORK SERVICE task these run only when this process is elevated
+        # (i.e. the on-demand elevated task, which reuses this same loop).
+        $needsElev = [bool]$feature.requires_elevation
+        if ($needsElev -and -not (Test-IsElevated)) {
+            Write-AgentLog "Skipping $($feature.name): requires elevation (opt-in; runs only under the elevated task)"
+            continue
+        }
         $scriptPath = $feature.script
         if (-not [System.IO.Path]::IsPathRooted($scriptPath)) {
             $scriptPath = Join-Path $script:RepoRoot $feature.script
@@ -559,6 +619,14 @@ function Update-AgentIfNeeded {
 
     # Silent in-place upgrade. The task GUID/install folder are stable, so the
     # scheduled task keeps pointing at the same exe after the MSI is replaced.
+    # msiexec /i needs an elevated token; the routine task is NETWORK SERVICE,
+    # so an actual install is deferred to the on-demand elevated task (E4).
+    if (-not (Test-IsElevated)) {
+        $ok = Request-ElevatedJob -Action 'update'
+        Write-AgentLog "MSI install requires elevation — staged for elevated task: $ok"
+        Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+        return $ok
+    }
     try {
         $p = Start-Process msiexec.exe -ArgumentList "/i `"$tmp`" /qn /norestart" -Wait -PassThru
         Write-AgentLog "msiexec exit code: $($p.ExitCode)"
@@ -621,6 +689,12 @@ function Invoke-RemoteCommand {
     switch ($kind) {
         'reboot' {
             $delay = [int]$payload.delay_seconds
+            # E4: reboot needs SeShutdownPrivilege; the routine task runs as
+            # NETWORK SERVICE, so defer to the on-demand elevated task.
+            if (-not (Test-IsElevated)) {
+                $ok = Request-ElevatedJob -Action 'reboot' -Payload @{ delay_seconds = $delay }
+                return @{ status = if ($ok) { 'completed' } else { 'failed' }; output = 'Reboot deferred to elevated task (least privilege)'; exit_code = if ($ok) { 0 } else { 1 } }
+            }
             if ($delay -gt 0) {
                 & shutdown.exe /r /t $delay /f 2>&1 | Out-Null
             }
@@ -702,6 +776,59 @@ Write-AgentLog "Agent cycle start (endpoint: $($Config.endpoint))"
 
 # mTLS: fetch the client cert once before the first endpoint call.
 $null = Ensure-ClientCert -Config $Config
+
+# E4: on-demand elevated task (-ElevatedOnce). Runs exactly one privileged
+# cycle (elevated collectors run, self-upgrade installs, reboot is possible)
+# then clears any staged elevated request. Never loops.
+if ($ElevatedOnce) {
+    Write-AgentLog "Elevated once run (privileged cycle)"
+
+    # Perform any staged reboot. The routine (NETWORK SERVICE) task cannot
+    # reboot, so it stages a request that this privileged pass consumes.
+    $jobPath = Get-ElevatedTaskRequestPath
+    if (Test-Path $jobPath) {
+        try {
+            $job = (Get-Content $jobPath -Raw | ConvertFrom-Json)
+            if ($job.action -eq 'reboot') {
+                $delay = [int]$job.delay_seconds
+                if ($delay -gt 0) { & shutdown.exe /r /t $delay /f 2>&1 | Out-Null }
+                else { Restart-Computer -Force -ErrorAction Stop }
+                Write-AgentLog "Elevated reboot executed (delay $delay s)"
+            }
+        }
+        catch { Write-AgentLog "Elevated reboot failed: $($_.Exception.Message)" }
+    }
+
+    Prune-Queue
+    try { $null = Send-AgentHeartbeat -Config $Config }
+    catch { Write-AgentLog "Heartbeat failed: $($_.Exception.Message)" }
+
+    if (-not $CollectOnly -and -not $FlushOnly) { $null = Update-AgentIfNeeded -Config $Config }
+
+    if (-not $FlushOnly) {
+        $ran = Invoke-AgentCollection -Config $Config
+        Write-AgentLog "Elevated collection: $($ran -join ', ')"
+    }
+    if (-not $CollectOnly) {
+        $null = Send-AgentBatch -Config $Config
+    }
+    if (-not $FlushOnly -and -not $CollectOnly) {
+        $cmds = Get-PendingCommands -Config $Config
+        foreach ($cmd in $cmds) {
+            if ($null -ne $cmd.id -and (Get-ExecutedCommand -CommandId $cmd.id)) {
+                Write-AgentLog "Command $($cmd.id) already executed — skipping (at-most-once)"
+                continue
+            }
+            $result = Invoke-RemoteCommand -Config $Config -Cmd $cmd
+            if ($null -ne $cmd.id) { Record-ExecutedCommand -CommandId $cmd.id -Result $result }
+            Send-CommandResult -Config $Config -CmdId $cmd.id -Result $result
+        }
+    }
+
+    Clear-ElevatedRequest
+    Write-AgentLog "Elevated once complete"
+    exit 0
+}
 
 do {
     # E2: keep the outbox bounded (retention + size cap) once per cycle.

@@ -55,6 +55,9 @@ async def build_agent_json(pool) -> dict:
             "name": feat["name"],
             "script": feat["script"],
             "enabled": row["enabled"] if row else feat.get("default_enabled", True),
+            # E4: collectors that need an elevated token are opt-in; the agent
+            # skips them unless it is running under the on-demand elevated task.
+            "requires_elevation": bool(feat.get("requires_elevation", False)),
         })
 
     return {

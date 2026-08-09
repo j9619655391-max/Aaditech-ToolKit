@@ -9,7 +9,7 @@
     { "name": "eventlogs", "script": "Scripts/Export-EventLogs.ps1", "enabled": true },
     { "name": "network", "script": "Scripts/Network-Diagnostic.ps1", "enabled": true },
     { "name": "firewall", "script": "Scripts/Firewall-Test.ps1", "enabled": true },
-    { "name": "users", "script": "Scripts/User-Inventory.ps1", "enabled": false },
-    { "name": "printers", "script": "Scripts/Printer-Fix.ps1", "enabled": false }
+    { "name": "users", "script": "Scripts/User-Inventory.ps1", "enabled": false, "requires_elevation": true },
+    { "name": "printers", "script": "Scripts/Printer-Fix.ps1", "enabled": false, "requires_elevation": true }
   ]
 }

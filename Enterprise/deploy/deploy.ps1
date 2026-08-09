@@ -232,7 +232,12 @@ Log "Caddyfile rendered -> deploy\Caddyfile"
 
 $featuresJson = Get-Content (Join-Path $Here 'api\features.json') -Raw | ConvertFrom-Json
 $features = @($featuresJson.features | ForEach-Object {
-    [pscustomobject]@{ name = $_.name; script = $_.script; enabled = [bool]$_.default_enabled }
+    [pscustomobject]@{
+        name               = $_.name
+        script             = $_.script
+        enabled            = [bool]$_.default_enabled
+        requires_elevation = [bool]$_.requires_elevation
+    }
 })
 
 # Agent version + interval come from agent/agent-version.json (single source of

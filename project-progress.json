@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-09T02:48:16+05:30",
-  "last_verified_commit": "6fc74e4f3275b11595045c59568184ba9e6674e3",
-  "last_verified_date": "2026-08-09T02:43:04+05:30",
+  "generated": "2026-08-09T19:52:08+05:30",
+  "last_verified_commit": "dc59b4a4bc71cecbf85c2eee47dfee9ca5791f11",
+  "last_verified_date": "2026-08-09T02:48:16+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -12,31 +12,12 @@
     "percent": 100.0
   },
   "latest_delta": {
-    "added": 0,
+    "added": 1,
     "removed": 0,
-    "changed": 7,
-    "unchanged": 113
+    "changed": 9,
+    "unchanged": 111
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-08T05:25:49+05:30",
-      "added": [
-        "Enterprise/deploy/deploy.ps1",
-        "Enterprise/api/app/github.py"
-      ],
-      "removed": [],
-      "changed": [
-        "Enterprise/api/app/config.py",
-        "Enterprise/deploy/deploy.sh",
-        "Enterprise/api/app/bundle.py",
-        "Enterprise/portal/index.html",
-        "Enterprise/api/app/main.py",
-        "Enterprise/agent/Agent-Collect.ps1",
-        "Enterprise/ROADMAP.md",
-        "Enterprise/docker-compose.yml"
-      ],
-      "unchanged_count": 101
-    },
     {
       "detected_at": "2026-08-08T05:30:10+05:30",
       "added": [],
@@ -283,6 +264,25 @@
         "Enterprise/api/app/main.py"
       ],
       "unchanged_count": 113
+    },
+    {
+      "detected_at": "2026-08-09T19:52:08+05:30",
+      "added": [
+        "Enterprise/agent/wix/Create-ElevatedTask.ps1"
+      ],
+      "removed": [],
+      "changed": [
+        "Enterprise/agent/agent-config.example.json",
+        "Enterprise/api/features.json",
+        "Enterprise/agent/wix/build-msi.ps1",
+        "Enterprise/agent/Agent-Collect.ps1",
+        "Enterprise/api/app/main.py",
+        "Enterprise/deploy/deploy.ps1",
+        "Enterprise/api/app/bundle.py",
+        "Enterprise/SCALING-PLAN.md",
+        "Enterprise/agent/wix/Agent.wxs"
+      ],
+      "unchanged_count": 111
     }
   ],
   "next_recommended_tasks": [

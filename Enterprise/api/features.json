@@ -5,91 +5,104 @@
       "label": "System Quick Check",
       "script": "Scripts/QuickCheck.ps1",
       "description": "Quick system health and inventory snapshot.",
-      "default_enabled": true
+      "default_enabled": true,
+      "requires_elevation": false
     },
     {
       "name": "eventlogs",
       "label": "Windows Event Logs",
       "script": "Scripts/Export-EventLogs.ps1",
       "description": "Exports System/Application/Security event logs (sanitized).",
-      "default_enabled": true
+      "default_enabled": true,
+      "requires_elevation": false
     },
     {
       "name": "network",
       "label": "Network Diagnostics",
       "script": "Scripts/Network-Diagnostic.ps1",
       "description": "IP config, DNS, ping and connectivity checks.",
-      "default_enabled": true
+      "default_enabled": true,
+      "requires_elevation": false
     },
     {
       "name": "firewall",
       "label": "Firewall Audit",
       "script": "Scripts/Firewall-Test.ps1",
       "description": "Validates Windows firewall status and rules.",
-      "default_enabled": true
+      "default_enabled": true,
+      "requires_elevation": false
     },
     {
       "name": "users",
       "label": "User Inventory",
       "script": "Scripts/User-Inventory.ps1",
       "description": "Enumerates local users and groups.",
-      "default_enabled": false
+      "default_enabled": false,
+      "requires_elevation": true
     },
     {
       "name": "printers",
       "label": "Printer Diagnostics",
       "script": "Scripts/Printer-Fix.ps1",
       "description": "Detects and repairs common printer issues.",
-      "default_enabled": false
+      "default_enabled": false,
+      "requires_elevation": true
     },
     {
       "name": "hardware",
       "label": "Hardware Inventory",
       "script": "Enterprise/agent/collectors/Get-HardwareInventory.ps1",
       "description": "CPU, RAM, disks, GPU, BIOS, serial and battery wear %.",
-      "default_enabled": true
+      "default_enabled": true,
+      "requires_elevation": false
     },
     {
       "name": "software",
       "label": "Software Inventory",
       "script": "Enterprise/agent/collectors/Get-SoftwareInventory.ps1",
       "description": "Installed applications with versions.",
-      "default_enabled": true
+      "default_enabled": true,
+      "requires_elevation": false
     },
     {
       "name": "diskhealth",
       "label": "Disk Health (SMART)",
       "script": "Enterprise/agent/collectors/Get-DiskHealth.ps1",
       "description": "Physical disk health and SMART failure prediction.",
-      "default_enabled": true
+      "default_enabled": true,
+      "requires_elevation": false
     },
     {
       "name": "health",
       "label": "System Health",
       "script": "Enterprise/agent/collectors/Get-SystemHealth.ps1",
       "description": "Uptime, CPU/memory load, reboot-pending and critical services.",
-      "default_enabled": true
+      "default_enabled": true,
+      "requires_elevation": false
     },
     {
       "name": "bitlocker",
       "label": "BitLocker Status",
       "script": "Enterprise/agent/collectors/Get-BitLockerStatus.ps1",
       "description": "Volume encryption state.",
-      "default_enabled": false
+      "default_enabled": false,
+      "requires_elevation": true
     },
     {
       "name": "updatecompliance",
       "label": "Windows Update Compliance",
       "script": "Enterprise/agent/collectors/Get-WindowsUpdateStatus.ps1",
       "description": "Last successful update activity (best-effort without WU API).",
-      "default_enabled": true
+      "default_enabled": true,
+      "requires_elevation": false
     },
     {
       "name": "licenses",
       "label": "License Info",
       "script": "Enterprise/agent/collectors/Get-LicenseInfo.ps1",
       "description": "Windows/Office keys (last 5 only, sanitized, admin-only in portal).",
-      "default_enabled": false
+      "default_enabled": false,
+      "requires_elevation": true
     }
   ]
 }

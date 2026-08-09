@@ -1417,6 +1417,7 @@ async def list_features():
             "description": feat["description"],
             "enabled": row["enabled"] if row else feat.get("default_enabled", True),
             "config": row["config"] if row else {},
+            "requires_elevation": bool(feat.get("requires_elevation", False)),
         })
     return result
 

@@ -60,6 +60,10 @@ Write-Host "Staged sqlite3.exe ($($(Get-Item $stageSqlite).Length) bytes)"
 Copy-Item (Join-Path $RepoRoot 'Scripts') (Join-Path $Stage 'Scripts') -Recurse -Force
 Copy-Item (Join-Path $RepoRoot 'Config')  (Join-Path $Stage 'Config')  -Recurse -Force
 
+# E4: on-demand elevated helper (registers ITToolkitAgentElevated with a
+# security descriptor that lets the NETWORK SERVICE agent trigger it).
+Copy-Item (Join-Path $WixDir 'Create-ElevatedTask.ps1') (Join-Path $Stage 'Scripts\Create-ElevatedTask.ps1') -Force
+
 # bundle the support-engineer collectors (installed as <root>\Enterprise\agent\collectors\,
 # same relative path the agent.json feature scripts use in the repo)
 $collectors = Join-Path $RepoRoot 'Enterprise\agent\collectors'

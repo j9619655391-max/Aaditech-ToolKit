@@ -466,12 +466,23 @@
   streamed a MSI (agent bearer); clearing the target → back to `false`
   (rollback path); rollout admin writes an `agent.rollout.set` audit row.
 
-### E4. Least-privilege agent task + file ACLs
+### E4. Least-privilege agent task + file ACLs — DONE
 - **Fix:** scheduled task runs as `NETWORK SERVICE` (not SYSTEM); collectors that need
-  elevation are opt-in; `icacls` ProgramData to SYSTEM+admin (token, queue, pfx, logs).
-- **Files:** `Agent.wxs`, `Agent-Collect.ps1`, `deploy.ps1`.
-- **Test gate:** task principal != SYSTEM; standard user cannot read `agent.json`/
-  `queue.sqlite3`; collectors still produce data.
+  elevation are opt-in; `icacls` ProgramData to SYSTEM+Admin (+NETWORK SERVICE so
+  collection still writes) for token, queue, pfx, logs. Admin-only work (msiexec
+  self-upgrade, scheduled reboot, elevated-only collectors) runs through a new
+  on-demand elevated task `ITToolkitAgentElevated` (`schtasks /run`), registered
+  with a security descriptor that lets the unprivileged agent trigger it.
+- **Files:** `Agent.wxs` (task principal + elevated helper + icacls), new
+  `wix/Create-ElevatedTask.ps1` (SDDL registration over COM), `build-msi.ps1`
+  (stage helper), `Agent-Collect.ps1` (`Test-IsElevated`, feature gating in
+  `Invoke-AgentCollection`, `Request-ElevatedJob`/`-ElevatedOnce` mode, reboot +
+  msiexec deferral), `api/features.json` + `bundle.py` + `main.py`
+  (`requires_elevation` on users/printers/bitlocker/licenses), `deploy.ps1`
+  (propagates flag), `agent-config.json` + `.example`.
+- **Test gate:** main task principal = `NT AUTHORITY\NETWORK SERVICE`; standard
+  user cannot read `agent.json`/`queue.sqlite3`; non-elevated collectors still
+  produce data; elevated-only collectors run under the on-demand elevated task.
 
 ---
 
