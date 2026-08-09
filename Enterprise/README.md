@@ -16,6 +16,13 @@ Windows clients                        Server (Docker, one host)
 
 ## Quick start (server) — intranet / LAN first
 
+> **AI-agent / automated deploys:** run the prerequisite scanner first, then follow
+> `Documentation/Deployment-AI-Runbook.md` — it decides the path (Windows local
+> build, Linux+GitHub, or agent-only box) from the scan verdict.
+> ```powershell
+> pwsh -NoProfile -File ./Enterprise/tests/Check-Deploy-Prereqs.ps1 -ShowTable
+> ```
+
 ```bash
 cd Enterprise/deploy
 ./deploy.sh          # default = LAN mode (no internet needed)  — macOS / Linux

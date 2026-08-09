@@ -1,12 +1,20 @@
 # IT-Toolkit — Version Reference
 
-**Current release:** `v1.2.0`
-**Release date:** 2026-08-08
+**Current release:** `v1.3.0`
+**Release date:** 2026-08-09
 **Branch:** `main`
 **Repository:** https://github.com/j9619655391-max/Aaditech-ToolKit
-**Remote:** `origin` (GitHub, public) — `main` + `v1.0.0`, `v1.1.0` tags pushed
-**CI status:** ✅ green on `windows-latest` — PowerShell validation + **agent exe/MSI build** (WiX v5) both pass end-to-end (verified 2026-08-08 via push + workflow_dispatch).
+**Remote:** `origin` (GitHub, public) — `main` + `v1.0.0`, `v1.1.0`, `v1.2.0` tags pushed
+**CI status:** ✅ green on `windows-latest` — PowerShell validation + **agent exe/MSI build** (WiX v5) both pass end-to-end; **API pytest smoke suite** (vs Postgres service) added in this release.
 
+> **v1.3.0 = Enterprise hardening (SCALING-PLAN A–E)**: least-privilege agent
+> task (NETWORK SERVICE + on-demand elevated helper, E4), agent heartbeat /
+> queue pruning / self-update (E1–E3), metrics + structured logs + audit log
+> (D1–D3), transactional ingest + setup, at-most-once commands, cert renewal,
+> backup/restore (C1–C6), RBAC + ratelimit + TLS + secrets-at-rest (B1–B6),
+> and the A1–A7 foundation fixes. Added an AI-agent prerequisite scanner +
+> deployment runbook and an API pytest suite.
+>
 > **v1.2.0 = SaaS-style auto-setup (Rev 3)**: everything is auto-detected /
 > auto-generated on ANY server; the only manual step is the setup wizard
 > (company / admin / SMTP / build mode). `deploy.ps1` (Windows Server) builds +

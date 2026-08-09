@@ -234,6 +234,7 @@ for f in manifest:
         "name": f["name"],
         "script": f["script"],
         "enabled": f.get("default_enabled", True),
+        "requires_elevation": f.get("requires_elevation", False),
     })
 print(json.dumps(out))
 PY

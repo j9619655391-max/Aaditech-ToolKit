@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.3.0 — Enterprise hardening + test tooling (SCALING-PLAN A–E)
+
+- **Least-privilege agent task (E4):** routine scheduled task runs as
+  `NETWORK SERVICE`; admin-only collectors (`users`, `printers`, `bitlocker`,
+  `licenses`) are opt-in via `requires_elevation`; admin work (msiexec
+  self-upgrade, scheduled reboot) is staged to an on-demand elevated task
+  `ITToolkitAgentElevated` (runs as SYSTEM/Highest via `schtasks /run`,
+  registered through the Task Scheduler COM API with a DACL that lets the
+  unprivileged agent trigger it). `icacls` locks down ProgramData + the local
+  `agent.json` to SYSTEM/Administrators/NETWORK SERVICE.
+- **Agent maturity (E1–E3):** per-cycle heartbeat (`/api/agent/heartbeat`),
+  bounded outbox pruning + exponential backoff with jitter, and staged
+  self-update via a rollout target + silent MSI upgrade.
+- **Observability & audit (D1–D3):** zero-dependency Prometheus `/metrics`,
+  structured JSON logs with request-id correlation, and an admin-only fleet
+  audit log (login / setup / user / command / agent / feature / build actions).
+- **Reliability (C1–C6):** pg_dump/restore runbook, startup-only migrations,
+  transactional ingest + bounded limits (413/limit clamp), transactional setup
+  (retryable, `setup_complete` last), at-most-once commands + sanitized output,
+  and automatic client-cert renewal before expiry.
+- **Security (B1–B6):** admin-only `licenses`/audit RBAC, login rate-limit +
+  per-user lockout, optional TLS main port, prod-gated API docs, Fernet
+  secrets-at-rest for SMTP/GitHub PAT, and per-agent credentials (token + mTLS
+  client cert) replacing the shared fleet token.
+- **Foundation (A1–A7):** bundled sqlite3, single version source, working MSI
+  upgrade path, real registry override, Caddy cert timing fix, honest deploy
+  health checks, and 0600/icacls secret permissions.
+- **Test tooling:** new `Enterprise/api/requirements-dev.txt` + pytest smoke
+  suite (`Enterprise/api/tests/`) that runs against a throwaway Postgres DB and
+  is wired into CI (`api-tests` job, Postgres service). New AI-agent
+  prerequisite scanner (`Enterprise/tests/Check-Deploy-Prereqs.ps1`) +
+  deployment runbook (`Documentation/Deployment-AI-Runbook.md`).
+- **FIX:** `ci.yml` + `deploy.sh` now emit `requires_elevation` in the baked
+  agent config (previously only `deploy.ps1` did), so the E4 gating works for
+  CI-built MSIs and Linux/macOS deploys too.
+
 ## v3.9 UPDATES — SaaS auto-setup + GitHub remote build (Rev 3)
 
 - **NEW: `Enterprise/deploy/deploy.ps1`** — one-command Windows Server bring-up:

@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-09T19:52:08+05:30",
-  "last_verified_commit": "dc59b4a4bc71cecbf85c2eee47dfee9ca5791f11",
-  "last_verified_date": "2026-08-09T02:48:16+05:30",
+  "generated": "2026-08-09T21:12:27+05:30",
+  "last_verified_commit": "1bed850ed94ed6bd82051605ad39fe7806bcd109",
+  "last_verified_date": "2026-08-09T19:52:08+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -12,22 +12,12 @@
     "percent": 100.0
   },
   "latest_delta": {
-    "added": 1,
+    "added": 6,
     "removed": 0,
-    "changed": 9,
-    "unchanged": 111
+    "changed": 5,
+    "unchanged": 116
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-08T05:30:10+05:30",
-      "added": [],
-      "removed": [],
-      "changed": [
-        "Enterprise/api/app/github.py",
-        "Enterprise/api/app/main.py"
-      ],
-      "unchanged_count": 109
-    },
     {
       "detected_at": "2026-08-08T05:43:21+05:30",
       "added": [],
@@ -283,6 +273,26 @@
         "Enterprise/agent/wix/Agent.wxs"
       ],
       "unchanged_count": 111
+    },
+    {
+      "detected_at": "2026-08-09T21:12:27+05:30",
+      "added": [
+        "Enterprise/api/tests/conftest.py",
+        "Documentation/Deployment-AI-Runbook.md",
+        "Enterprise/api/tests/test_smoke.py",
+        "Enterprise/tests/Check-Deploy-Prereqs.ps1",
+        "Enterprise/api/requirements-dev.txt",
+        "Enterprise/api/tests/__init__.py"
+      ],
+      "removed": [],
+      "changed": [
+        "VERSION.md",
+        "CHANGELOG.md",
+        "Enterprise/README.md",
+        "Enterprise/deploy/deploy.sh",
+        ".github/workflows/ci.yml"
+      ],
+      "unchanged_count": 116
     }
   ],
   "next_recommended_tasks": [

@@ -79,6 +79,43 @@ jobs:
         run: |
           pwsh -NoProfile -File ./Scripts/Index/Update-ProjectIndex.ps1 -Check
 
+  api-tests:
+    name: API test suite (pytest vs Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ittoolkit
+          POSTGRES_USER: ittoolkit
+          POSTGRES_PASSWORD: ci-test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ittoolkit"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install api deps + dev deps
+        working-directory: Enterprise/api
+        run: |
+          pip install -q -r requirements.txt -r requirements-dev.txt
+
+      - name: Run pytest smoke suite (throwaway DB)
+        working-directory: Enterprise/api
+        env:
+          DATABASE_URL: postgresql://ittoolkit:ci-test-password@localhost:5432/ittoolkit
+          FEATURES_FILE: features.json
+        run: |
+          python -m pytest tests -q
+
   agent-build:
     name: Build agent exe + MSI
     runs-on: windows-latest
@@ -101,7 +138,7 @@ jobs:
           $token = if ($env:API_TOKEN) { $env:API_TOKEN } else { 'CHANGE-ME' }
           $manifest = (Get-Content ./Enterprise/api/features.json -Raw | ConvertFrom-Json).features
           $features = @($manifest | ForEach-Object {
-            @{ name = $_.name; script = $_.script; enabled = [bool]$_.default_enabled }
+            @{ name = $_.name; script = $_.script; enabled = [bool]$_.default_enabled; requires_elevation = [bool]$_.requires_elevation }
           })
           $agentMeta = Get-Content ./Enterprise/agent/agent-version.json -Raw | ConvertFrom-Json
           $cfg = [ordered]@{

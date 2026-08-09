@@ -1,34 +1,35 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-09T19:52:08+05:30",
+  "generated": "2026-08-09T21:12:27+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "dc59b4a4bc71cecbf85c2eee47dfee9ca5791f11",
-  "last_verified_date": "2026-08-09T02:48:16+05:30",
+  "last_verified_commit": "1bed850ed94ed6bd82051605ad39fe7806bcd109",
+  "last_verified_date": "2026-08-09T19:52:08+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 83,
+    "commit_count": 84,
     "clean_working_tree": false,
-    "head": "dc59b4a4bc71cecbf85c2eee47dfee9ca5791f11"
+    "head": "1bed850ed94ed6bd82051605ad39fe7806bcd109"
   },
   "latest_delta": {
-    "detected_at": "2026-08-09T19:52:08+05:30",
+    "detected_at": "2026-08-09T21:12:27+05:30",
     "added": [
-      "Enterprise/agent/wix/Create-ElevatedTask.ps1"
+      "Enterprise/api/tests/conftest.py",
+      "Documentation/Deployment-AI-Runbook.md",
+      "Enterprise/api/tests/test_smoke.py",
+      "Enterprise/tests/Check-Deploy-Prereqs.ps1",
+      "Enterprise/api/requirements-dev.txt",
+      "Enterprise/api/tests/__init__.py"
     ],
     "removed": [],
     "changed": [
-      "Enterprise/agent/agent-config.example.json",
-      "Enterprise/api/features.json",
-      "Enterprise/agent/wix/build-msi.ps1",
-      "Enterprise/agent/Agent-Collect.ps1",
-      "Enterprise/api/app/main.py",
-      "Enterprise/deploy/deploy.ps1",
-      "Enterprise/api/app/bundle.py",
-      "Enterprise/SCALING-PLAN.md",
-      "Enterprise/agent/wix/Agent.wxs"
+      "VERSION.md",
+      "CHANGELOG.md",
+      "Enterprise/README.md",
+      "Enterprise/deploy/deploy.sh",
+      ".github/workflows/ci.yml"
     ],
-    "unchanged_count": 111
+    "unchanged_count": 116
   },
   "module_state": {
     "working": [

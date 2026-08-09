@@ -1,0 +1,5 @@
+# Dev/test-only dependencies (NOT installed by the api image).
+# Run the API test suite with:
+#   python -m pytest tests -q
+pytest==8.3.4
+httpx==0.28.1
