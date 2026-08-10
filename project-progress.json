@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-10T23:13:33+05:30",
-  "last_verified_commit": "406c22115205e34f63eb0b7905a4621eac417c08",
-  "last_verified_date": "2026-08-10T21:10:01+05:30",
+  "generated": "2026-08-10T23:55:50+05:30",
+  "last_verified_commit": "4a53e7345b6237eeba94901db924326ef667aa65",
+  "last_verified_date": "2026-08-10T23:13:32+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -12,25 +12,12 @@
     "percent": 100.0
   },
   "latest_delta": {
-    "added": 0,
+    "added": 1,
     "removed": 0,
-    "changed": 6,
-    "unchanged": 122
+    "changed": 2,
+    "unchanged": 126
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-09T00:24:04+05:30",
-      "added": [],
-      "removed": [],
-      "changed": [
-        "Enterprise/SCALING-PLAN.md",
-        "Enterprise/api/schema.sql",
-        "Enterprise/agent/Agent-Collect.ps1",
-        "Enterprise/api/app/main.py",
-        "Enterprise/api/app/db.py"
-      ],
-      "unchanged_count": 111
-    },
     {
       "detected_at": "2026-08-09T01:27:03+05:30",
       "added": [
@@ -284,6 +271,18 @@
         "Enterprise/api/app/config.py"
       ],
       "unchanged_count": 122
+    },
+    {
+      "detected_at": "2026-08-10T23:55:50+05:30",
+      "added": [
+        "Enterprise/deploy/Install-Prereqs.ps1"
+      ],
+      "removed": [],
+      "changed": [
+        "VERSION.md",
+        "Documentation/Deployment-AI-Runbook.md"
+      ],
+      "unchanged_count": 126
     }
   ],
   "next_recommended_tasks": [

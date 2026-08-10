@@ -70,6 +70,24 @@ pwsh -NoProfile -File ./Enterprise/tests/Check-Deploy-Prereqs.ps1 -ForAgentBox  
 > deployment. For each `status == "missing"` check, run its `fix` command,
 > then re-run the scanner. Only proceed when the scanner exits `0`.
 
+**On a fresh Windows Server, prefer the one-command installer instead of
+fixing checks one-by-one.** It installs everything the scanner flags (Git,
+Docker Desktop + WSL2, .NET SDK, ps2exe under Windows PowerShell 5.1, WiX v5,
+optional signtool) and handles the required reboot:
+
+```powershell
+# as Administrator; idempotent - re-run after the reboot to verify Docker
+pwsh -NoProfile -File ./Enterprise/deploy/Install-Prereqs.ps1
+```
+
+Flags:
+- `-SkipDocker` — Docker Desktop/WSL2 already working (or server is remote)
+- `-IncludeSdk` — also install the Windows SDK for `signtool` (else MSI ships unsigned)
+- `-VerifyOnly` — check only, install nothing (like the scanner)
+
+Exit codes: `0` ready → run deploy.ps1 · `2` reboot required → reboot, re-run,
+then deploy.ps1 · `3` blockers remain.
+
 ---
 
 ## 2. Step 2 — Parse the verdict & choose the path

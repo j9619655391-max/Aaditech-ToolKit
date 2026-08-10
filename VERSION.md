@@ -21,7 +21,11 @@
 > restarts, returned once in the setup response for a one-time download, and
 > downloadable by admins via `GET /api/session-secret`. `deploy.ps1` no longer
 > injects `SESSION_SECRET` via `.env` so the setup-generated key stays
-> authoritative.
+> authoritative. Added `Enterprise/deploy/Install-Prereqs.ps1` — a one-command
+> Windows Server prerequisite **installer** (Git, Docker Desktop + WSL2, .NET
+> SDK, ps2exe under Windows PowerShell 5.1, WiX v5, optional signtool) that
+> handles the required reboot, so a fresh box goes straight from install to
+> `deploy.ps1`.
 >
 > **v1.2.0 = SaaS-style auto-setup (Rev 3)**: everything is auto-detected /
 > auto-generated on ANY server; the only manual step is the setup wizard
