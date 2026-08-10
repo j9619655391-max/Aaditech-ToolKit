@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-10T20:53:09+05:30",
-  "last_verified_commit": "7a712b094a0cba610ca7cde136616228385360bf",
-  "last_verified_date": "2026-08-09T21:21:27+05:30",
+  "generated": "2026-08-10T21:01:43+05:30",
+  "last_verified_commit": "bd203c27f4df85e9e568726044313b19267355e5",
+  "last_verified_date": "2026-08-10T20:53:09+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -12,30 +12,12 @@
     "percent": 100.0
   },
   "latest_delta": {
-    "added": 1,
+    "added": 0,
     "removed": 0,
-    "changed": 20,
-    "unchanged": 107
+    "changed": 2,
+    "unchanged": 126
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-08T22:29:35+05:30",
-      "added": [
-        "Enterprise/api/app/ratelimit.py",
-        "Enterprise/deploy/Caddyfile.template"
-      ],
-      "removed": [],
-      "changed": [
-        "Enterprise/deploy/Caddyfile",
-        "Enterprise/api/app/main.py",
-        "Enterprise/deploy/deploy.sh",
-        "Enterprise/deploy/deploy.ps1",
-        "Enterprise/portal/index.html",
-        "Enterprise/SCALING-PLAN.md",
-        "Enterprise/api/app/auth.py"
-      ],
-      "unchanged_count": 106
-    },
     {
       "detected_at": "2026-08-08T22:36:10+05:30",
       "added": [],
@@ -298,6 +280,16 @@
         "Documentation/Setup-Guide.md"
       ],
       "unchanged_count": 107
+    },
+    {
+      "detected_at": "2026-08-10T21:01:43+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [
+        "Enterprise/agent/build/build-agent.ps1",
+        "Enterprise/agent/Agent-Collect.ps1"
+      ],
+      "unchanged_count": 126
     }
   ],
   "next_recommended_tasks": [

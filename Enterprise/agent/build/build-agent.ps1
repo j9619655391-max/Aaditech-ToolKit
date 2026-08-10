@@ -23,11 +23,11 @@ $ErrorActionPreference = 'Stop'
 if ($PSVersionTable.PSEdition -eq 'Core') {
     $ps51 = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
     if (Test-Path $ps51) {
-        Write-Host "Running under PowerShell Core — re-invoking with Windows PowerShell 5.1 (required by ps2exe)"
+        Write-Host "Running under PowerShell Core - re-invoking with Windows PowerShell 5.1 (required by ps2exe)"
         & $ps51 -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath -ConfigPath $ConfigPath -OutDir $OutDir
         exit $LASTEXITCODE
     }
-    Write-Warning "PowerShell 5.1 not found ($ps51) — attempting ps2exe under PowerShell Core (may fail)"
+    Write-Warning "PowerShell 5.1 not found ($ps51) - attempting ps2exe under PowerShell Core (may fail)"
 }
 
 if (-not (Test-Path $ConfigPath)) {

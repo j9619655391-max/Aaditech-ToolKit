@@ -351,12 +351,12 @@ function Invoke-AgentScript {
         [string]$ScriptPath,
         [int]$TimeoutSeconds = 300
     )
-    # W7: feature scripts (QuickCheck, Network-Diagnostic, Export-EventLogs, …)
+    # W7: feature scripts (QuickCheck, Network-Diagnostic, Export-EventLogs, ...)
     # contain interactive Read-Host prompts and some spawn GUI apps (notepad).
     # Under the Task Scheduler NETWORK SERVICE context there is no console, so a
     # Read-Host would block forever and stall the collection cycle. Run each
-    # script in an isolated child PowerShell with stdin fed from NUL (EOF → any
-    # Read-Host returns immediately) and a hard timeout, then return its output.
+    # script in an isolated child PowerShell with stdin fed from NUL (EOF makes
+    # any Read-Host return immediately) and a hard timeout, then return output.
     $psExe = if ($PSVersionTable.PSEdition -eq 'Core') {
         Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
     } else {
