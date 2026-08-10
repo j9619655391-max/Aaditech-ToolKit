@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-10T21:01:43+05:30",
-  "last_verified_commit": "bd203c27f4df85e9e568726044313b19267355e5",
-  "last_verified_date": "2026-08-10T20:53:09+05:30",
+  "generated": "2026-08-10T21:10:01+05:30",
+  "last_verified_commit": "1a2f88cf2e0acfabd180aa81a76ff092d250ab5a",
+  "last_verified_date": "2026-08-10T21:01:43+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -14,26 +14,10 @@
   "latest_delta": {
     "added": 0,
     "removed": 0,
-    "changed": 2,
-    "unchanged": 126
+    "changed": 1,
+    "unchanged": 127
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-08T22:36:10+05:30",
-      "added": [],
-      "removed": [],
-      "changed": [
-        "Enterprise/docker-compose.yml",
-        "Enterprise/api/app/config.py",
-        "Enterprise/deploy/Caddyfile.template",
-        "Enterprise/api/app/main.py",
-        "Enterprise/deploy/deploy.sh",
-        "Enterprise/deploy/Caddyfile",
-        "Enterprise/deploy/deploy.ps1",
-        "Enterprise/SCALING-PLAN.md"
-      ],
-      "unchanged_count": 107
-    },
     {
       "detected_at": "2026-08-08T22:45:39+05:30",
       "added": [
@@ -290,6 +274,15 @@
         "Enterprise/agent/Agent-Collect.ps1"
       ],
       "unchanged_count": 126
+    },
+    {
+      "detected_at": "2026-08-10T21:10:01+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [
+        "Enterprise/agent/wix/build-msi.ps1"
+      ],
+      "unchanged_count": 127
     }
   ],
   "next_recommended_tasks": [

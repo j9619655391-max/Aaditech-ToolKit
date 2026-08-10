@@ -47,7 +47,11 @@ if (-not (Test-Path $stageSqlite)) {
     try {
         Invoke-WebRequest $sqliteUrl -OutFile $sqliteZip -UseBasicParsing
         Expand-Archive $sqliteZip -DestinationPath $extractDir -Force
-        Copy-Item (Join-Path $extractDir "sqlite-tools-win-x64-$sqliteVer\sqlite3.exe") $stageSqlite -Force
+        # The zip's internal layout has varied between releases; find sqlite3.exe
+        # wherever it landed instead of assuming a fixed nested path.
+        $sqliteExe = Get-ChildItem $extractDir -Recurse -Filter sqlite3.exe -ErrorAction SilentlyContinue |
+            Select-Object -First 1
+        if ($sqliteExe) { Copy-Item $sqliteExe.FullName $stageSqlite -Force }
     }
     finally {
         if (Test-Path $sqliteZip)  { Remove-Item $sqliteZip -Force -ErrorAction SilentlyContinue }
