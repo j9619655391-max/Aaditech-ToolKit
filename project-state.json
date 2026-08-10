@@ -1,27 +1,32 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-10T23:55:50+05:30",
+  "generated": "2026-08-11T05:12:31+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "4a53e7345b6237eeba94901db924326ef667aa65",
-  "last_verified_date": "2026-08-10T23:13:32+05:30",
+  "last_verified_commit": "1ecad6963587399df06e096e4e647f341511568b",
+  "last_verified_date": "2026-08-10T23:55:50+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 90,
+    "commit_count": 91,
     "clean_working_tree": false,
-    "head": "4a53e7345b6237eeba94901db924326ef667aa65"
+    "head": "1ecad6963587399df06e096e4e647f341511568b"
   },
   "latest_delta": {
-    "detected_at": "2026-08-10T23:55:50+05:30",
-    "added": [
-      "Enterprise/deploy/Install-Prereqs.ps1"
-    ],
+    "detected_at": "2026-08-11T05:12:31+05:30",
+    "added": [],
     "removed": [],
     "changed": [
+      "Enterprise/portal/index.html",
       "VERSION.md",
-      "Documentation/Deployment-AI-Runbook.md"
+      "Enterprise/api/app/config.py",
+      "Enterprise/api/app/db.py",
+      "Enterprise/api/tests/test_smoke.py",
+      "Enterprise/api/schema.sql",
+      "Enterprise/api/app/rules.py",
+      "Enterprise/api/app/main.py",
+      "CHANGELOG.md"
     ],
-    "unchanged_count": 126
+    "unchanged_count": 120
   },
   "module_state": {
     "working": [

@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.3.0 — post-release feature additions (F1/F3/F4)
+
+- **F1 — Webhook alert delivery:** new-alert digests can now be POSTed to a
+  generic JSON endpoint, a Slack incoming webhook (blocks format), or a
+  Microsoft Teams connector (MessageCard) in addition to SMTP email. Config +
+  live test live on the portal Alerts page: `GET/PUT /api/alerts/webhook` and
+  `POST /api/alerts/test-webhook` (admin-only). Delivered with stdlib
+  `urllib.request` in a worker thread so the eval loop is never blocked.
+- **F3 — Software inventory & license compliance:** new **Software** portal tab
+  with fleet-wide search (app name/publisher, case-insensitive) and CSV export
+  (`GET /api/software/search`, `GET /api/software/export`), plus an admin-only
+  license compliance view/export showing Windows/Office key last-5 characters
+  (`GET /api/license/compliance`, `GET /api/license/export`). Added an
+  `idx_events_kind_agent` index for fast "latest event per agent" lookups.
+- **F4 — Multi-tenant foundation:** setup now creates a `companies` tenant,
+  binds the admin user (and every subsequently created user) to it, and new
+  agents enroll into the current default company. Agent/event/alert/command/
+  user/report queries are scoped to the signed-in user's company. Admin
+  Companies manager in the Users tab (`GET/POST /api/companies`,
+  `GET/POST /api/settings/default-company`); `bootstrap` returns the caller's
+  tenant + (for admins) the company directory.
+- **Tests:** API pytest suite grown to 25 cases covering webhook payload
+  shapes + real local-server delivery, software search/export, license
+  compliance RBAC, and cross-tenant isolation.
+
 ## v1.3.0 — Enterprise hardening + test tooling (SCALING-PLAN A–E)
 
 - **Least-privilege agent task (E4):** routine scheduled task runs as

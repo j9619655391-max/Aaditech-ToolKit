@@ -45,6 +45,7 @@
     <button data-view="events">Events</button>
     <button data-view="commands">Commands</button>
     <button data-view="alerts">Alerts <span id="alertBadge" style="display:none;background:var(--bad);color:#0f172a;border-radius:999px;padding:0 6px;font-size:11px;margin-left:4px"></span></button>
+    <button data-view="software">Software</button>
     <button data-view="reports">Reports</button>
     <button data-view="features">Features</button>
     <button data-view="users">Users</button>
@@ -94,7 +95,9 @@ async function start() {
   window.user = boot.user;
   applyBranding(boot);
   document.getElementById('header').style.display = 'flex';
-  document.getElementById('who').textContent = (boot.user ? boot.user.username + ' · ' + boot.user.role : '');
+  document.getElementById('who').textContent =
+    (boot.user ? boot.user.username + ' · ' + boot.user.role : '')
+    + (boot.company && boot.company.name ? ' · ' + boot.company.name : '');
   setupNav();
   refreshAlertBadge();
   setInterval(refreshAlertBadge, 30000);
@@ -314,6 +317,7 @@ async function render() {
   if (view === 'events') return renderEvents();
   if (view === 'commands') return renderCommands();
   if (view === 'alerts') return renderAlerts();
+  if (view === 'software') return renderSoftware();
   if (view === 'reports') return renderReports();
   if (view === 'features') return renderFeatures();
   if (view === 'users') return renderUsers();
@@ -562,11 +566,13 @@ async function saveRule(name) {
 }
 
 async function renderAlerts() {
-  const [alerts, rules] = await Promise.all([
+  const [alerts, rules, webhook] = await Promise.all([
     api('/api/alerts?status=' + (alertFilter === 'all' ? '' : alertFilter) + '&limit=200'),
     api('/api/alert-rules'),
+    (window.user && window.user.role === 'admin') ? api('/api/alerts/webhook') : null,
   ]);
   if (!alerts) return;
+  if (webhook) window.__webhook = webhook;
   const canAct = window.user && (window.user.role === 'admin' || window.user.role === 'operation');
   const isAdmin = window.user && window.user.role === 'admin';
   const severityBadge = s => `<span class="badge ${s === 'critical' ? 'off' : s === 'warning' ? '' : 'on'}">${esc(s)}</span>`;
@@ -597,6 +603,30 @@ async function renderAlerts() {
       <span id="email_test_result" class="muted"></span>
     </div>` : '';
 
+  const webhookBlock = isAdmin ? `
+    <div class="card"><h3>Webhook notifications (admin)</h3>
+      <p class="muted">POST new-alert digests to a generic webhook, Slack incoming webhook, or Teams connector. Separate alert emails can run at the same time.</p>
+      <label>Webhook URL</label><input id="webhook_url" value="${esc((window.__webhook && window.__webhook.url) || '')}" placeholder="https://hooks.slack.com/services/..." />
+      <div class="row">
+        <div style="flex:1"><label>Channel format</label>
+          <select id="webhook_type">
+            <option value="generic" ${(window.__webhook && window.__webhook.type) === 'generic' ? 'selected' : ''}>Generic JSON</option>
+            <option value="slack" ${(window.__webhook && window.__webhook.type) === 'slack' ? 'selected' : ''}>Slack</option>
+            <option value="teams" ${(window.__webhook && window.__webhook.type) === 'teams' ? 'selected' : ''}>Microsoft Teams</option>
+          </select>
+        </div>
+        <div style="flex:1"><label>Bearer token (optional)</label><input id="webhook_token" value="${esc((window.__webhook && window.__webhook.token) || '')}" placeholder="sk-..." /></div>
+      </div>
+      <div class="row" style="align-items:center;margin-top:10px">
+        <button class="action" onclick="saveWebhook()">Save webhook</button>
+        <button class="ghost" onclick="testWebhook()">Send test webhook</button>
+        <span id="webhook_result" class="muted"></span>
+      </div>
+      <div style="margin-top:8px">
+        <label><input id="webhook_enabled" type="checkbox" ${(window.__webhook && window.__webhook.enabled) ? 'checked' : ''} /> Enable webhook alert delivery</label>
+      </div>
+    </div>` : '';
+
   const rulesBlock = isAdmin ? `
     <div class="card"><h3>Alert rules (admin)</h3>
       <table><thead><tr><th>Rule</th><th>Severity</th><th>Condition</th><th>Enabled</th><th></th></tr></thead>
@@ -615,7 +645,7 @@ async function renderAlerts() {
       <div style="margin-bottom:8px">${filterBtns}</div>
       <table><thead><tr><th>Agent</th><th>Rule</th><th>Severity</th><th>Message</th><th>Status</th><th>Created</th><th></th></tr></thead>
       <tbody>${rows || '<tr><td colspan="7" class="muted">No alerts match this filter.</td></tr>'}</tbody></table>
-    </div>` + emailBlock + rulesBlock;
+    </div>` + emailBlock + webhookBlock + rulesBlock;
 }
 
 async function testAlertEmail() {
@@ -628,7 +658,85 @@ async function testAlertEmail() {
   } catch { out.textContent = 'Failed'; }
 }
 
+async function saveWebhook() {
+  const out = document.getElementById('webhook_result');
+  const enabled = document.getElementById('webhook_enabled').checked;
+  const body = {
+    enabled,
+    url: document.getElementById('webhook_url').value.trim(),
+    type: document.getElementById('webhook_type').value,
+    token: document.getElementById('webhook_token').value.trim(),
+  };
+  out.textContent = 'Saving…';
+  try {
+    const r = await fetch('/api/alerts/webhook', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) { window.__webhook = body; out.textContent = enabled && body.url ? 'Saved — webhooks will be sent on new alerts.' : 'Saved.'; }
+    else out.textContent = j.detail || 'Failed';
+  } catch { out.textContent = 'Failed'; }
+}
+
+async function testWebhook() {
+  const out = document.getElementById('webhook_result');
+  out.textContent = 'Sending…';
+  try {
+    const r = await fetch('/api/alerts/test-webhook', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const j = await r.json().catch(() => ({}));
+    out.textContent = r.ok ? `Sent to ${j.type || 'webhook'}.` : (j.detail || 'Failed');
+  } catch { out.textContent = 'Failed'; }
+}
+
 function setAlertFilter(s) { alertFilter = s; renderAlerts(); }
+
+// ---------------------------------------------------------------- software (F3)
+
+let softwareQ = '';
+
+async function renderSoftware() {
+  const isAdmin = window.user && window.user.role === 'admin';
+  const [search, license] = await Promise.all([
+    api('/api/software/search?q=' + encodeURIComponent(softwareQ) + '&limit=200'),
+    isAdmin ? api('/api/license/compliance') : null,
+  ]);
+  if (!search) return;
+
+  const appRows = [];
+  for (const ag of search.results || []) {
+    for (const a of ag.apps || []) {
+      appRows.push({ hostname: ag.hostname, ...a });
+    }
+  }
+  const table = appRows.length ? `
+    <table><thead><tr><th>Hostname</th><th>Application</th><th>Version</th><th>Publisher</th></tr></thead>
+    <tbody>${appRows.map(r => `<tr><td>${esc(r.hostname)}</td><td>${esc(r.DisplayName)}</td><td>${esc(r.DisplayVersion || '')}</td><td>${esc(r.Publisher || '')}</td></tr>`).join('')}</tbody></table>`
+    : '<p class="muted">No installed software matches this search.</p>';
+
+  const licenseBlock = isAdmin ? `
+    <div class="card"><h3>License compliance (admin)</h3>
+      <p class="muted">Windows/Office keys are reported as last-5 characters only — full keys never leave the machine.</p>
+      <table><thead><tr><th>Hostname</th><th>Windows key (last 5)</th><th>Office key (last 5)</th></tr></thead>
+      <tbody>${(license && license.compliance || []).map(r => `<tr><td>${esc(r.hostname)}</td><td><span class="badge ${r.windows_ok ? 'on' : 'off'}">${esc(r.windows_key_last5 || 'missing')}</span></td><td><span class="badge ${r.office_ok ? 'on' : 'off'}">${esc(r.office_key_last5 || 'missing')}</span></td></tr>`).join('') || '<tr><td colspan="3" class="muted">No license reports yet (feature off by default).</td></tr>'}</tbody></table>
+      <div style="margin-top:10px"><a href="/api/license/export" class="action" style="text-decoration:none;display:inline-block">Export license CSV</a></div>
+    </div>` : '';
+
+  app.innerHTML = `
+    <div class="card"><h3>Software inventory</h3>
+      <p class="muted">Search installed applications across the fleet by name or publisher (case-insensitive).</p>
+      <div class="row" style="align-items:center">
+        <input id="soft_q" style="flex:1" placeholder="Search apps… (e.g. chrome, edge, adobe)" value="${esc(softwareQ)}" onkeydown="if(event.key==='Enter')softwareSearch()" />
+        <button class="action" onclick="softwareSearch()">Search</button>
+        <a href="/api/software/export" class="ghost" style="text-decoration:none;display:inline-block">Export all CSV</a>
+      </div>
+      <div style="margin-top:10px">${search.agents ? `<span class="badge on">${search.agents} agent(s)</span> <span class="badge">${appRows.length} app(s)</span>` : ''}</div>
+    </div>
+    <div class="card"><h3>Results</h3>${table}</div>` + licenseBlock;
+}
+
+function softwareSearch() {
+  const q = document.getElementById('soft_q').value.trim();
+  softwareQ = q;
+  renderSoftware();
+}
 
 // ---------------------------------------------------------------- reports (P6)
 
@@ -699,7 +807,11 @@ async function saveConfig(name) {
 // ---------------------------------------------------------------- users (admin)
 
 async function renderUsers() {
-  const data = await api('/api/users');
+  const [data, companies, defaultCompany] = await Promise.all([
+    api('/api/users'),
+    api('/api/companies'),
+    api('/api/settings/default-company'),
+  ]);
   if (!data) return;
   const rows = data.map(u => `
     <tr>
@@ -734,7 +846,35 @@ async function renderUsers() {
         <div><button class="action" onclick="addUser()">Create</button></div>
       </div>
       <div class="error" id="users_err"></div>
+    </div>
+    <div class="card"><h3>Companies / tenants</h3>
+      <p class="muted">Agents and users belong to a company. New agents enroll into the default company; list queries are scoped to the signed-in user's company.</p>
+      <table><thead><tr><th>Company</th><th>Users</th><th>Agents</th><th></th></tr></thead>
+      <tbody>${(companies || []).map(c => `
+        <tr>
+          <td>${esc(c.name)} ${c.id === (defaultCompany && defaultCompany.company_id) ? '<span class="badge on">default</span>' : ''}</td>
+          <td>${c.users}</td><td>${c.agents}</td>
+          <td><button class="ghost" onclick="setDefaultCompany('${esc(c.name)}')">Make default</button></td>
+        </tr>`).join('') || '<tr><td colspan="4" class="muted">No companies yet.</td></tr>'}</tbody></table>
+      <div class="row" style="align-items:flex-end;margin-top:10px">
+        <div style="flex:2"><label>New company name</label><input id="nc_name" /></div>
+        <div><button class="action" onclick="addCompany()">Create company</button></div>
+      </div>
+      <div class="error" id="companies_err"></div>
     </div>`;
+}
+
+async function addCompany() {
+  const err = document.getElementById('companies_err');
+  const name = document.getElementById('nc_name').value.trim();
+  if (!name) { err.textContent = 'Company name is required.'; return; }
+  const r = await api('/api/companies', { method: 'POST', body: JSON.stringify({ name }) });
+  if (r) { err.textContent = ''; renderUsers(); }
+}
+
+async function setDefaultCompany(name) {
+  await api('/api/settings/default-company', { method: 'POST', body: JSON.stringify({ name }) });
+  renderUsers();
 }
 
 async function addUser() {

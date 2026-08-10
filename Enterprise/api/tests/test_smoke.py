@@ -214,3 +214,247 @@ def test_list_limit_clamped(client, admin):
     r = client.get("/api/events?limit=999999", headers=admin)
     assert r.status_code == 200
     assert len(r.json()) <= 500
+
+
+# ---------------------------------------------------------------- F1: webhook alerts
+
+
+def test_webhook_config_roundtrip(client, admin, monitoring):
+    """F1: webhook alert config is readable/writable by admins; the payload is
+    shaped per channel type and test-webhook refuses a disabled config."""
+    r = client.get("/api/alerts/webhook", headers=admin)
+    assert r.status_code == 200
+    assert r.json()["enabled"] is False
+
+    put = client.put(
+        "/api/alerts/webhook",
+        json={"enabled": True, "url": "https://hooks.example.com/x", "type": "slack", "token": ""},
+        headers=admin,
+    )
+    assert put.status_code == 200, put.text
+    assert put.json()["sendable"] is True
+    assert put.json()["type"] == "slack"
+
+    got = client.get("/api/alerts/webhook", headers=admin).json()
+    assert got["enabled"] is True and got["url"] == "https://hooks.example.com/x"
+
+    denied = client.get("/api/alerts/webhook", headers=monitoring)
+    assert denied.status_code == 403
+
+    # restore default so other tests aren't affected by a live webhook
+    client.put(
+        "/api/alerts/webhook",
+        json={"enabled": False, "url": "", "type": "generic", "token": ""},
+        headers=admin,
+    )
+
+
+def test_webhook_payload_shapes(client):
+    """F1: payloads are formatted for Slack / Teams / generic channels."""
+    from app import rules
+
+    portal = "itk.example"
+    alerts = [{"severity": "critical", "hostname": "SRV-01", "message": "disk full"}]
+
+    mt, slack = rules._webhook_payload(alerts, "slack", portal)
+    assert mt == "application/json"
+    assert slack["blocks"][0]["text"]["text"] == "*1 new alert(s)*"
+    assert "SRV-01" in slack["blocks"][1]["text"]["text"]
+
+    mt, teams = rules._webhook_payload(alerts, "teams", portal)
+    assert teams["@type"] == "MessageCard" and teams["themeColor"] == "0072C6"
+
+    mt, generic = rules._webhook_payload(alerts, "generic", portal)
+    assert generic["event"] == "alerts.opened" and generic["count"] == 1
+    assert generic["alerts"][0]["hostname"] == "SRV-01"
+
+
+def test_webhook_delivery_to_local_server(client, admin):
+    """F1: a configured webhook actually receives the alert digest (E2E)."""
+    import http.server
+    import threading
+
+    received: dict = {}
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):
+            length = int(self.headers.get("Content-Length", 0))
+            received["body"] = self.rfile.read(length).decode()
+            received["content_type"] = self.headers.get("Content-Type", "")
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, *a):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    url = f"http://127.0.0.1:{server.server_address[1]}/hook"
+
+    try:
+        client.put(
+            "/api/alerts/webhook",
+            json={"enabled": True, "url": url, "type": "teams", "token": "tok-123"},
+            headers=admin,
+        )
+        test = client.post("/api/alerts/test-webhook", headers=admin)
+        assert test.status_code == 200, test.text
+        assert test.json()["type"] == "teams"
+        assert received.get("content_type", "").startswith("application/json")
+        import json as _json
+        assert _json.loads(received["body"])["@type"] == "MessageCard"
+        assert received["body"] != ""  # a live POST happened
+    finally:
+        server.shutdown()
+        server.server_close()
+        client.put(
+            "/api/alerts/webhook",
+            json={"enabled": False, "url": "", "type": "generic", "token": ""},
+            headers=admin,
+        )
+
+
+def test_webhook_test_requires_config(client, admin):
+    """F1: test-webhook without a configured URL is refused with 400."""
+    r = client.post("/api/alerts/test-webhook", headers=admin)
+    assert r.status_code == 400
+
+
+# ---------------------------------------------------------------- F3: software inventory
+
+
+def _ingest_software(client, shared_token, hostname, apps):
+    batch = {
+        "hostname": hostname,
+        "os": "Windows 11",
+        "agent_version": "1.2.0",
+        "events": [
+            {
+                "kind": "software",
+                "payload": {"count": len(apps), "apps": apps},
+                "captured_at": "2026-08-11T09:00:00Z",
+                "client_msg_id": f"soft-{hostname}",
+            },
+            {
+                "kind": "licenses",
+                "payload": {"windows_key_last5": "A1B2C", "office_keys_last5": "D3E4F"},
+                "captured_at": "2026-08-11T09:00:00Z",
+                "client_msg_id": f"lic-{hostname}",
+            },
+        ],
+    }
+    r = client.post(
+        "/ingest",
+        json=batch,
+        headers={"Authorization": f"Bearer {shared_token}"},
+    )
+    assert r.status_code == 200, r.text
+    return r.json()["agent_id"]
+
+
+def test_software_search_finds_apps(client, admin, shared_token):
+    """F3: search finds installed apps by name/publisher; empty query lists all."""
+    _ingest_software(
+        client, shared_token, "pc-soft-001",
+        [{"DisplayName": "Google Chrome", "DisplayVersion": "126.0.6478.0", "Publisher": "Google LLC"}],
+    )
+    hit = client.get("/api/software/search", params={"q": "chrome"}, headers=admin).json()
+    assert hit["agents"] >= 1
+    assert any(r["hostname"] == "pc-soft-001" for r in hit["results"])
+    assert any(
+        a["DisplayName"] == "Google Chrome"
+        for r in hit["results"] for a in r["apps"]
+    )
+
+    all_rows = client.get("/api/software/search", params={"q": ""}, headers=admin).json()
+    assert all_rows["agents"] >= 1
+
+
+def test_software_export_csv(client, admin, shared_token):
+    """F3: CSV export lists hostname + app columns."""
+    _ingest_software(
+        client, shared_token, "pc-soft-002",
+        [{"DisplayName": "Microsoft Edge", "DisplayVersion": "124", "Publisher": "Microsoft"}],
+    )
+    r = client.get("/api/software/export", headers=admin)
+    assert r.status_code == 200
+    assert "text/csv" in r.headers["content-type"]
+    assert "Microsoft Edge" in r.text
+    assert "pc-soft-002" in r.text
+
+
+def test_license_compliance_admin_only(client, admin, monitoring, shared_token):
+    """F3: license compliance view is admin-only and shows last-5 key chars."""
+    _ingest_software(client, shared_token, "pc-soft-003", [])
+    r = client.get("/api/license/compliance", headers=admin)
+    assert r.status_code == 200, r.text
+    rows = r.json()["compliance"]
+    assert any(x["hostname"] == "pc-soft-003" and x["windows_key_last5"] == "A1B2C" for x in rows)
+
+    denied = client.get("/api/license/compliance", headers=monitoring)
+    assert denied.status_code == 403
+
+    exp = client.get("/api/license/export", headers=admin)
+    assert exp.status_code == 200 and "windows_key_last5" in exp.text
+
+
+# ---------------------------------------------------------------- F4: tenants
+
+
+def test_setup_creates_company_and_binds_admin(client, admin):
+    """F4: setup created a tenant company and the admin user belongs to it."""
+    r = client.get("/api/bootstrap", headers=admin)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["company"]["name"] == "ACME Test Corp"
+    assert body["user"]["company_id"] == body["company"]["id"]
+    assert any(c["name"] == "ACME Test Corp" for c in body["companies"])
+
+
+def test_company_directory_and_default(client, admin):
+    """F4: admins can list/create companies and repoint the default."""
+    companies = client.get("/api/companies", headers=admin)
+    assert companies.status_code == 200
+    assert any(c["name"] == "ACME Test Corp" for c in companies.json())
+
+    created = client.post("/api/companies", json={"name": "Beta Corp"}, headers=admin)
+    assert created.status_code in (200, 201), created.text
+
+    dup = client.post("/api/companies", json={"name": "Beta Corp"}, headers=admin)
+    assert dup.status_code == 409
+
+    cur = client.get("/api/settings/default-company", headers=admin)
+    assert cur.json()["company_id"] is not None
+
+    moved = client.post("/api/settings/default-company", json={"name": "Beta Corp"}, headers=admin)
+    assert moved.status_code == 200 and moved.json()["name"] == "Beta Corp"
+
+
+def test_company_isolates_agents_and_users(client, admin, shared_token):
+    """F4: an agent enrolled while Beta is the default company is invisible to
+    the ACME-scoped admin; its new users carry the tenant too."""
+    client.post("/api/settings/default-company", json={"name": "Beta Corp"}, headers=admin)
+    batch = {
+        "hostname": "pc-beta-001",
+        "os": "Windows 11",
+        "events": [{"kind": "quickcheck", "payload": {"note": "beta"}, "captured_at": "2026-08-11T10:00:00Z"}],
+    }
+    r = client.post("/ingest", json=batch, headers={"Authorization": f"Bearer {shared_token}"})
+    assert r.status_code == 200, r.text
+
+    agents = client.get("/api/agents", headers=admin).json()
+    assert not any(a["hostname"] == "pc-beta-001" for a in agents), "cross-tenant leak!"
+
+    # a new user created by the ACME admin still belongs to ACME
+    created = client.post(
+        "/api/users",
+        json={"username": "acme-op", "password": "AcmeOpPass!1", "role": "operation"},
+        headers=admin,
+    )
+    assert created.status_code == 200, created.text
+    acme_id = client.get("/api/bootstrap", headers=admin).json()["company"]["id"]
+    assert created.json()["company_id"] == acme_id
+
+    # restore default so later ingests go to ACME again
+    client.post("/api/settings/default-company", json={"name": "ACME Test Corp"}, headers=admin)

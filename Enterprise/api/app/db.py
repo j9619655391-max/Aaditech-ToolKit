@@ -123,6 +123,31 @@ _SCHEMA_MIGRATIONS = [
     """
     ALTER TABLE agents ADD COLUMN IF NOT EXISTS agent_token_revoked BOOLEAN NOT NULL DEFAULT FALSE
     """,
+    # F4: multi-tenant foundation. One row per company; users + agents belong
+    # to a company and every list query is scoped to the caller's company.
+    """
+    CREATE TABLE IF NOT EXISTS companies (
+        id         SERIAL PRIMARY KEY,
+        name       TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+    """,
+    """
+    ALTER TABLE agents ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id)
+    """,
+    """
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_agents_company ON agents(company_id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_users_company ON users(company_id)
+    """,
+    # F3: fast "latest event per agent" lookups for software/license compliance.
+    """
+    CREATE INDEX IF NOT EXISTS idx_events_kind_agent ON events(kind, agent_id, captured_at DESC)
+    """,
     # D3: fleet audit trail. One row per security/admin-relevant action.
     """
     CREATE TABLE IF NOT EXISTS audit_log (

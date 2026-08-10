@@ -157,12 +157,36 @@ async def require_session(request: Request) -> dict:
         raise HTTPException(status_code=401, detail="Not logged in")
     pool = await db.connect()
     user = await pool.fetchrow(
-        "SELECT id, username, role, active FROM users WHERE id = $1 AND active = TRUE",
+        "SELECT id, username, role, active, company_id FROM users WHERE id = $1 AND active = TRUE",
         user_id,
     )
     if user is None:
         raise HTTPException(status_code=401, detail="Not logged in")
     return dict(user)
+
+
+def _company_scope(user: dict, alias: str, args: list, sql: str) -> tuple[str, list]:
+    """F4: restrict a query to the caller's company.
+
+    Appends an AND clause on <alias>.company_id. Users without a company
+    (legacy installs / no setup yet) are unscoped so they keep working. Callers
+    must build their LIMIT clause AFTER this returns.
+    """
+    cid = user.get("company_id")
+    if not cid:
+        return sql, args
+    args.append(cid)
+    return f"{sql} AND {alias}.company_id = ${len(args)}", args
+
+
+async def _company_id(pool) -> int | None:
+    """The 'default' company id: agents enroll into it when they first connect.
+    Set during first-run setup; NULL until then."""
+    val = await pool.fetchval("SELECT value FROM settings WHERE key = 'default_company_id'")
+    try:
+        return int(val) if val else None
+    except (TypeError, ValueError):
+        return None
 
 
 def require_role(*roles: str):
@@ -208,11 +232,15 @@ async def _audit(
 # ---------------------------------------------------------------- agent auth (B6)
 
 async def _get_or_create_agent(pool, hostname: str) -> dict:
+    # F4: new agents enroll into the default company (set during setup). The
+    # ON CONFLICT branch only refreshes last_seen, so an existing agent keeps
+    # whatever company it was already assigned to.
+    cid = await _company_id(pool)
     row = await pool.fetchrow(
-        "INSERT INTO agents (hostname) VALUES ($1) "
+        "INSERT INTO agents (hostname, company_id) VALUES ($1, $2) "
         "ON CONFLICT (hostname) DO UPDATE SET last_seen = now() "
-        "RETURNING id, hostname, agent_token, agent_token_revoked",
-        hostname,
+        "RETURNING id, hostname, agent_token, agent_token_revoked, company_id",
+        hostname, cid,
     )
     return dict(row)
 
@@ -350,6 +378,17 @@ class CommandResult(BaseModel):
     exit_code: int | None = None
 
 
+class WebhookSettings(BaseModel):
+    enabled: bool = False
+    url: str = Field(default="", max_length=2000)
+    type: str = Field(default="generic", pattern="^(generic|slack|teams)$")
+    token: str = Field(default="", max_length=500)
+
+
+class CompanyCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
 # ---------------------------------------------------------------- lifecycle
 
 @app.on_event("startup")
@@ -469,10 +508,24 @@ async def run_setup(payload: SetupRequest, request: Request, response: Response)
                     "ON CONFLICT (key) DO UPDATE SET value = $2",
                     "setup_complete", "1",
                 )
+                # F4: create the tenant company, make it the default (new agents
+                # enroll into it), and bind the admin user to it.
+                company = await conn.fetchrow(
+                    "INSERT INTO companies (name) VALUES ($1) "
+                    "ON CONFLICT (name) DO UPDATE SET name = companies.name "
+                    "RETURNING id",
+                    payload.company_name,
+                )
+                company_id = company["id"]
+                await conn.execute(
+                    "INSERT INTO settings (key, value) VALUES ($1, $2) "
+                    "ON CONFLICT (key) DO UPDATE SET value = $2",
+                    "default_company_id", str(company_id),
+                )
                 user = await conn.fetchrow(
-                    "INSERT INTO users (username, password_hash, role) "
-                    "VALUES ($1, $2, 'admin') RETURNING id, username, role",
-                    payload.admin_username, auth.hash_password(payload.admin_password),
+                    "INSERT INTO users (username, password_hash, role, company_id) "
+                    "VALUES ($1, $2, 'admin', $3) RETURNING id, username, role, company_id",
+                    payload.admin_username, auth.hash_password(payload.admin_password), company_id,
                 )
     except Exception:
         # C4: transaction above rolls back automatically on any error, so a
@@ -556,6 +609,14 @@ async def bootstrap(user: dict = Depends(require_session)):
     info["agent_token_configured"] = bool(config.API_TOKEN)
     if user["role"] == "admin":
         info["agent_token"] = config.API_TOKEN
+    # F4: tenant context for the current user + (admin) the company directory.
+    if user.get("company_id"):
+        info["company"] = await pool.fetchrow(
+            "SELECT id, name, created_at FROM companies WHERE id = $1",
+            user["company_id"],
+        )
+    if user["role"] == "admin":
+        info["companies"] = [dict(r) for r in await pool.fetch("SELECT id, name, created_at FROM companies ORDER BY id")]
     return info
 
 
@@ -567,12 +628,16 @@ def _check_role(value: str) -> None:
 
 
 @app.get("/api/users", dependencies=[Depends(require_session)])
-async def list_users(_: dict = Depends(require_role("admin"))):
+async def list_users(admin: dict = Depends(require_role("admin"))):
     pool = await db.connect()
     rows = await pool.fetch(
-        "SELECT id, username, role, active, created_by, created_at "
+        "SELECT id, username, role, active, company_id, created_by, created_at "
         "FROM users ORDER BY id"
     )
+    # F4: tenant-scoped listing — an admin only sees users of their own company
+    # (unless they have no company yet, e.g. legacy/global admin).
+    if admin.get("company_id"):
+        rows = [r for r in rows if r["company_id"] == admin["company_id"]]
     return [dict(r) for r in rows]
 
 
@@ -582,10 +647,11 @@ async def create_user(payload: UserCreate, request: Request, admin: dict = Depen
     pool = await db.connect()
     try:
         row = await pool.fetchrow(
-            "INSERT INTO users (username, password_hash, role, created_by) "
-            "VALUES ($1, $2, $3, $4) "
-            "RETURNING id, username, role, active, created_at",
-            payload.username, auth.hash_password(payload.password), payload.role, admin["id"],
+            "INSERT INTO users (username, password_hash, role, created_by, company_id) "
+            "VALUES ($1, $2, $3, $4, $5) "
+            "RETURNING id, username, role, active, company_id, created_at",
+            payload.username, auth.hash_password(payload.password), payload.role,
+            admin["id"], admin.get("company_id"),
         )
     except asyncpg.exceptions.UniqueViolationError:
         raise HTTPException(status_code=409, detail="Username already exists")
@@ -878,16 +944,19 @@ async def build_trigger(payload: BuildTriggerRequest, request: Request, user: di
 # ---------------------------------------------------------------- command channel (P5)
 
 @app.get("/api/commands", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def list_commands(limit: int = 100):
+async def list_commands(limit: int = 100, user: dict = Depends(require_session)):
     limit = _clamp_limit(limit)
     pool = await db.connect()
-    rows = await pool.fetch(
+    sql = (
         "SELECT c.id, a.hostname, c.kind, c.payload, c.status, c.result, "
         "       c.created_at, c.picked_up_at, c.completed_at "
-        "FROM commands c JOIN agents a ON a.id = c.agent_id "
-        "ORDER BY c.id DESC LIMIT $1",
-        limit,
+        "FROM commands c JOIN agents a ON a.id = c.agent_id WHERE 1=1"
     )
+    args: list = []
+    sql, args = _company_scope(user, "a", args, sql)
+    sql += f" ORDER BY c.id DESC LIMIT ${max(len(args) + 1, 1)}"
+    args.append(limit)
+    rows = await pool.fetch(sql, *args)
     return [dict(r) for r in rows]
 
 
@@ -903,7 +972,10 @@ async def create_command(payload: CommandCreate, request: Request, user: dict = 
                 detail=f"Script '{script}' is not in the allowlist ({', '.join(config.RUN_SCRIPT_ALLOWLIST) or 'empty'})",
             )
     pool = await db.connect()
-    agent = await pool.fetchrow("SELECT id, hostname FROM agents WHERE id = $1", payload.agent_id)
+    sql = "SELECT id, hostname, company_id FROM agents WHERE id = $1"
+    args: list = [payload.agent_id]
+    sql, args = _company_scope(user, "agents", args, sql)
+    agent = await pool.fetchrow(sql, *args)
     if agent is None:
         raise HTTPException(status_code=404, detail="Agent not found")
     row = await pool.fetchrow(
@@ -967,7 +1039,7 @@ class RuleUpdate(BaseModel):
 
 
 @app.get("/api/alerts", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def list_alerts(status: str | None = None, limit: int = 100):
+async def list_alerts(status: str | None = None, limit: int = 100, user: dict = Depends(require_session)):
     limit = _clamp_limit(limit)
     pool = await db.connect()
     sql = (
@@ -981,6 +1053,7 @@ async def list_alerts(status: str | None = None, limit: int = 100):
     if status:
         sql += f" AND al.status = ${len(args) + 1}"
         args.append(status)
+    sql, args = _company_scope(user, "a", args, sql)
     sql += f" ORDER BY al.created_at DESC LIMIT ${max(len(args) + 1, 1)}"
     args.append(limit)
     rows = await pool.fetch(sql, *args)
@@ -988,9 +1061,12 @@ async def list_alerts(status: str | None = None, limit: int = 100):
 
 
 @app.get("/api/alerts/open", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def open_alerts_count():
+async def open_alerts_count(user: dict = Depends(require_session)):
     pool = await db.connect()
-    count = await pool.fetchval("SELECT count(*) FROM alerts WHERE status = 'open'")
+    sql = "SELECT count(*) FROM alerts al LEFT JOIN agents a ON a.id = al.agent_id WHERE al.status = 'open'"
+    args: list = []
+    sql, args = _company_scope(user, "a", args, sql)
+    count = await pool.fetchval(sql, *args)
     return {"open": count}
 
 
@@ -1058,13 +1134,75 @@ async def test_alert_email(_: dict = Depends(require_role("admin"))):
     return {"ok": True, "from": smtp["from"], "to": smtp["to"]}
 
 
+@app.get("/api/alerts/webhook", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def get_webhook_config(_: dict = Depends(require_role("admin"))):
+    """F1: read the current webhook alert delivery config (generic/Slack/Teams)."""
+    pool = await db.connect()
+    cfg = await rules.get_webhook_settings(pool)
+    return {"enabled": cfg["enabled"], "url": cfg["url"], "type": cfg["type"], "token": cfg["token"]}
+
+
+@app.put("/api/alerts/webhook", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def put_webhook_config(payload: WebhookSettings, request: Request, admin: dict = Depends(require_role("admin"))):
+    """F1: persist webhook alert delivery config. Returns a small 'sendable'
+    hint so the portal can surface "configured but won't reach Slack" states."""
+    pool = await db.connect()
+    values = {
+        "webhook_enabled": "true" if payload.enabled else "false",
+        "webhook_url": payload.url.strip(),
+        "webhook_type": payload.type,
+        "webhook_token": payload.token.strip(),
+    }
+    for key, value in values.items():
+        await pool.execute(
+            "INSERT INTO settings (key, value) VALUES ($1, $2) "
+            "ON CONFLICT (key) DO UPDATE SET value = $2",
+            key, value,
+        )
+    await _audit(
+        pool,
+        action="alert_webhook.update",
+        target="settings",
+        detail={"enabled": payload.enabled, "type": payload.type, "url": bool(payload.url)},
+        user=admin,
+        ip=ratelimit.client_ip(request),
+    )
+    return {
+        "ok": True,
+        "enabled": payload.enabled,
+        "type": payload.type,
+        "configured": bool(payload.url.strip()),
+        "sendable": bool(payload.url.strip() and payload.enabled),
+    }
+
+
+@app.post("/api/alerts/test-webhook", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def test_alert_webhook(_: dict = Depends(require_role("admin"))):
+    """F1: POST a test alert to the configured webhook to verify connectivity."""
+    pool = await db.connect()
+    cfg = await rules.get_webhook_settings(pool)
+    if not cfg["enabled"] or not cfg["url"]:
+        raise HTTPException(status_code=400, detail="Webhook not enabled (enable it and set a URL first)")
+    sent = await rules._send_alert_webhook(
+        pool,
+        [{"severity": "info", "hostname": "test", "message": "Webhook test message from IT-Toolkit"}],
+    )
+    if not sent:
+        raise HTTPException(status_code=502, detail="Webhook POST failed — check URL/token and network")
+    return {"ok": True, "type": cfg["type"], "url": cfg["url"]}
+
+
 # ---------------------------------------------------------------- reports (P6)
 
-async def _agent_report_rows(pool) -> list[dict]:
-    agents = await pool.fetch(
+async def _agent_report_rows(pool, user: dict) -> list[dict]:
+    sql = (
         "SELECT id, hostname, os, agent_version, ip, registered_at, last_seen "
-        "FROM agents ORDER BY hostname"
+        "FROM agents WHERE 1=1"
     )
+    args: list = []
+    sql, args = _company_scope(user, "agents", args, sql)
+    sql += " ORDER BY hostname"
+    agents = await pool.fetch(sql, *args)
     rows = []
     for a in agents:
         row = dict(a)
@@ -1090,10 +1228,10 @@ def _as_csv(data: list[dict], columns: list[str]) -> str:
 
 
 @app.get("/api/report/fleet", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def fleet_report():
+async def fleet_report(user: dict = Depends(require_session)):
     pool = await db.connect()
     rows = []
-    for r in await _agent_report_rows(pool):
+    for r in await _agent_report_rows(pool, user):
         hw = (r.get("hardware") or {}).get("payload") or {}
         hl = (r.get("health") or {}).get("payload") or {}
         rows.append({
@@ -1130,7 +1268,10 @@ async def agent_report(
     user: dict = Depends(require_session),
 ):
     pool = await db.connect()
-    agent = await pool.fetchrow("SELECT * FROM agents WHERE id = $1", agent_id)
+    sql = "SELECT * FROM agents WHERE id = $1"
+    args: list = [agent_id]
+    sql, args = _company_scope(user, "agents", args, sql)
+    agent = await pool.fetchrow(sql, *args)
     if agent is None:
         raise HTTPException(status_code=404, detail="Agent not found")
     # B1: license payloads contain product keys — admin-only. Non-admins get
@@ -1315,26 +1456,30 @@ async def ingest(batch: IngestBatch, request: Request, authorization: str = Head
 # ---------------------------------------------------------------- admin API
 
 @app.get("/api/agents", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def list_agents():
+async def list_agents(user: dict = Depends(require_session)):
     pool = await db.connect()
-    rows = await pool.fetch(
-        "SELECT id, hostname, os, agent_version, ip, registered_at, last_seen "
-        "FROM agents ORDER BY last_seen DESC"
+    sql = (
+        "SELECT id, hostname, os, agent_version, ip, company_id, registered_at, last_seen "
+        "FROM agents WHERE 1=1"
     )
+    args: list = []
+    sql, args = _company_scope(user, "agents", args, sql)
+    sql += " ORDER BY last_seen DESC"
+    rows = await pool.fetch(sql, *args)
     return [dict(r) for r in rows]
 
 
 # B6: per-agent credential lifecycle (admin).
 
 @app.get("/api/agents/{agent_id}/token", dependencies=[Depends(require_setup_done), Depends(require_session)])
-async def agent_credential(agent_id: int, _: dict = Depends(require_role("admin"))):
+async def agent_credential(agent_id: int, admin: dict = Depends(require_role("admin"))):
     """Return whether this agent uses a per-agent token and whether it is
     revoked. Never reveals the token itself."""
     pool = await db.connect()
-    row = await pool.fetchrow(
-        "SELECT hostname, agent_token, agent_token_revoked FROM agents WHERE id = $1",
-        agent_id,
-    )
+    sql = "SELECT hostname, agent_token, agent_token_revoked FROM agents WHERE id = $1"
+    args: list = [agent_id]
+    sql, args = _company_scope(admin, "agents", args, sql)
+    row = await pool.fetchrow(sql, *args)
     if row is None:
         raise HTTPException(status_code=404, detail="Agent not found")
     return {
@@ -1349,9 +1494,10 @@ async def revoke_agent(agent_id: int, request: Request, admin: dict = Depends(re
     """Cut this agent off immediately: its per-agent token (and the shared
     token) stop being accepted for ingest/polls. Only an admin can undo it."""
     pool = await db.connect()
-    updated = await pool.execute(
-        "UPDATE agents SET agent_token_revoked = TRUE WHERE id = $1", agent_id
-    )
+    sql = "UPDATE agents SET agent_token_revoked = TRUE WHERE id = $1"
+    args: list = [agent_id]
+    sql, args = _company_scope(admin, "agents", args, sql)
+    updated = await pool.execute(sql, *args)
     if updated == "UPDATE 0":
         raise HTTPException(status_code=404, detail="Agent not found")
     await _audit(
@@ -1367,9 +1513,10 @@ async def revoke_agent(agent_id: int, request: Request, admin: dict = Depends(re
 @app.post("/api/agents/{agent_id}/unrevoke", dependencies=[Depends(require_setup_done), Depends(require_session)])
 async def unrevoke_agent(agent_id: int, request: Request, admin: dict = Depends(require_role("admin"))):
     pool = await db.connect()
-    updated = await pool.execute(
-        "UPDATE agents SET agent_token_revoked = FALSE WHERE id = $1", agent_id
-    )
+    sql = "UPDATE agents SET agent_token_revoked = FALSE WHERE id = $1"
+    args: list = [agent_id]
+    sql, args = _company_scope(admin, "agents", args, sql)
+    updated = await pool.execute(sql, *args)
     if updated == "UPDATE 0":
         raise HTTPException(status_code=404, detail="Agent not found")
     await _audit(
@@ -1406,12 +1553,196 @@ async def list_events(
     if kind:
         sql += f" AND e.kind = ${len(args) + 1}"
         args.append(kind)
+    sql, args = _company_scope(user, "a", args, sql)
     if kind != "licenses" and user["role"] != "admin":
         sql += " AND e.kind <> 'licenses'"
     sql += f" ORDER BY e.captured_at DESC LIMIT ${max(len(args) + 1, 1)}"
     args.append(limit)
     rows = await pool.fetch(sql, *args)
     return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------- software inventory (F3)
+
+async def _latest_payload_per_agent(pool, kind: str, user: dict) -> list[dict]:
+    """Latest event payload of the given kind for each agent in the caller's
+    company: [{hostname, agent_id, payload, captured_at}]."""
+    sql = (
+        "SELECT DISTINCT ON (a.id) a.id AS agent_id, a.hostname, e.payload, e.captured_at "
+        "FROM agents a JOIN events e ON e.agent_id = a.id "
+        "WHERE e.kind = $1"
+    )
+    args: list = [kind]
+    sql, args = _company_scope(user, "a", args, sql)
+    sql += " ORDER BY a.id, e.captured_at DESC"
+    return [dict(r) for r in await pool.fetch(sql, *args)]
+
+
+@app.get("/api/software/search", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def software_search(q: str = "", limit: int = 200, user: dict = Depends(require_session)):
+    """F3: search installed software across the fleet.
+
+    Searches app DisplayName / Publisher / DisplayVersion (case-insensitive
+    substring) in each agent's latest 'software' event. Aggregates duplicate
+    app names into a per-app count. Non-admins never see license keys (they are
+    in a different event kind anyway); 'licenses' is admin-only.
+    """
+    limit = _clamp_limit(limit)
+    pool = await db.connect()
+    needle = (q or "").strip().lower()
+    results: list[dict] = []
+    for row in await _latest_payload_per_agent(pool, "software", user):
+        payload = row["payload"] or {}
+        apps = payload.get("apps") or []
+        matches = [a for a in apps if not needle or needle in str(a.get("DisplayName", "")).lower()
+                   or needle in str(a.get("Publisher", "")).lower()]
+        if not matches:
+            continue
+        results.append({
+            "hostname": row["hostname"],
+            "agent_id": row["agent_id"],
+            "count": len(matches),
+            "apps": matches[:50],
+        })
+        if len(results) >= limit:
+            break
+    return {"query": q, "agents": len(results), "results": results}
+
+
+@app.get("/api/software/export", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def software_export(user: dict = Depends(require_session)):
+    """F3: CSV export of the full software inventory (one row per agent+app)."""
+    pool = await db.connect()
+    rows: list[dict] = []
+    for row in await _latest_payload_per_agent(pool, "software", user):
+        for app in (row["payload"] or {}).get("apps") or []:
+            rows.append({
+                "hostname": row["hostname"],
+                "display_name": app.get("DisplayName", ""),
+                "display_version": app.get("DisplayVersion", ""),
+                "publisher": app.get("Publisher", ""),
+            })
+    rows.sort(key=lambda r: (r["hostname"].lower(), r["display_name"].lower()))
+    csv_text = _as_csv(rows, ["hostname", "display_name", "display_version", "publisher"])
+    return Response(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="software-inventory.csv"'},
+    )
+
+
+@app.get("/api/license/compliance", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def license_compliance(user: dict = Depends(require_role("admin"))):
+    """F3: per-agent license compliance view (admin-only). Windows/Office keys
+    are reported last-5 characters by the agent collector; full keys never
+    leave the machine. 'ok' means a key was reported."""
+    pool = await db.connect()
+    rows = []
+    for row in await _latest_payload_per_agent(pool, "licenses", user):
+        payload = row["payload"] or {}
+        rows.append({
+            "hostname": row["hostname"],
+            "agent_id": row["agent_id"],
+            "last_seen": row["captured_at"],
+            "windows_key_last5": payload.get("windows_key_last5", ""),
+            "office_key_last5": payload.get("office_keys_last5", ""),
+            "windows_ok": bool(payload.get("windows_key_last5")),
+            "office_ok": bool(payload.get("office_keys_last5")),
+        })
+    rows.sort(key=lambda r: r["hostname"].lower())
+    return {"agents": len(rows), "compliance": rows}
+
+
+@app.get("/api/license/export", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def license_export(user: dict = Depends(require_role("admin"))):
+    """F3: CSV export of license compliance (admin-only)."""
+    pool = await db.connect()
+    rows = []
+    for row in await _latest_payload_per_agent(pool, "licenses", user):
+        payload = row["payload"] or {}
+        rows.append({
+            "hostname": row["hostname"],
+            "windows_key_last5": payload.get("windows_key_last5", ""),
+            "office_key_last5": payload.get("office_keys_last5", ""),
+        })
+    rows.sort(key=lambda r: r["hostname"].lower())
+    csv_text = _as_csv(rows, ["hostname", "windows_key_last5", "office_key_last5"])
+    return Response(
+        content=csv_text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="license-compliance.csv"'},
+    )
+
+
+# ---------------------------------------------------------------- tenants (F4)
+
+@app.get("/api/companies", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def list_companies(user: dict = Depends(require_role("admin"))):
+    """F4: tenant directory (admin-only)."""
+    pool = await db.connect()
+    rows = await pool.fetch(
+        "SELECT c.id, c.name, c.created_at, "
+        "       (SELECT count(*) FROM users u WHERE u.company_id = c.id) AS users, "
+        "       (SELECT count(*) FROM agents a WHERE a.company_id = c.id) AS agents "
+        "FROM companies c ORDER BY c.id"
+    )
+    return [dict(r) for r in rows]
+
+
+@app.post("/api/companies", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def create_company(payload: CompanyCreate, request: Request, user: dict = Depends(require_role("admin"))):
+    """F4: create a tenant company. It is not the default (existing agents keep
+    their current company); to enroll new agents into it, assign it as default
+    via /api/settings/default-company."""
+    pool = await db.connect()
+    try:
+        row = await pool.fetchrow(
+            "INSERT INTO companies (name) VALUES ($1) RETURNING id, name, created_at",
+            payload.name.strip(),
+        )
+    except asyncpg.exceptions.UniqueViolationError:
+        raise HTTPException(status_code=409, detail="Company already exists")
+    await _audit(
+        pool,
+        action="company.create",
+        target=f"company:{row['name']}",
+        user=user,
+        ip=ratelimit.client_ip(request),
+    )
+    return dict(row)
+
+
+@app.get("/api/settings/default-company", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def get_default_company(user: dict = Depends(require_role("admin"))):
+    """F4: which company new agents enroll into (NULL = global/no tenant)."""
+    pool = await db.connect()
+    cid = await _company_id(pool)
+    if cid is None:
+        return {"company_id": None, "name": None}
+    row = await pool.fetchrow("SELECT id, name FROM companies WHERE id = $1", cid)
+    return {"company_id": cid, "name": row["name"] if row else None}
+
+
+@app.post("/api/settings/default-company", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def set_default_company(payload: CompanyCreate, request: Request, user: dict = Depends(require_role("admin"))):
+    """F4: point new-agent enrollment at a specific company (by name)."""
+    pool = await db.connect()
+    row = await pool.fetchrow("SELECT id FROM companies WHERE name = $1", payload.name.strip())
+    if row is None:
+        raise HTTPException(status_code=404, detail="Company not found")
+    await pool.execute(
+        "INSERT INTO settings (key, value) VALUES ('default_company_id', $1) "
+        "ON CONFLICT (key) DO UPDATE SET value = $1",
+        str(row["id"]),
+    )
+    await _audit(
+        pool,
+        action="company.set_default",
+        target=f"company:{payload.name.strip()}",
+        user=user,
+        ip=ratelimit.client_ip(request),
+    )
+    return {"ok": True, "company_id": row["id"], "name": payload.name.strip()}
 
 
 @app.get("/api/features", dependencies=[Depends(require_setup_done), Depends(require_session)])

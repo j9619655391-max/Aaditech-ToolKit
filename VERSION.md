@@ -27,6 +27,20 @@
 > handles the required reboot, so a fresh box goes straight from install to
 > `deploy.ps1`.
 >
+> **Feature additions (F1/F3/F4):** new-alert digests can now also be POSTed to a
+> **webhook** (generic JSON, Slack blocks, or Teams MessageCard — F1) from the
+> Alerts page (`/api/alerts/webhook` GET/PUT + `/api/alerts/test-webhook`),
+> running alongside SMTP email. The **Software** portal tab adds fleet-wide
+> software search (name/publisher, case-insensitive) + CSV export and an
+> admin-only **license compliance** view with CSV export (`/api/software/search`,
+> `/api/software/export`, `/api/license/compliance`, `/api/license/export` — F3).
+> A **multi-tenant foundation** is in place: setup creates a `companies` tenant,
+> binds the admin (and every created user) to it, and new agents enroll into the
+> current default company; agents/events/alerts/commands/users/reports are now
+> scoped to the signed-in user's company, with an admin Companies manager in the
+> Users tab (`/api/companies`, `/api/settings/default-company` — F4). 25 API
+> pytest cases cover the new surface.
+>
 > **v1.2.0 = SaaS-style auto-setup (Rev 3)**: everything is auto-detected /
 > auto-generated on ANY server; the only manual step is the setup wizard
 > (company / admin / SMTP / build mode). `deploy.ps1` (Windows Server) builds +

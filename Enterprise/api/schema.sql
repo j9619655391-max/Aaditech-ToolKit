@@ -98,3 +98,19 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_log_ts ON audit_log(ts DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action);
+
+-- F3: fast "latest event per agent" lookups for software/license compliance.
+CREATE INDEX IF NOT EXISTS idx_events_kind_agent ON events(kind, agent_id, captured_at DESC);
+
+-- F4: multi-tenant foundation. One row per company; users + agents belong to a
+-- company and list queries are scoped to the caller's company_id.
+CREATE TABLE IF NOT EXISTS companies (
+    id         SERIAL PRIMARY KEY,
+    name       TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id);
+ALTER TABLE users  ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id);
+CREATE INDEX IF NOT EXISTS idx_agents_company ON agents(company_id);
+CREATE INDEX IF NOT EXISTS idx_users_company ON users(company_id);

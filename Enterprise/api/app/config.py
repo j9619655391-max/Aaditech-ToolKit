@@ -67,6 +67,13 @@ SMTP_TO = [
 _SMTP_STARTTLS = os.environ.get("SMTP_STARTTLS", "true").lower() in ("1", "true", "yes")
 SMTP_ENCRYPTION = os.environ.get("SMTP_ENCRYPTION", "starttls" if _SMTP_STARTTLS else "none")
 
+# Webhook alert delivery (P6.2). Alerts are posted to a generic/Slack/Teams
+# incoming webhook when WEBHOOK_ENABLED=true and WEBHOOK_URL is set. Values can
+# be overridden per-install via the portal Alerts view (settings table).
+WEBHOOK_ENABLED = os.environ.get("WEBHOOK_ENABLED", "false")
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "")
+WEBHOOK_TYPE = os.environ.get("WEBHOOK_TYPE", "generic")  # generic | slack | teams
+
 # ---------------------------------------------------------------- API token
 
 _PLACEHOLDERS = {"", "change-me", "change-me-random-token", "changeme"}

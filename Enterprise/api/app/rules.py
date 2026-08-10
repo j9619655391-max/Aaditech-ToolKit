@@ -6,8 +6,10 @@ once (when the condition fires and no 'open' alert exists for that pair) and
 resolves open alerts when the condition clears.
 """
 import asyncio
+import json
 import logging
 import smtplib
+import urllib.request
 
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
@@ -213,6 +215,90 @@ async def _send_alert_email(pool, opened_alerts: list[dict]) -> bool:
     return await asyncio.to_thread(_send)
 
 
+async def get_webhook_settings(pool) -> dict:
+    """Resolve effective webhook alert settings (DB first, env fallback).
+
+    Keys persisted via the portal Alerts view: webhook_enabled, webhook_url,
+    webhook_type (generic | slack | teams). webhook_token is optional (Bearer).
+    """
+    from . import config
+
+    db = await pool.fetch("SELECT key, value FROM settings WHERE key LIKE 'webhook_%'")
+    kv = {r["key"]: r["value"] for r in db}
+    return {
+        "enabled": (kv.get("webhook_enabled") or config.WEBHOOK_ENABLED).lower() == "true",
+        "url": kv.get("webhook_url") or config.WEBHOOK_URL,
+        "type": kv.get("webhook_type") or config.WEBHOOK_TYPE,
+        "token": kv.get("webhook_token") or "",
+    }
+
+
+def _webhook_payload(alerts: list[dict], webhook_type: str, portal: str) -> tuple[str, dict]:
+    """Return (media_type, payload_dict) shaped for the target channel."""
+    lines = [f"- [{a['severity']}] {a['hostname']}: {a['message']}" for a in alerts]
+    body = "\n".join(lines) or "(empty)"
+    if webhook_type == "slack":
+        return (
+            "application/json",
+            {
+                "text": f"IT-Toolkit: {len(alerts)} new alert(s)",
+                "blocks": [
+                    {"type": "section", "text": {"type": "mrkdwn", "text": f"*{len(alerts)} new alert(s)*"}},
+                    {"type": "section", "text": {"type": "mrkdwn", "text": body}},
+                    {"type": "context", "elements": [{"type": "mrkdwn", "text": f"Portal: <https://{portal}/|open>"}]},
+                ],
+            },
+        )
+    if webhook_type == "teams":
+        return (
+            "application/json",
+            {
+                "@type": "MessageCard",
+                "@context": "http://schema.org/extensions",
+                "summary": f"IT-Toolkit: {len(alerts)} new alert(s)",
+                "themeColor": "0072C6",
+                "title": f"{len(alerts)} new alert(s)",
+                "text": body,
+            },
+        )
+    return (
+        "application/json",
+        {"source": "it-toolkit", "event": "alerts.opened", "count": len(alerts), "alerts": alerts, "portal": portal},
+    )
+
+
+async def _send_alert_webhook(pool, opened_alerts: list[dict]) -> bool:
+    """POST one digest to a configured webhook (Slack / Teams / generic).
+
+    No-op unless enabled + a URL is configured. Runs in a thread so the eval
+    loop is not blocked. Returns True if a 2xx response was received.
+    """
+    cfg = await get_webhook_settings(pool)
+    if not cfg["enabled"] or not cfg["url"]:
+        return False
+
+    portal = (await pool.fetchval("SELECT value FROM settings WHERE key = 'server_host'")) or "localhost"
+    media_type, payload = _webhook_payload(opened_alerts, cfg["type"], portal)
+    data = json.dumps(payload).encode("utf-8")
+
+    def _post() -> bool:
+        req = urllib.request.Request(cfg["url"], data=data, method="POST")
+        req.add_header("Content-Type", media_type)
+        if cfg["token"]:
+            req.add_header("Authorization", f"Bearer {cfg['token']}")
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                ok = 200 <= resp.status < 300
+                if not ok:
+                    logger.error("alert webhook rejected: HTTP %s", resp.status)
+                return ok
+        except Exception as exc:
+            logger.error("alert webhook send failed: %r", exc)
+            return False
+
+    return await asyncio.to_thread(_post)
+
+
 async def evaluate_rules(pool) -> int:
     """Evaluate all enabled rules; return number of alerts opened this run."""
     from . import metrics
@@ -247,7 +333,10 @@ async def evaluate_rules(pool) -> int:
                     rule["id"], agent["id"],
                 )
     if opened_alerts:
-        await _send_alert_email(pool, opened_alerts)
+        await asyncio.gather(
+            _send_alert_email(pool, opened_alerts),
+            _send_alert_webhook(pool, opened_alerts),
+        )
     return opened
 
 
