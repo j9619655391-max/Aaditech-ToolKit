@@ -284,11 +284,19 @@ try {
 finally { Pop-Location }
 
 Log "Waiting for api health..."
+# The api service is NOT port-published to the host (only caddy is, on
+# 80/443/9443), so we probe its healthcheck inside the container instead of
+# hitting localhost:8000 (which would always time out).
 $apiHealthy = $false
 for ($i = 0; $i -lt 30; $i++) {
     try {
-        $r = Invoke-WebRequest -Uri "http://localhost:8000/healthz" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
-        if ($r.StatusCode -eq 200) { $apiHealthy = $true; break }
+        Push-Location $Here
+        try {
+            $probe = docker compose -f $ComposeFile exec -T api python -c "import urllib.request;urllib.request.urlopen('http://localhost:8000/healthz',timeout=3)"
+            if ($LASTEXITCODE -eq 0) { $apiHealthy = $true }
+        }
+        finally { Pop-Location }
+        if ($apiHealthy) { break }
     } catch { }
     Start-Sleep -Seconds 2
 }

@@ -4,12 +4,20 @@
   "token": "CHANGE-ME",
   "agent_version": "1.0.0",
   "interval_minutes": 30,
+  "run_script_allowlist": [],
   "features": [
-    { "name": "quickcheck", "script": "Scripts/QuickCheck.ps1", "enabled": true },
-    { "name": "eventlogs", "script": "Scripts/Export-EventLogs.ps1", "enabled": true },
-    { "name": "network", "script": "Scripts/Network-Diagnostic.ps1", "enabled": true },
-    { "name": "firewall", "script": "Scripts/Firewall-Test.ps1", "enabled": true },
+    { "name": "quickcheck", "script": "Scripts/QuickCheck.ps1", "enabled": true, "requires_elevation": false },
+    { "name": "eventlogs", "script": "Scripts/Export-EventLogs.ps1", "enabled": true, "requires_elevation": false },
+    { "name": "network", "script": "Scripts/Network-Diagnostic.ps1", "enabled": true, "requires_elevation": false },
+    { "name": "firewall", "script": "Scripts/Firewall-Test.ps1", "enabled": true, "requires_elevation": false },
     { "name": "users", "script": "Scripts/User-Inventory.ps1", "enabled": false, "requires_elevation": true },
-    { "name": "printers", "script": "Scripts/Printer-Fix.ps1", "enabled": false, "requires_elevation": true }
+    { "name": "printers", "script": "Scripts/Printer-Fix.ps1", "enabled": false, "requires_elevation": true },
+    { "name": "hardware", "script": "Enterprise/agent/collectors/Get-HardwareInventory.ps1", "enabled": true, "requires_elevation": false },
+    { "name": "software", "script": "Enterprise/agent/collectors/Get-SoftwareInventory.ps1", "enabled": true, "requires_elevation": false },
+    { "name": "diskhealth", "script": "Enterprise/agent/collectors/Get-DiskHealth.ps1", "enabled": true, "requires_elevation": false },
+    { "name": "health", "script": "Enterprise/agent/collectors/Get-SystemHealth.ps1", "enabled": true, "requires_elevation": false },
+    { "name": "bitlocker", "script": "Enterprise/agent/collectors/Get-BitLockerStatus.ps1", "enabled": false, "requires_elevation": true },
+    { "name": "updatecompliance", "script": "Enterprise/agent/collectors/Get-WindowsUpdateStatus.ps1", "enabled": true, "requires_elevation": false },
+    { "name": "licenses", "script": "Enterprise/agent/collectors/Get-LicenseInfo.ps1", "enabled": false, "requires_elevation": true }
   ]
 }

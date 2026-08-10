@@ -1,4 +1,3 @@
-import hashlib
 import hmac
 import io
 import json
@@ -98,7 +97,6 @@ async def _observe_http(request: Request, call_next):
             "", extra=_access_fields(request, 500, start)
         )
         raise
-    dur_ms = (time.perf_counter() - start) * 1000.0
     metrics.http_duration.observe(
         time.perf_counter() - start,
         {"route": _route_for(request)},
@@ -1189,7 +1187,6 @@ async def agent_msi_download(hostname: str, authorization: str = Header(default=
     """E3: agent-facing MSI binary download (mTLS + per-agent token). Unlike the
     portal's /api/agent-msi (session auth) this is meant to be fetched by the
     agent itself during a silent self-upgrade."""
-    pool = await db.connect()
     await require_agent_token(hostname, authorization)
     path = bundle.msi_path()
     if not path.exists():
@@ -1393,7 +1390,7 @@ async def list_events(
         sql += f" AND e.kind = ${len(args) + 1}"
         args.append(kind)
     if kind != "licenses" and user["role"] != "admin":
-        sql += f" AND e.kind <> 'licenses'"
+        sql += " AND e.kind <> 'licenses'"
     sql += f" ORDER BY e.captured_at DESC LIMIT ${max(len(args) + 1, 1)}"
     args.append(limit)
     rows = await pool.fetch(sql, *args)

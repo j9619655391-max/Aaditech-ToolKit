@@ -346,6 +346,47 @@ function ConvertTo-JsonPayload {
     return ($sanitized | ConvertTo-Json -Compress -Depth 10)
 }
 
+function Invoke-AgentScript {
+    param(
+        [string]$ScriptPath,
+        [int]$TimeoutSeconds = 300
+    )
+    # W7: feature scripts (QuickCheck, Network-Diagnostic, Export-EventLogs, …)
+    # contain interactive Read-Host prompts and some spawn GUI apps (notepad).
+    # Under the Task Scheduler NETWORK SERVICE context there is no console, so a
+    # Read-Host would block forever and stall the collection cycle. Run each
+    # script in an isolated child PowerShell with stdin fed from NUL (EOF → any
+    # Read-Host returns immediately) and a hard timeout, then return its output.
+    $psExe = if ($PSVersionTable.PSEdition -eq 'Core') {
+        Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    } else {
+        (Get-Process -Id $PID).Path
+    }
+    $childArgs = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
+        '-Command', "& `"$ScriptPath`" 2>&1 | Out-String")
+    # Start-Process requires the redirected stdin file to already exist (EOF
+    # means any Read-Host in the child returns immediately instead of hanging).
+    $stdinFile = Join-Path $env:TEMP 'itk-agent-stdin.txt'
+    $stdoutFile = Join-Path $env:TEMP 'itk-agent-stdout.txt'
+    $stderrFile = Join-Path $env:TEMP 'itk-agent-stderr.txt'
+    Set-Content -Path $stdinFile -Value '' -ErrorAction SilentlyContinue
+    $p = Start-Process -FilePath $psExe -ArgumentList $childArgs -NoNewWindow `
+        -RedirectStandardInput $stdinFile `
+        -RedirectStandardOutput $stdoutFile `
+        -RedirectStandardError $stderrFile -PassThru
+    if (-not $p.WaitForExit($TimeoutSeconds * 1000)) {
+        try { $p.Kill() } catch { }
+        throw "Script timed out after ${TimeoutSeconds}s: $ScriptPath"
+    }
+    $out = ''
+    if (Test-Path $stdoutFile) { $out = Get-Content $stdoutFile -Raw }
+    $err = ''
+    if (Test-Path $stderrFile) { $err = Get-Content $stderrFile -Raw }
+    Remove-Item $stdinFile, $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+    if ($p.ExitCode -ne 0) { throw "Script exited with code $($p.ExitCode): $ScriptPath $err" }
+    return $out
+}
+
 function Invoke-AgentCollection {
     param($Config)
     $results = @()
@@ -372,7 +413,7 @@ function Invoke-AgentCollection {
         }
         try {
             Write-AgentLog "Running $($feature.name) ($scriptPath)"
-            $output = & $scriptPath 2>&1 | Out-String
+            $output = Invoke-AgentScript -ScriptPath $scriptPath
             $structured = ConvertFrom-CollectorOutput -Raw $output
             $payload = ConvertTo-JsonPayload -Result $structured
             Invoke-SQLite -Query "INSERT INTO outbox (kind, payload, sanitized) VALUES ('$($feature.name)', '$($payload.Replace("'","''"))', 1);" -DatabasePath $QueueDb | Out-Null

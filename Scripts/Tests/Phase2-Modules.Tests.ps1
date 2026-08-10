@@ -16,7 +16,7 @@ covered by a guard test only.
 param()
 
 BeforeAll {
-    $global:moduleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\modules')).Path
+    $global:moduleRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\Modules')).Path
 }
 
 Describe 'SanitizeEngine' {

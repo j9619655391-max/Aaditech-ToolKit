@@ -35,10 +35,26 @@ TEST_URL = f"{_M.group(1)}/{TEST_DB}" if _M else BASE_URL
 TEST_DATA_DIR = "/tmp/ittk-test-data"
 
 # Point config.PORTAL_DIR / FEATURES_FILE at the checkout rather than the
-# container layout (/app/...) so the same suite runs in Docker and CI.
-_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-TEST_PORTAL_DIR = os.path.join(_REPO_ROOT, "Enterprise", "portal")
-TEST_FEATURES_FILE = os.path.join(_REPO_ROOT, "Enterprise", "api", "features.json")
+# container layout (/app/...) so the same suite runs in Docker and CI. The
+# path differs between the two, so try each candidate and use the first hit.
+_API_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+
+def _first_existing(*candidates: str) -> str:
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return candidates[0]
+
+
+TEST_PORTAL_DIR = _first_existing(
+    os.path.join(_API_ROOT, "portal"),                       # container: /app/portal
+    os.path.join(_API_ROOT, "..", "portal"),                 # checkout: <root>/Enterprise/portal
+)
+TEST_FEATURES_FILE = _first_existing(
+    os.path.join(_API_ROOT, "features.json"),                 # container: /app/features.json
+    os.path.join(_API_ROOT, "..", "..", "api", "features.json"),
+)
 
 
 def _admin_connect() -> asyncpg.Connection:

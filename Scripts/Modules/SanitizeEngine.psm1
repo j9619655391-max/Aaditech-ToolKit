@@ -28,7 +28,8 @@ function Get-SanitizationConfig {
     .SYNOPSIS
         Loads sanitization settings from Config/config.json with safe defaults.
     #>
-    $configPath = Join-Path (Split-Path -Parent $script:ModulesPath) 'Config/config.json'
+    $repoRoot = Split-Path -Parent (Split-Path -Parent $script:ModulesPath)
+    $configPath = Join-Path $repoRoot 'Config/config.json'
     $settings = @{
         maskEmails    = $true
         maskIPs       = $true

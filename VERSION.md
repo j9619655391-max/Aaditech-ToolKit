@@ -4,7 +4,7 @@
 **Release date:** 2026-08-09
 **Branch:** `main`
 **Repository:** https://github.com/j9619655391-max/Aaditech-ToolKit
-**Remote:** `origin` (GitHub, public) — `main` + `v1.0.0`, `v1.1.0`, `v1.2.0` tags pushed
+**Remote:** `origin` (GitHub, public) — `main` + `v1.0.0`, `v1.1.0`, `v1.2.0`, `v1.3.0` tags pushed
 **CI status:** ✅ green on `windows-latest` — PowerShell validation + **agent exe/MSI build** (WiX v5) both pass end-to-end; **API pytest smoke suite** (vs Postgres service) added in this release.
 
 > **v1.3.0 = Enterprise hardening (SCALING-PLAN A–E)**: least-privilege agent
@@ -82,9 +82,9 @@ changes to the local toolkit.
 - **Verified locally:** full Docker stack + agent→server round-trip with PII `[REDACTED-*]` sanitization (macOS smoke).
 
 CI (`ci.yml`) runs on `windows-latest` and is **green**: PowerShell parse
-(30 files), JSON validation, Phase 1 regression, Pester suites (RemoteToolkit,
-BatchLauncher, Phase2 modules), PSScriptAnalyzer (0 errors), and project-index
-freshness (`-Check`).
+(all `.ps1`/`.psm1` files), JSON validation, Phase 1 regression, Pester suites (RemoteToolkit,
+BatchLauncher, Phase2 modules), the API pytest suite (vs Postgres 16), PSScriptAnalyzer (0 errors),
+and project-index freshness (`-Check`).
 
 ## Manual smoke-run items (Windows-only)
 The following cannot be end-to-end verified on a macOS dev host and require a

@@ -83,3 +83,18 @@ CREATE TABLE IF NOT EXISTS alerts (
     resolved_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_alerts_status ON alerts(status);
+
+-- D3: fleet audit trail. One row per security/admin-relevant action.
+CREATE TABLE IF NOT EXISTS audit_log (
+    id         BIGSERIAL PRIMARY KEY,
+    ts         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    username   TEXT,
+    role       TEXT,
+    action     TEXT NOT NULL,
+    target     TEXT,
+    detail     jsonb NOT NULL DEFAULT '{}',
+    ip         TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_audit_log_ts ON audit_log(ts DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action);

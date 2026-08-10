@@ -9,7 +9,9 @@
 #
 # Outputs (Enterprise/agent/build/codesign/):
 #   IT-Toolkit-CodeSign-CA.pfx   -> base64 this into the CODESIGN_PFX_B64 secret
-#   IT-Toolkit-CodeSign-CA.cer   -> public cert; commit it and push via GPO
+#   IT-Toolkit-CodeSign-CA.cer   -> public leaf cert; commit it and push via GPO
+#   IT-Toolkit-CodeSign-Root.cer -> public root cert (committed; deploy.ps1/ci.yml
+#                                   import it so signtool can validate the chain)
 #   codesign-password.txt        -> the random PFX password (DO NOT COMMIT)
 #
 # Usage:
@@ -48,11 +50,13 @@ $Leaf = New-SelfSignedCertificate `
     -TextExtension @("2.5.29.19={text}CA=false") `
     -NotAfter (Get-Date).AddYears(5)
 
-# 3) Export: PFX (private key) + CER (public).
+# 3) Export: PFX (private key) + CER (public) + root CER (chain validation).
 $pfx = Join-Path $OutDir 'IT-Toolkit-CodeSign-CA.pfx'
 $cer = Join-Path $OutDir 'IT-Toolkit-CodeSign-CA.cer'
+$rootCer = Join-Path $OutDir 'IT-Toolkit-CodeSign-Root.cer'
 Export-PfxCertificate -Cert $Leaf -FilePath $pfx -Password $SecurePass -Force | Out-Null
 Export-Certificate -Cert $Leaf -FilePath $cer -Force | Out-Null
+Export-Certificate -Cert $Root -FilePath $rootCer -Force | Out-Null
 Set-Content -Path (Join-Path $OutDir 'codesign-password.txt') -Value $Password
 
 # Clean the ephemeral leaf/root out of the local store (the PFX holds the key).
@@ -66,12 +70,15 @@ $b64 | Set-Content -Path (Join-Path $OutDir 'codesign-pfx.b64')
 Write-Host "Code-signing CA created in $OutDir"
 Write-Host "  PFX:  IT-Toolkit-CodeSign-CA.pfx  (password: $Password)"
 Write-Host "  CER:  IT-Toolkit-CodeSign-CA.cer"
+Write-Host "  ROOT: IT-Toolkit-CodeSign-Root.cer"
 Write-Host ""
 Write-Host "Next steps:"
 Write-Host "  1) Set GitHub secrets:"
 Write-Host "       CODESIGN_PFX_B64      = base64 of the PFX (see codesign-pfx.b64)"
 Write-Host "       CODESIGN_PFX_PASSWORD = $Password"
-Write-Host "  2) Commit the .cer and push it to clients' 'Trusted Publishers' via GPO:"
+Write-Host "  2) Commit both .cer files (leaf + root) — the root must be the one"
+Write-Host "     deploy.ps1 / ci.yml import for signtool chain validation. Push the"
+Write-Host "     leaf to clients' 'Trusted Publishers' via GPO:"
 Write-Host "       Computer Config > Policies > Windows Settings > Security Settings >"
 Write-Host "       Public Key Policies > Trusted Publishers > Import -> IT-Toolkit-CodeSign-CA.cer"
 Write-Host "  3) CI now auto-signs IT-Toolkit-Agent.exe/.msi with signtool."

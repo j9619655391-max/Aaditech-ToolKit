@@ -122,7 +122,7 @@ jobs:
     defaults:
       run:
         shell: pwsh
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'agent')
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
 
@@ -133,6 +133,7 @@ jobs:
           API_TOKEN: ${{ secrets.API_TOKEN }}
           MTLS_ENDPOINT: ${{ secrets.MTLS_ENDPOINT }}
           ENROLL_URL: ${{ secrets.ENROLL_URL }}
+          RUN_SCRIPT_ALLOWLIST: ${{ secrets.RUN_SCRIPT_ALLOWLIST }}
         run: |
           $endpoint = if ($env:SERVER_ENDPOINT) { $env:SERVER_ENDPOINT } else { 'http://CHANGE-ME/ingest' }
           $token = if ($env:API_TOKEN) { $env:API_TOKEN } else { 'CHANGE-ME' }
@@ -141,12 +142,17 @@ jobs:
             @{ name = $_.name; script = $_.script; enabled = [bool]$_.default_enabled; requires_elevation = [bool]$_.requires_elevation }
           })
           $agentMeta = Get-Content ./Enterprise/agent/agent-version.json -Raw | ConvertFrom-Json
+          # C5: run-script allowlist mirrors what deploy.sh/deploy.ps1 bake
+          # (from the RUN_SCRIPT_ALLOWLIST env), so CI-built agents enforce the
+          # same defense when the server issues run-script commands. Empty -> [].
+          $runScripts = if ($env:RUN_SCRIPT_ALLOWLIST) { $env:RUN_SCRIPT_ALLOWLIST -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ } } else { @() }
           $cfg = [ordered]@{
             endpoint = $endpoint
             token = $token
             agent_version = [string]$agentMeta.agent_version
             interval_minutes = [int]$agentMeta.interval_minutes
             features = $features
+            run_script_allowlist = @($runScripts)
           }
           # Optional mTLS: when MTLS_ENDPOINT is set, agents talk to the :9443
           # client-auth port and enroll for a client cert over the main port.
@@ -157,9 +163,13 @@ jobs:
           $cfg | ConvertTo-Json -Depth 5 | Set-Content ./Enterprise/agent/agent-config.json
 
       - name: Install ps2exe
+        # MScholtes/PS2EXE requires Windows PowerShell 5.1 (uses the .NET
+        # Framework compiler); it fails under pwsh (PowerShell 7).
+        shell: powershell
         run: Install-Module ps2exe -Force -Scope CurrentUser
 
       - name: Build agent exe
+        shell: powershell
         run: ./Enterprise/agent/build/build-agent.ps1
 
       - name: Install WiX toolset

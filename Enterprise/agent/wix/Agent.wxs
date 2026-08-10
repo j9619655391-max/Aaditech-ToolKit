@@ -84,6 +84,18 @@
             <Component Id="ModToolkitConfig" Guid="C3D4E5F6-4444-4444-4444-444444444444">
               <File Id="ToolkitConfig" Name="ToolkitConfig.psm1" Source="stage\Scripts\Modules\ToolkitConfig.psm1" KeyPath="yes" />
             </Component>
+            <Component Id="ModExportEngine" Guid="C3D4E5F6-5555-5555-5555-555555555555">
+              <File Id="ExportEngine" Name="ExportEngine.psm1" Source="stage\Scripts\Modules\ExportEngine.psm1" KeyPath="yes" />
+            </Component>
+            <Component Id="ModAlertEngine" Guid="C3D4E5F6-6666-6666-6666-666666666666">
+              <File Id="AlertEngine" Name="AlertEngine.psm1" Source="stage\Scripts\Modules\AlertEngine.psm1" KeyPath="yes" />
+            </Component>
+            <Component Id="ModReportGenerator" Guid="C3D4E5F6-7777-7777-7777-777777777777">
+              <File Id="ReportGenerator" Name="ReportGenerator.psm1" Source="stage\Scripts\Modules\ReportGenerator.psm1" KeyPath="yes" />
+            </Component>
+            <Component Id="ModLogManager" Guid="C3D4E5F6-8888-8888-8888-888888888888">
+              <File Id="LogManager" Name="LogManager.psm1" Source="stage\Scripts\Modules\LogManager.psm1" KeyPath="yes" />
+            </Component>
           </Directory>
         </Directory>
 
@@ -225,6 +237,10 @@
       <ComponentRef Id="ModToolkitData" />
       <ComponentRef Id="ModCredential" />
       <ComponentRef Id="ModToolkitConfig" />
+      <ComponentRef Id="ModExportEngine" />
+      <ComponentRef Id="ModAlertEngine" />
+      <ComponentRef Id="ModReportGenerator" />
+      <ComponentRef Id="ModLogManager" />
       <ComponentRef Id="ConfigFile" />
       <ComponentRef Id="AgentConfig" />
       <ComponentRef Id="RegistryConfig" />

@@ -8,16 +8,17 @@
     Implements 9-step Index Audit specification.
 #>
 
+$script:AuditRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $script:AuditConfig = @{
-    IndexPath = "/audit/index.json"
-    LedgerPath = "/audit/ledger.json"
-    ReportsPath = "/audit/reports"
-    IndexSummaryPath = "/audit/index_summary.json"
+    IndexPath = Join-Path $script:AuditRoot 'index.json'
+    LedgerPath = Join-Path $script:AuditRoot 'ledger.json'
+    ReportsPath = Join-Path $script:AuditRoot 'reports'
+    IndexSummaryPath = Join-Path $script:AuditRoot 'index_summary.json'
     BackupEnabled = $true
 }
 
 function Initialize-AuditEngine {
-    param([string]$RootPath = "/Users/admin/Downloads/IT-Toolkit 2")
+    param([string]$RootPath = (Split-Path -Parent $script:AuditRoot))
     try {
         $dirs = @("$RootPath/audit", "$RootPath/audit/reports", "$RootPath/audit/backups")
         foreach ($d in $dirs) { if (-not (Test-Path $d)) { New-Item -ItemType Directory -Path $d -Force | Out-Null } }
@@ -29,10 +30,10 @@ function Initialize-AuditEngine {
 }
 
 function New-AuditIndex {
-    param([string]$RootPath = "/Users/admin/Downloads/IT-Toolkit 2")
+    param([string]$RootPath = (Split-Path -Parent $script:AuditRoot))
     try {
         $index = @{
-            "path" = "/audit/index.json"
+            "path" = $script:AuditConfig.IndexPath
             "module" = "audit-index"
             "purpose" = "Machine-readable repository map"
             "exports" = @("index")

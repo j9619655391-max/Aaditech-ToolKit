@@ -7,7 +7,6 @@
 
 import json
 import logging
-import uuid
 from contextvars import ContextVar
 
 _LOCAL = ContextVar("ittoolkit_request_id", default="")

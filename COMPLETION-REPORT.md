@@ -315,7 +315,7 @@ Menu 8: View Documentation
 - Scripts/README.md explains all 7 scripts in detail
 - Documentation/README.md indexes all resources
 - Config comments explain every option
-- Setup-Wizard.md is interactive guide
+- Setup-Wizard.bat is interactive guide
 - AI Prompts section in CHANGELOG updated
 
 ---

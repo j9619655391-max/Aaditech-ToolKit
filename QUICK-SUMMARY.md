@@ -51,7 +51,7 @@
 | **User-Inventory.ps1** | Hardware/software audit (CPU, RAM, disks, apps, updates, BIOS) | Complete asset inventory for tracking |
 | **Firewall-Test.ps1** | Firewall profile status + port connectivity testing | Diagnose if issue is firewall or network |
 | **Export-EventLogs.ps1** | Sanitizable event log export for tickets | Fast ticket attachment instead of manual log collection |
-| **Pin-QuickAccess.ps1** | Automate common folder shortcuts | Save users time navigating file system |
+| **Pin-QuickAccess-Folders.ps1** | Automate common folder shortcuts | Save users time navigating file system |
 | **Master Menu** | Single launch point for all tools | No need to remember where each script lives |
 | **AI-Prompts** | 33 pre-made prompts for ChatGPT/Claude | 10-15 minutes faster than typing your own prompts |
 | **Knowledge Base** | Excel sheet for logging solutions | Compound learning (solve problem once, find instantly next time) |

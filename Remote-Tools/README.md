@@ -3,7 +3,7 @@
 This folder is for anything you use to connect to or support a machine remotely.
 
 ## Built-in Windows tools (no download needed)
-- `mstsc` — Remote Desktop Connection (RDP). Use `Saved-RDP-Connections.ps1` in this folder
+- `mstsc` — Remote Desktop Connection (RDP). Use `Generate-RDP-Shortcuts.ps1` in this folder
   to generate one-click .rdp shortcut files for machines you connect to often.
 - `PsExec` (part of Sysinternals Suite, see Software/Portable-Software-Links.md) — run commands
   on a remote machine without installing anything.

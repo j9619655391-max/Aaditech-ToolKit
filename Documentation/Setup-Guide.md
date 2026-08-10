@@ -67,9 +67,9 @@ door to everything else below, so you never have to remember which subfolder a t
   Saves recent errors/warnings to a text file you can attach directly.
 - **New machine you'll support regularly** → Master Menu → option 5 (Pin Quick Access) and
   option 6 (Generate RDP Shortcuts) to set it up for fast future access.
-- **Replying to users** → Master Menu → option 8 (Ticket Reply Templates), copy the matching
+- **Replying to users** → Master Menu → option 10 (Ticket Reply Templates), copy the matching
   template, fill in the brackets, paste into your ticketing tool or email.
-- **Stuck on something unfamiliar** → Master Menu → option 10 (AI Assistant Prompts) for
+- **Stuck on something unfamiliar** → Master Menu → option 12 (AI Assistant Prompts) for
   ready-made prompts to paste into your AI chat tool — remember to sanitize identifying info first.
 - **After solving anything new or unusual** → add one row to `Knowledge-Base.xlsx` (Tab 1).
   Takes 30 seconds, saves you re-searching the same problem in 6 months.

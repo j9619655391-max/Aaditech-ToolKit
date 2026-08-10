@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-09T21:21:28+05:30",
-  "last_verified_commit": "cd95a59da0905f657ca46d7bbf52c3603da38b48",
-  "last_verified_date": "2026-08-09T21:12:27+05:30",
+  "generated": "2026-08-10T20:53:09+05:30",
+  "last_verified_commit": "7a712b094a0cba610ca7cde136616228385360bf",
+  "last_verified_date": "2026-08-09T21:21:27+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -12,31 +12,12 @@
     "percent": 100.0
   },
   "latest_delta": {
-    "added": 0,
+    "added": 1,
     "removed": 0,
-    "changed": 1,
-    "unchanged": 126
+    "changed": 20,
+    "unchanged": 107
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-08T20:16:42+05:30",
-      "added": [
-        "Enterprise/SCALING-PLAN.md",
-        "Enterprise/agent/agent-version.json"
-      ],
-      "removed": [],
-      "changed": [
-        "Enterprise/agent/Agent-Collect.ps1",
-        "Enterprise/agent/wix/Agent.wxs",
-        ".gitignore",
-        "Enterprise/agent/wix/build-msi.ps1",
-        ".github/workflows/ci.yml",
-        "Enterprise/deploy/deploy.ps1",
-        "Enterprise/api/app/bundle.py",
-        "Enterprise/deploy/deploy.sh"
-      ],
-      "unchanged_count": 103
-    },
     {
       "detected_at": "2026-08-08T22:29:35+05:30",
       "added": [
@@ -287,6 +268,36 @@
         "Enterprise/api/tests/conftest.py"
       ],
       "unchanged_count": 126
+    },
+    {
+      "detected_at": "2026-08-10T20:53:09+05:30",
+      "added": [
+        "Enterprise/api/.dockerignore"
+      ],
+      "removed": [],
+      "changed": [
+        "COMPLETION-REPORT.md",
+        "Enterprise/api/app/main.py",
+        "Enterprise/agent/wix/Agent.wxs",
+        "Documentation/README.md",
+        "Enterprise/agent/wix/build-msi.ps1",
+        "Remote-Tools/README.md",
+        "QUICK-SUMMARY.md",
+        "Enterprise/agent/agent-config.example.json",
+        "Enterprise/agent/build/build-agent.ps1",
+        "Enterprise/agent/Agent-Collect.ps1",
+        "Scripts/Tests/Phase2-Modules.Tests.ps1",
+        "Enterprise/deploy/deploy.ps1",
+        "Enterprise/api/tests/conftest.py",
+        "Scripts/Modules/SanitizeEngine.psm1",
+        "Enterprise/api/schema.sql",
+        ".github/workflows/ci.yml",
+        "VERSION.md",
+        "Enterprise/api/app/logging_setup.py",
+        "Enterprise/agent/build/new-codesign-cert.ps1",
+        "Documentation/Setup-Guide.md"
+      ],
+      "unchanged_count": 107
     }
   ],
   "next_recommended_tasks": [

@@ -103,9 +103,14 @@ Write-Host "Baking AgentVersion=$AgentVersion AgentInterval=$AgentInterval MsiVe
 Push-Location $WixDir
 try {
     & $wix.Source build 'Agent.wxs' -o "$(Join-Path $BuildOut 'IT-Toolkit-Agent.msi')" -d "AgentVersion=$MsiVersion" -d "AgentInterval=$AgentInterval"
+    if ($LASTEXITCODE -ne 0) { throw "WiX build failed with exit code $LASTEXITCODE (see output above)" }
 }
 finally {
     Pop-Location
+}
+
+if (-not (Test-Path (Join-Path $BuildOut 'IT-Toolkit-Agent.msi'))) {
+    throw "WiX build reported success but no MSI was produced at $BuildOut\IT-Toolkit-Agent.msi"
 }
 
 Write-Host "MSI built: $BuildOut\IT-Toolkit-Agent.msi"

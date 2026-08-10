@@ -189,12 +189,12 @@ Complete guide to all documentation files and resources in the toolkit.
 ### CHANGELOG.md
 **Purpose:** Version history and what's new
 
-**Current version:** 3.0
+**Current version:** v1.3.0 (see `VERSION.md` — tags v1.0.0…v1.3.0)
 
 **What changed:**
-- v3.0: Enterprise client-server stack (agent/.exe/.msi, FastAPI server, portal, Docker intranet deploy, auto-generated tokens)
-- v2.0: Complete Firewall-Test, enhanced User-Inventory, Setup-Wizard, 33+ AI prompts
-- v1.0: Initial release with core scripts
+- v1.3.0: Enterprise hardening (SCALING-PLAN A–E) — least-privilege NETWORK SERVICE agent, API pytest suite
+- v1.2.0: SaaS auto-setup (Rev 3) — deploy.ps1/deploy.sh + GitHub remote build
+- v1.0.0/v1.1.0: Enterprise client-server stack (agent/.exe/.msi, FastAPI server, portal, Docker intranet deploy, auto-generated tokens)
 
 **When to read:** To understand what changed between versions
 
