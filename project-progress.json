@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-10T21:10:01+05:30",
-  "last_verified_commit": "1a2f88cf2e0acfabd180aa81a76ff092d250ab5a",
-  "last_verified_date": "2026-08-10T21:01:43+05:30",
+  "generated": "2026-08-10T23:13:33+05:30",
+  "last_verified_commit": "406c22115205e34f63eb0b7905a4621eac417c08",
+  "last_verified_date": "2026-08-10T21:10:01+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -14,23 +14,10 @@
   "latest_delta": {
     "added": 0,
     "removed": 0,
-    "changed": 1,
-    "unchanged": 127
+    "changed": 6,
+    "unchanged": 122
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-08T22:45:39+05:30",
-      "added": [
-        "Enterprise/api/app/vault.py"
-      ],
-      "removed": [],
-      "changed": [
-        "Enterprise/SCALING-PLAN.md",
-        "Enterprise/api/app/main.py",
-        "Enterprise/api/app/rules.py"
-      ],
-      "unchanged_count": 112
-    },
     {
       "detected_at": "2026-08-09T00:24:04+05:30",
       "added": [],
@@ -283,6 +270,20 @@
         "Enterprise/agent/wix/build-msi.ps1"
       ],
       "unchanged_count": 127
+    },
+    {
+      "detected_at": "2026-08-10T23:13:33+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [
+        "Enterprise/api/app/main.py",
+        "Enterprise/api/tests/test_smoke.py",
+        "VERSION.md",
+        "Enterprise/portal/index.html",
+        "Enterprise/deploy/deploy.ps1",
+        "Enterprise/api/app/config.py"
+      ],
+      "unchanged_count": 122
     }
   ],
   "next_recommended_tasks": [

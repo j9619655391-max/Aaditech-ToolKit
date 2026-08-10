@@ -130,7 +130,6 @@ if (-not (Test-Path $EnvFile)) {
     @"
 POSTGRES_PASSWORD=$(New-Secret)
 API_TOKEN=$(New-Secret)
-SESSION_SECRET=$(New-Secret)
 SERVER_HOST=$HOST
 CADDY_HOST=$CaddyHost
 ENVIRONMENT=prod
@@ -138,8 +137,12 @@ BUILD_MODE=local_windows
 "@ | Set-Content $EnvFile -Encoding utf8
 }
 else {
-    # fix placeholders + ensure required keys exist
-    foreach ($key in 'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'API_TOKEN', 'SESSION_SECRET', 'SERVER_HOST', 'CADDY_HOST', 'ENVIRONMENT', 'BUILD_MODE') {
+    # fix placeholders + ensure required keys exist.
+    # NOTE: SESSION_SECRET is deliberately NOT set here — it is auto-generated
+    # at first-time setup (POST /api/setup) and persisted under DATA_DIR so the
+    # operator can download it once. Setting it via .env would win over that
+    # file on restart and invalidate the downloaded key.
+    foreach ($key in 'POSTGRES_DB', 'POSTGRES_USER', 'POSTGRES_PASSWORD', 'API_TOKEN', 'SERVER_HOST', 'CADDY_HOST', 'ENVIRONMENT', 'BUILD_MODE') {
         $hit = Get-Content $EnvFile | Where-Object { $_ -like "$key=*" } | Select-Object -First 1
         if (-not $hit) {
             $val = switch ($key) {
@@ -147,7 +150,6 @@ else {
                 'POSTGRES_USER' { 'ittoolkit' }
                 'POSTGRES_PASSWORD' { New-Secret }
                 'API_TOKEN' { New-Secret }
-                'SESSION_SECRET' { New-Secret }
                 'SERVER_HOST' { $HOST }
                 'CADDY_HOST' { $CaddyHost }
                 'ENVIRONMENT' { 'prod' }
@@ -166,6 +168,8 @@ else {
         }
     }
 }
+# remove any stale SESSION_SECRET line (management moved to setup-time rotation)
+(Get-Content $EnvFile) | Where-Object { $_ -notlike 'SESSION_SECRET=*' } | Set-Content $EnvFile
 Set-SecretFileAcl $EnvFile  # A7: .env holds API token + DB password
 
 # load .env into the process so docker compose substitution works

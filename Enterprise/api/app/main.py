@@ -403,6 +403,11 @@ async def run_setup(payload: SetupRequest, request: Request, response: Response)
     if done and str(done).strip() not in ("0", "", "false", "False"):
         raise HTTPException(status_code=409, detail="Setup already complete")
 
+    # SESSION_SECRET: rotate to a fresh strong value on first-time setup, BEFORE
+    # any vault.encrypt() below, so every stored secret is encrypted under the
+    # new key. The value is handed back once for the operator to download.
+    session_secret = config.rotate_session_secret()
+
     # C4: resolve/validate EVERYTHING before the first write so a crash can't
     # leave a half-configured install. setup_complete is written last, inside
     # the same transaction — any failure rolls back so setup can be retried.
@@ -488,6 +493,7 @@ async def run_setup(payload: SetupRequest, request: Request, response: Response)
         "company": payload.company_name,
         "server_host": payload.server_host,
         "admin": dict(user),
+        "session_secret": session_secret,
     }
 
 
@@ -635,6 +641,17 @@ async def download_ca(_: dict = Depends(require_role("admin", "operation"))):
     if not path.exists():
         raise HTTPException(status_code=404, detail="CA not generated yet")
     return FileResponse(path, media_type="application/x-pem-file", filename="itk-ca.crt")
+
+
+@app.get("/api/session-secret", dependencies=[Depends(require_setup_done), Depends(require_session)])
+async def download_session_secret(user: dict = Depends(require_role("admin"))):
+    """Download the server's SESSION_SECRET. It encrypts DB secrets (Fernet)
+    and signs sessions, so treat it like a keyfile: needed for backup/restore,
+    must not leak. Returns the current persisted value."""
+    path = Path(config.DATA_DIR) / "session_secret"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="No session secret persisted yet")
+    return FileResponse(path, media_type="text/plain", filename="itk-session-secret.txt")
 
 
 @app.get("/api/agent/enroll")

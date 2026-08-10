@@ -239,7 +239,31 @@ async function doSetup() {
   };
   const res = await fetch('/api/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   if (!res.ok) { err.textContent = (await res.json()).detail || 'Setup failed'; return; }
+  const data = await res.json();
+  if (data.session_secret) return renderSecretBackup(data.session_secret);
   start();
+}
+
+function renderSecretBackup(secret) {
+  const blob = new Blob([secret + '\n'], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  app.innerHTML = `
+    <div class="center card">
+      <h2>Setup complete — save your encryption key</h2>
+      <p class="muted">This key encrypts stored secrets (SMTP password, GitHub token) and signs login sessions.
+      It is shown <b>only once</b>. Download it now — you'll need it to restore this server from a backup.
+      Treat it like a password: anyone with it can decrypt your stored secrets.</p>
+      <div style="margin:14px 0;padding:10px;background:#0b0f14;border:1px solid #2a3b4d;border-radius:8px;font-family:monospace;word-break:break-all;font-size:13px">${esc(secret)}</div>
+      <div class="row" style="align-items:flex-end;gap:10px">
+        <a class="action" style="flex:1;text-align:center" href="${url}" download="itk-session-secret.txt">Download key file</a>
+        <button class="action" style="flex:1" onclick="copySecret('${esc(secret)}', this)">Copy</button>
+      </div>
+      <div style="margin-top:18px"><button class="action" style="width:100%" onclick="start()">Continue to dashboard</button></div>
+    </div>`;
+}
+
+function copySecret(secret, btn) {
+  navigator.clipboard.writeText(secret).then(() => { btn.textContent = 'Copied'; }).catch(() => {});
 }
 
 // ---------------------------------------------------------------- login

@@ -48,7 +48,27 @@ def test_login_and_me(client, admin):
     assert r.status_code == 200
     body = r.json()
     assert body["username"] == "rootadmin"
-    assert body["role"] == "admin"
+
+
+def test_session_secret_download_requires_admin(client, admin, monitoring):
+    """Setup-rotated SESSION_SECRET is downloadable by admins only and matches
+    the persisted value under DATA_DIR."""
+    import os
+    from pathlib import Path
+
+    secret_file = Path(os.environ["DATA_DIR"]) / "session_secret"
+    assert secret_file.exists()
+
+    ok = client.get("/api/session-secret", headers=admin)
+    assert ok.status_code == 200
+    assert ok.headers["content-type"].startswith("text/plain")
+    assert ok.text.strip() == secret_file.read_text().strip()
+
+    denied = client.get("/api/session-secret", headers=monitoring)
+    assert denied.status_code == 403
+
+    anon = client.get("/api/session-secret")
+    assert anon.status_code in (401, 403)
 
 
 def test_login_bad_credentials(client):

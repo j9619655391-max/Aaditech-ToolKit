@@ -1,24 +1,29 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-10T21:10:01+05:30",
+  "generated": "2026-08-10T23:13:33+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "1a2f88cf2e0acfabd180aa81a76ff092d250ab5a",
-  "last_verified_date": "2026-08-10T21:01:43+05:30",
+  "last_verified_commit": "406c22115205e34f63eb0b7905a4621eac417c08",
+  "last_verified_date": "2026-08-10T21:10:01+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 88,
+    "commit_count": 89,
     "clean_working_tree": false,
-    "head": "1a2f88cf2e0acfabd180aa81a76ff092d250ab5a"
+    "head": "406c22115205e34f63eb0b7905a4621eac417c08"
   },
   "latest_delta": {
-    "detected_at": "2026-08-10T21:10:01+05:30",
+    "detected_at": "2026-08-10T23:13:33+05:30",
     "added": [],
     "removed": [],
     "changed": [
-      "Enterprise/agent/wix/build-msi.ps1"
+      "Enterprise/api/app/main.py",
+      "Enterprise/api/tests/test_smoke.py",
+      "VERSION.md",
+      "Enterprise/portal/index.html",
+      "Enterprise/deploy/deploy.ps1",
+      "Enterprise/api/app/config.py"
     ],
-    "unchanged_count": 127
+    "unchanged_count": 122
   },
   "module_state": {
     "working": [

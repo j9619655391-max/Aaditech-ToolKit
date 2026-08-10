@@ -15,6 +15,14 @@
 > and the A1–A7 foundation fixes. Added an AI-agent prerequisite scanner +
 > deployment runbook and an API pytest suite.
 >
+> **Post-release hardening (same v1.3.0 tag series):** `SESSION_SECRET` is now
+> rotated to a fresh strong value automatically during first-time setup (before
+> any secrets are encrypted), persisted under the volume so it survives
+> restarts, returned once in the setup response for a one-time download, and
+> downloadable by admins via `GET /api/session-secret`. `deploy.ps1` no longer
+> injects `SESSION_SECRET` via `.env` so the setup-generated key stays
+> authoritative.
+>
 > **v1.2.0 = SaaS-style auto-setup (Rev 3)**: everything is auto-detected /
 > auto-generated on ANY server; the only manual step is the setup wizard
 > (company / admin / SMTP / build mode). `deploy.ps1` (Windows Server) builds +
