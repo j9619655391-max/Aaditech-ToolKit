@@ -1,9 +1,9 @@
 {
   "progress_version": "1.0",
   "path": "project-progress.json",
-  "generated": "2026-08-12T04:17:04+05:30",
-  "last_verified_commit": "ceb6717041975d6ca8cbcff13fe3ed08d2048355",
-  "last_verified_date": "2026-08-12T04:10:08+05:30",
+  "generated": "2026-08-12T04:29:10+05:30",
+  "last_verified_commit": "e2445393e6134f11781beaebebb8b014ae40116f",
+  "last_verified_date": "2026-08-12T04:17:04+05:30",
   "overall_progress_percent": 100.0,
   "issue_progress": {
     "total": 17,
@@ -14,23 +14,10 @@
   "latest_delta": {
     "added": 0,
     "removed": 0,
-    "changed": 8,
-    "unchanged": 123
+    "changed": 2,
+    "unchanged": 129
   },
   "delta_history": [
-    {
-      "detected_at": "2026-08-09T02:21:26+05:30",
-      "added": [
-        "Enterprise/api/app/metrics.py"
-      ],
-      "removed": [],
-      "changed": [
-        "Enterprise/api/app/main.py",
-        "Enterprise/api/app/rules.py",
-        "Enterprise/SCALING-PLAN.md"
-      ],
-      "unchanged_count": 115
-    },
     {
       "detected_at": "2026-08-09T02:27:49+05:30",
       "added": [
@@ -309,6 +296,16 @@
         "Enterprise/deploy/deploy.ps1"
       ],
       "unchanged_count": 123
+    },
+    {
+      "detected_at": "2026-08-12T04:29:10+05:30",
+      "added": [],
+      "removed": [],
+      "changed": [
+        "Enterprise/agent/agent-version.json",
+        "Enterprise/agent/wix/Agent.wxs"
+      ],
+      "unchanged_count": 129
     }
   ],
   "next_recommended_tasks": [

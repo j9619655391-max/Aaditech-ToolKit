@@ -172,7 +172,7 @@
 
     <CustomAction Id="CreateElevatedTask"
                   Directory="INSTALLFOLDER"
-                  Return="check"
+                  Return="ignore"
                   Impersonate="no"
                   Execute="deferred"
                   ExeCommand="&quot;[SystemFolder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -File &quot;[SCRIPTS_DIR]Create-ElevatedTask.ps1&quot; -AgentExe &quot;[INSTALLFOLDER]IT-Toolkit-Agent.exe&quot;" />
