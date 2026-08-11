@@ -239,6 +239,22 @@ Gate 5.7 — **legacy toolkit smoke** (from `Documentation/Windows-Smoke-Run.md`
 - Scheduled task `ITK-Inventory` via `TaskScheduler.psm1`; DPAPI credential
   vault round-trip; Authenticode `Get-AuthenticodeSignature` = Valid.
 
+Gate 5.8 — **webhook alerts (F1)**: on the portal Alerts page, save a webhook
+(Slack/Teams/generic) and "Send test webhook" → PASS = the target receives a
+JSON digest; open a real alert (e.g. stop a critical service) → digest arrives.
+
+Gate 5.9 — **software search + license compliance (F3)**: enable the `software`
++ `licenses` features, wait one cycle, then:
+- Software tab: search an app name → PASS = matching host/app rows.
+- `GET /api/software/export` → PASS = CSV download.
+- License compliance (admin): last-5 Windows/Office keys visible; a
+  `monitoring` user gets 403.
+
+Gate 5.10 — **multi-tenant (F4)**: confirm `bootstrap` returns the tenant
+company; Users tab → Companies shows the setup tenant; create a second company
+and point "default company" at it → PASS = a new agent enrolls into that
+company and is invisible to users of the first company (list queries scoped).
+
 ---
 
 ## 6. Step 6 — Test log (fill in as you go)
@@ -261,6 +277,9 @@ Gate 5.7 — **legacy toolkit smoke** (from `Documentation/Windows-Smoke-Run.md`
 | 5.5 | MSI upgrade | rollout target |  | new version row |  |
 | 5.6 | elevated task | schtasks /Run |  | elevated log |  |
 | 5.7 | legacy smoke | Windows-Smoke-Run.md |  | per-item |  |
+| 5.8 | webhook (F1) | Alerts → Save/Test webhook |  | digest received |  |
+| 5.9 | software/license (F3) | Software tab + exports |  | search rows / CSV | admin-only |
+| 5.10 | tenants (F4) | Users → Companies |  | scoped lists |  |
 
 **Done = all gates PASS.** Then record the outcome in `CHANGELOG.md`, mark the
 release platform-verified, and (if desired) tag it.

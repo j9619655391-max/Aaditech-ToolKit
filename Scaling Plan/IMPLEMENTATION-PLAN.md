@@ -771,6 +771,12 @@ $ticket = Create-ServiceNowTicket -Title "Test" -Description "Test"
 **Complexity:** Low-Medium  
 **Dependencies:** Phase 1, AlertEngine  
 
+> **Note (2026-08-11):** webhook alert delivery is already shipped in the
+> **Enterprise stack** (F1 — generic/Slack/Teams digests from the portal Alerts
+> page, `Enterprise/api/app/rules.py`). This section covers the *local*
+> `Integration/Teams` + `Integration/Slack` PowerShell module variant, which is
+> still optional.
+
 #### Files to Create:
 ```
 Scripts/

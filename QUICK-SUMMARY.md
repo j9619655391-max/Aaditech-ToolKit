@@ -6,6 +6,10 @@
 > agent `.exe`/`.msi`, FastAPI server, web portal, PostgreSQL, and Docker-based
 > **intranet (LAN)** deployment — see `Enterprise/README.md`. The claim below
 > that "Docker is not needed" is now **superseded** by `Enterprise/`.
+> **Since this banner was written, the Enterprise stack has also shipped:
+> alerting (SMTP + webhooks F1), software inventory search + license
+> compliance (F3), and a multi-tenant foundation with company scoping (F4)** —
+> see `Enterprise/README.md`, `CHANGELOG.md` and `VERSION.md`.
 > The remaining roadmap items (anomaly detection, remediation automation,
 > Intune/cloud integrations) are still open follow-ups.
 

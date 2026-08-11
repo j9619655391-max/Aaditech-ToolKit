@@ -134,6 +134,9 @@
 - **Files:** `main.py` (role deps + licenses filter), `portal/index.html`.
 - **Test gate:** monitoring user hits `GET /api/events?kind=licenses` → 403; product
   keys absent from all non-admin responses.
+- **Status: DONE** — `licenses`/audit admin-only, Agent Setup hidden for
+  monitoring (CHANGELOG v1.3.0 B1–B6). Extended in F3/F4: license compliance +
+  software search and all list queries are role/company gated.
 
 ### B2. Rate limiting + login lockout
 - **Finding:** no protection on `/api/login` or any endpoint.
@@ -496,6 +499,10 @@
 - **Files:** `rules.py`, `config.py`, `.env.example`, portal Alerts settings.
 - **Test gate:** open a disk-low alert → webhook receives formatted message; throttle
   prevents >1 per N min per rule.
+- **Status: DONE (2026-08-11)** — generic/Slack/Teams digests via
+  `GET/PUT /api/alerts/webhook` + `POST /api/alerts/test-webhook` (Alerts page);
+  stdlib `urllib.request` in a worker thread so the eval loop never blocks.
+  Verified end-to-end against a local HTTP server (test suite).
 
 ### F2. API platform: key auth + webhooks
 - **Fix:** per-integration API keys (scoped roles), Bearer auth for `/api/*`, webhook
@@ -503,18 +510,29 @@
 - **Files:** `main.py` (key model), new `api_keys` table, portal Integrations page.
 - **Test gate:** create key with `monitoring` scope → works on GET, 403 on mutations;
   revoke → 401.
+- **Status: NOT STARTED (deferred by user 2026-08-11)** — webhook *delivery* for
+  alert events shipped in F1; key-auth platform + event webhooks remain open.
 
 ### F3. Software inventory search + license compliance
 - **Fix:** index `software`/`licenses` events; portal search (app name, version) +
   license compliance view (admin); export.
 - **Files:** `main.py` (search endpoint), `db.py` (index), portal Fleet/Search.
 - **Test gate:** ingest software data → search returns matches; license view admin-only.
+- **Status: DONE (2026-08-11)** — `idx_events_kind_agent` index; Software portal
+  tab (`GET /api/software/search?q=`, `GET /api/software/export`) + admin-only
+  license compliance/export (`GET /api/license/compliance|export`). Test-gated.
 
 ### F4. Multi-tenant SaaS foundation
 - **Fix:** add `company_id` to agents/users/settings; per-tenant token+certs+MSI;
   portal picks company (admin); schema stays shared-DB with tenant scoping.
 - **Files:** migrations, `main.py` (scoping), `bundle.py`, `certs.py`, portal.
 - **Test gate:** two companies isolated end-to-end (data, tokens, MSI, branding).
+- **Status: DONE — foundation (2026-08-11)** — `companies` table + `company_id`
+  on users/agents; setup creates the tenant + binds the admin; new agents enroll
+  into the default company; list queries scoped via `_company_scope`;
+  `GET/POST /api/companies` + `GET/POST /api/settings/default-company` + portal
+  Companies manager. Per-tenant token/certs/MSI + branding remain future work
+  (agents/users/events/alerts/commands/reports are isolated today).
 
 ---
 

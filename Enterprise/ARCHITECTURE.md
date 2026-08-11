@@ -5,7 +5,10 @@
 > file, module, or doc.** The current repo stays 100% untouched; everything new
 > lives under `Enterprise/`.
 >
-> Status: **BLUEPRINT / SCAFFOLD** — committed with the full code skeleton.
+> Status: **IMPLEMENTED + VERIFIED** — full Docker stack (db + api + caddy),
+> agent MSI delivery, RBAC, alerts/reports, webhook delivery (F1), software/
+> license compliance (F3) and multi-tenant scoping (F4) are all live. This doc
+> documents the shipping design.
 
 ---
 
@@ -116,23 +119,28 @@ IT-Toolkit-Agent.exe
 | `caddy` | `caddy:2-alpine` | TLS reverse proxy, maps `/` → api; auto HTTPS (or IP self-signed) |
 
 ### Data model (PostgreSQL — easy to migrate: pure SQL DDL in `schema.sql`)
-- `agents` — hostname, os, agent_version, last_seen, ip, registered_at
-- `events` — agent_id, kind (inventory/eventlog/network/firewall/diagnostic), payload jsonb, sanitized bool, captured_at
+- `agents` — hostname, os, agent_version, last_seen, ip, registered_at, `company_id`
+- `events` — agent_id, kind (inventory/eventlog/network/firewall/diagnostic/software/licenses), payload jsonb, sanitized bool, captured_at
 - `feature_configs` — web-editable feature toggles/params (the "modify from portal" requirement)
 - `commands` (P5) — agent_id, kind (reboot/wake/run-script), payload jsonb, status lifecycle, result jsonb, audit trail
 - `alert_rules` (P6) — name, description, condition jsonb, severity, enabled
 - `alerts` (P6) — rule_id, agent_id, severity, message, status (open/acknowledged/resolved), timestamps
+- `companies` (F4) — id, name, created_at; `users.company_id` + `agents.company_id` FK into it (tenant scoping)
+- `audit_log` (D3) — ts, user, role, action, target, detail jsonb, ip
 
-### API surface (all Bearer-token protected)
+### API surface (session-cookie + role-gated; agent endpoints Bearer-token protected)
 - `POST /ingest` — agent batch upload (bulk, idempotent via `client_msg_id`)
-- `GET /api/agents` — list agents + last_seen
-- `GET /api/events?agent=&kind=` — query events
+- `GET /api/agents` — list agents + last_seen (scoped to the caller's company)
+- `GET /api/events?agent=&kind=` — query events (company-scoped; `licenses` admin-only)
 - `GET /api/features` — list what the toolkit can run (from a manifest)
 - `PUT /api/features/{name}` — toggle/configure from the portal
 - `GET /healthz` — liveness for Docker healthcheck
 - P5 commands: `GET/POST /api/commands`, agent `GET /api/commands/poll`, `POST /api/commands/{id}/result`
 - P6 alerts: `GET /api/alerts?status=&limit=`, `GET /api/alerts/open`, `POST /api/alerts/{id}/ack|resolve`, `GET/PUT /api/alert-rules`; eval loop background task (`ALERT_EVAL_MINUTES`)
 - P6 reports: `GET /api/report/fleet` (CSV), `GET /api/report/agent/{id}?format=json|csv`
+- F1 webhooks: `GET/PUT /api/alerts/webhook`, `POST /api/alerts/test-webhook` (admin) — generic/Slack/Teams digests
+- F3 software/license: `GET /api/software/search?q=`, `GET /api/software/export`, admin-only `GET /api/license/compliance`, `GET /api/license/export`
+- F4 tenants: `GET/POST /api/companies`, `GET/POST /api/settings/default-company` (admin); `GET /api/bootstrap` returns caller tenant + directory
 - P1 setup: `GET /api/setup/status`, `POST /api/setup` (company / admin / SMTP /
   **build mode** + optional `github_repo`/`github_token`), login/session + RBAC
 - Rev 3 GitHub remote build: `GET /api/build/status` (latest `ci.yml` run +
@@ -141,9 +149,10 @@ IT-Toolkit-Agent.exe
 
 ### Web portal (served from the API container, same origin)
 Single-page HTML+JS (no build step): session login (P2) → **Agents**, **Fleet**,
-**Events**, **Commands** (P5), **Alerts** (P6, with open-alert badge),
-**Reports** (P6), **Features** (edit toggles), **Users** (admin), **Agent Setup**.
-Because it shares the API origin, CORS is a non-issue and it's trivially redeployable.
+**Events**, **Commands** (P5), **Alerts** (P6, with open-alert badge + webhook
+config F1), **Software** (F3 search + admin license compliance), **Reports**
+(P6), **Features** (edit toggles), **Users** (admin, + **Companies** manager F4),
+**Agent Setup**. Because it shares the API origin, CORS is a non-issue and it's trivially redeployable.
 
 ---
 
@@ -228,9 +237,10 @@ silently breaking the DB.
 ## 9. Honest gaps (not code yet)
 - **Team accounts work** (RBAC: admin/operation/monitoring enforced in API +
   portal), the **company agent bundle downloads work**, and the **support-
-  engineer features are all shipped**: commands (P5), **alerts + reports (P6)** —
-  role-governed (admin/operation; monitoring read-only). Remaining:
-  **SMTP email alerts** (optional flag) and mTLS client certs (flag).
+  engineer features are all shipped**: commands (P5), **alerts + reports (P6)**,
+  webhook delivery (F1), software/license compliance (F3) and tenant scoping
+  (F4) — role-governed (admin/operation; monitoring read-only). Remaining:
+  mTLS client certs (flag). SMTP email + webhooks are both delivered.
 - **MSI delivery is live** — three paths (Rev 3): CI (`agent-build`, Windows)
   artifacts auto-pulled by `/api/build/status` (**github** mode), built + signed
   on a Windows Server by `deploy.ps1` (**local_windows** mode), or copied

@@ -30,8 +30,9 @@ already covered by `Scripts/Tests/BatchLauncher.Tests.ps1` (9/9 green), but actu
 execution is cmd.exe-specific.
 
 - [ ] Run `Toolkit-Menu.bat` from an elevated **Command Prompt
-- [ ] Each menu option 1-14 launches the intended script / submenu and returns to the menu
+- [ ] Each menu option 1-17 launches the intended script / submenu and returns to the menu
 - [ ] Option 7-14 fixed mappings no longer mislaunch (regression from v2.0 fixes)
+- [ ] Remote options 15-17 (QuickCheck / batch scan / network diagnostic) launch the remote scripts
 - [ ] `Setup-Wizard.bat` interactive flows complete (Quick setup, configure, verify, test PS execution)
 - [ ] Menu `exit` returns to the shell with no hanging prompts
 

@@ -8,7 +8,7 @@ Complete guide to all documentation files and resources in the toolkit.
 
 **New to the toolkit?** Start here:
 
-1. **Read:** [Setup-Guide.md](#setup-guidmd) - Installation and first-time setup
+1. **Read:** [Setup-Guide.md](#setup-guidemd) - Installation and first-time setup
 2. **Watch:** Open `Toolkit-Menu.bat` → test a few options
 3. **Reference:** Keep [Cheat-Sheet.md](#cheat-sheetmd) open while working
 4. **Troubleshoot:** Use [Troubleshooting-Flowcharts.md](#troubleshooting-flowchartsmd) when issues arise
@@ -193,6 +193,7 @@ Complete guide to all documentation files and resources in the toolkit.
 
 **What changed:**
 - v1.3.0: Enterprise hardening (SCALING-PLAN A–E) — least-privilege NETWORK SERVICE agent, API pytest suite
+- v1.3.0 (post-release): **F1 webhook alert delivery** (generic/Slack/Teams), **F3 software inventory search + license compliance + CSV export**, **F4 multi-tenant foundation** (`companies` tenants, company-scoped queries) — see `CHANGELOG.md`
 - v1.2.0: SaaS auto-setup (Rev 3) — deploy.ps1/deploy.sh + GitHub remote build
 - v1.0.0/v1.1.0: Enterprise client-server stack (agent/.exe/.msi, FastAPI server, portal, Docker intranet deploy, auto-generated tokens)
 
@@ -344,6 +345,7 @@ Config/
 | Release (v1.0.0) | 1.0.0 | ✓ Pushed to GitHub, CI green | 2026-08-06 |
 | Release (v1.1.0) | 1.1.0 | ✓ Enterprise stack feature-complete | 2026-08-07 |
 | Release (v1.2.0) | 1.2.0 | ✓ SaaS auto-setup + GitHub remote build | 2026-08-08 |
+| Release (v1.3.0) | 1.3.0 | ✓ Enterprise hardening + F1/F3/F4 (webhooks, software/license, tenants) | 2026-08-11 |
 
 ---
 

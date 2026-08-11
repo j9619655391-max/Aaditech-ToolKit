@@ -174,6 +174,12 @@ function Invoke-AutoRemediation {
 - Azure AD / Intune device compliance queries
 - SQL Server / PostgreSQL for centralized storage
 
+> **Status (2026-08-11):** the **Enterprise stack** now ships Teams/Slack/
+> generic **webhook alert notifications** (F1, Alerts page) and centralized
+> **PostgreSQL** storage + a multi-tenant portal (F4) — see
+> `Enterprise/README.md`. Ticket-integration (Jira/ServiceNow) and
+> Azure AD/Intune compliance queries remain open for the Enterprise tier.
+
 **Implementation Priority:**
 1. `Integration/Jira.psm1` - Create ticket from alert
 2. `Integration/Teams.psm1` - Post alert to channel

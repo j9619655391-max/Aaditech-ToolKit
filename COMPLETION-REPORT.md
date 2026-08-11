@@ -36,7 +36,7 @@ Your IT Toolkit has been **completely enhanced and fixed**. Everything that was 
 - Options 9-14 all mapped to wrong scripts
 
 **Status:** ✓ FIXED  
-**Verification:** All 14 menu options now correctly mapped:
+**Verification:** All 17 menu options now correctly mapped:
 ```
 1. QuickCheck.ps1 ✓
 2. Network-Diagnostic.ps1 ✓
@@ -52,6 +52,9 @@ Your IT Toolkit has been **completely enhanced and fixed**. Everything that was 
 12. AI-Assistant-Prompts.txt ✓
 13. Cheat-Sheet.md ✓
 14. Troubleshooting-Flowcharts.md ✓
+15. Remote QuickCheck (Invoke-RemoteQuickCheck.ps1) ✓
+16. Batch Remote Scan (BatchScan.ps1) ✓
+17. Remote Network Diagnostic (Invoke-RemoteNetworkDiagnostic.ps1) ✓
 ```
 
 ### 🔴 Critical Bug #2: Firewall-Test.ps1 Incomplete
@@ -332,7 +335,7 @@ Menu 8: View Documentation
 - ✓ Firewall-Test.ps1 - Firewall status (COMPLETED)
 
 ### Menu & Navigation
-- ✓ Toolkit-Menu.bat - 14-option master menu (FIXED)
+- ✓ Toolkit-Menu.bat - 17-option master menu (FIXED)
 - ✓ Setup-Wizard.bat - Interactive setup (NEW)
 - ✓ All menu mappings correct
 - ✓ No duplicate options
@@ -416,7 +419,7 @@ Menu 8: View Documentation
 ## 9. FILES MODIFIED & CREATED
 
 ### Modified Files (Fixed/Enhanced)
-1. **Toolkit-Menu.bat** - Fixed menu mappings (all 14 options)
+1. **Toolkit-Menu.bat** - Fixed menu mappings (all 17 options)
 2. **Firewall-Test.ps1** - Completed the script
 3. **User-Inventory.ps1** - Enhanced with more details
 4. **config.json** - Expanded to 15 sections, 40+ options
@@ -455,7 +458,7 @@ Menu 8: View Documentation
 - ✓ Documentation: Markdown files properly formatted
 
 ### Functionality Verification
-- ✓ Toolkit-Menu.bat: All 14 options map correctly
+- ✓ Toolkit-Menu.bat: All 17 options map correctly
 - ✓ Setup-Wizard.bat: All 8 menu options work
 - ✓ config.json: All scripts can read it successfully
 - ✓ Scripts: No incomplete or partial implementations
@@ -492,10 +495,11 @@ Menu 8: View Documentation
 
 ### Daily Usage
 1. Double-click `Toolkit-Menu.bat`
-2. Select from 14 options:
+2. Select from 17 options:
    - Scripts 1-6: Run diagnostic tools
    - Scripts 7-8: New inventory & firewall tests
    - Options 9-14: Open templates & documentation
+   - Options 15-17: Remote tools (QuickCheck / batch scan / network diagnostic)
 3. Logs are saved automatically
 
 ### When Troubleshooting
@@ -518,7 +522,7 @@ Menu 8: View Documentation
 | Scripts | 5 (2 incomplete) | 7 (all complete) | ✓ Fixed |
 | AI Prompts | 7 | 33 | ✓ Expanded |
 | Configuration | 3 sections | 15 sections | ✓ Enhanced |
-| Menu Options | 12 (wrong mappings) | 14 (all correct) | ✓ Fixed |
+| Menu Options | 12 (wrong mappings) | 17 (all correct) | ✓ Fixed |
 | Documentation | Basic | 50+ pages | ✓ Complete |
 | Setup Process | Manual | Wizard + manual | ✓ Improved |
 | Bugs | 2 critical | 0 | ✓ Fixed |

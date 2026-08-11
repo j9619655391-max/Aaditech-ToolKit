@@ -515,6 +515,11 @@ Issues remaining (if any):
 
 ## Task 2.5: Teams/Slack Notifications (2 hours)
 
+> **Note (2026-08-11):** webhook alert delivery is already shipped in the
+> **Enterprise stack** (F1 — generic/Slack/Teams digests via the portal Alerts
+> page). This task tracks the *local* `Scripts/Modules/ChatNotifications.psm1`
+> variant, which is still optional.
+
 ### Part A: Chat Notification Module
 - [ ] Create `Scripts/Modules/ChatNotifications.psm1`
   - [ ] `Send-TeamsNotification`

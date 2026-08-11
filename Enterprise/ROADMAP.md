@@ -73,6 +73,16 @@ are all derived from the setup answers.
   when the eval loop opens new alerts (`SMTP_HOST`/`SMTP_TO` in `.env`), plus a
   `POST /api/alerts/test-email` admin check — verified end-to-end with a local
   MailHog sink.
+- **F1 webhook alert delivery done & verified (2026-08-11)**: same digest
+  POSTed to generic/Slack/Teams webhooks from the Alerts page
+  (`GET/PUT /api/alerts/webhook`, `POST /api/alerts/test-webhook`).
+- **F3 software & license compliance done & verified (2026-08-11)**: Software
+  portal tab (fleet-wide search + CSV) and admin-only license compliance
+  (`/api/software/search|export`, `/api/license/compliance|export`).
+- **F4 multi-tenant foundation done & verified (2026-08-11)**: `companies`
+  table + `company_id` on users/agents; setup creates the tenant and binds the
+  admin; list queries are company-scoped; `/api/companies` +
+  `/api/settings/default-company` + portal Companies manager.
 - CI: PowerShell validation + agent build both green on `windows-latest`.
 
 ---
@@ -307,8 +317,10 @@ Each phase lands green on CI and keeps the existing toolkit untouched.
   for argon2 later); sessions are HMAC-signed cookies with a persisted
   `SESSION_SECRET`; commands audited; `run-script` allowlisted by default;
   `licenses` kind admin-only + sanitized.
-- Multi-tenant later: `companies` field on users/agents is schema-ready from P1.
-- Moving servers stays `deploy.sh --regen`; state is only in the data volumes.
+- **Multi-tenant (F4) — implemented:** `companies` table + `company_id` on
+  users/agents; setup creates the tenant and binds the admin; new agents enroll
+  into the current default company; list queries are scoped to the caller's
+  company. Moving servers stays `deploy.sh --regen`; state is only in the data volumes.
 
 ---
 
@@ -317,9 +329,12 @@ Each phase lands green on CI and keeps the existing toolkit untouched.
    token stays the default; **mTLS client certs are live** on agent port `:9443`
    (per-agent cert from the local CA, Caddy `client_auth` enforced). Agents opt
    in via `enroll_url` in agent.json.
-2. **Alerts channel:** ✅ **Decided & implemented:** portal-first (P6) **+ optional
-   SMTP email** (P6.1, verified) — set `SMTP_HOST` + `SMTP_TO` in `.env`; digest
+2. **Alerts channel:** ✅ **Decided & implemented:** portal-first (P6) **+ SMTP
+   email** (P6.1, verified) — set `SMTP_HOST` + `SMTP_TO` in `.env`; digest
    email on new alerts; `POST /api/alerts/test-email` for admin checks.
+   **+ webhook delivery (F1, implemented 2026-08-11)** — generic/Slack/Teams
+   digests via `GET/PUT /api/alerts/webhook` + `POST /api/alerts/test-webhook`,
+   configured on the Alerts page (env fallback `WEBHOOK_URL`/`WEBHOOK_TYPE`).
 3. **Remote command scope:** ✅ **Decided:** reboot + Wake-on-LAN + `run-script`
    allowlist behind a flag — implemented in P5.
 4. **Exe signing:** ✅ **Decided & implemented:** **internal code-signing CA** —

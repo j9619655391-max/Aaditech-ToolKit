@@ -40,6 +40,10 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_TO: ${SMTP_TO:-}
       SMTP_ENCRYPTION: ${SMTP_ENCRYPTION:-starttls}
+      WEBHOOK_ENABLED: ${WEBHOOK_ENABLED:-false}
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+      WEBHOOK_TYPE: ${WEBHOOK_TYPE:-generic}
+      WEBHOOK_TOKEN: ${WEBHOOK_TOKEN:-}
       BUILD_MODE: ${BUILD_MODE:-manual}
       ENVIRONMENT: ${ENVIRONMENT:-prod}
     volumes:

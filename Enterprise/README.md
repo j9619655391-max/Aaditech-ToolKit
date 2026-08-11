@@ -136,10 +136,10 @@ docker compose cp IT-Toolkit-Agent.msi api:/artifacts/
 | `ARCHITECTURE.md` | Full blueprint (zero-change guarantee, data model, security, migration) |
 | `ROADMAP.md` | **Next-steps plan**: CI agent delivery, first-time setup wizard, support-engineer features |
 | `docker-compose.yml` | One-host stack: `db` (Postgres) + `api` + `caddy` (+ `agent_artifacts` volume for the MSI) |
-| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), agent bundle (`/api/agent-bundle`, downloads), GitHub remote build (`/api/build/*`), alerts + reports (P6), `/healthz`; serves portal |
+| `api/` | FastAPI: `POST /ingest`, `/api/agents`, `/api/events`, `/api/features`, setup + login/session + RBAC (`/api/users`), agent bundle (`/api/agent-bundle`, downloads), GitHub remote build (`/api/build/*`), alerts + reports + **webhooks (F1)** + **software/license (F3)** + **companies/tenants (F4)** (P6), `/healthz`; serves portal |
 | `deploy/deploy.sh` | One-command bring-up (macOS/Linux): auto-IP detection + secrets + mTLS agent config |
 | `deploy/deploy.ps1` | One-command bring-up (Windows Server): same as `deploy.sh` **plus** local code-sign CA + ps2exe/WiX MSI build + sign + publish (`BUILD_MODE=local_windows`) |
-| `portal/` | Setup wizard + login + single-page admin UI (Agents / Fleet / Events / Commands / Alerts / Reports / Feature toggles / Users / Agent Setup with build panel) |
+| `portal/` | Setup wizard + login + single-page admin UI (Agents / Fleet / Events / Commands / Alerts / **Software** / Reports / Feature toggles / Users + **Companies manager** / Agent Setup with build panel) |
 | `agent/` | `Agent-Collect.ps1` (worker — collects, parses structured JSON, flushes, polls + executes commands; **auto-installs the server CA into `LocalMachine\Root`**), ps2exe + WiX MSI packaging |
 | `agent/collectors/` | 7 support-engineer collectors (hardware, software, diskhealth, health, bitlocker, updatecompliance, licenses) |
 
@@ -167,15 +167,37 @@ battery < 20%, critical service stopped, reboot pending > 7 days uptime.
   ack + resolve buttons (admin/operation), and an **open-alert badge** in the
   nav (polls every 30s). Admins can toggle/enable/disable rules and edit
   severity + condition JSON.
-- **Optional SMTP email** (P6.1): when `SMTP_HOST` + `SMTP_TO` are set in
-  `.env`, the eval loop emails a digest whenever it opens new alerts. Verify
-  delivery from the portal with the admin `POST /api/alerts/test-email` check.
+- **SMTP email** (P6.1): when `SMTP_HOST` + `SMTP_TO` are set in `.env` (or via
+  the setup wizard), the eval loop emails a digest whenever it opens new
+  alerts. Verify delivery from the portal with the admin
+  `POST /api/alerts/test-email` check.
+- **Webhook delivery** (F1): the same digest can be POSTed to a **generic
+  JSON**, **Slack** (blocks), or **Microsoft Teams** (MessageCard) webhook —
+  independently of, or alongside, SMTP. Configure on the portal Alerts page
+  (admin) via `GET/PUT /api/alerts/webhook` and test with
+  `POST /api/alerts/test-webhook`. Env fallbacks: `WEBHOOK_ENABLED`,
+  `WEBHOOK_URL`, `WEBHOOK_TYPE` (generic | slack | teams).
+- **Software inventory** (F3): the **Software** portal tab searches installed
+  apps fleet-wide by name/publisher (case-insensitive) and exports CSV:
+  `GET /api/software/search?q=`, `GET /api/software/export`. Admins get a
+  **license compliance** view (Windows/Office keys as last-5 only):
+  `GET /api/license/compliance`, `GET /api/license/export`.
+- **Multi-tenant** (F4): setup creates a `companies` tenant; the admin (and
+  every user created afterwards) belongs to it, and new agents enroll into the
+  current default company. Agent/event/alert/command/user/report queries are
+  scoped to the signed-in user's company. Admins manage tenants from the Users
+  tab (`GET/POST /api/companies`, `GET/POST /api/settings/default-company`);
+  `GET /api/bootstrap` returns the caller's tenant + the company directory.
 - **Reports page** (portal): **fleet CSV** (one row per agent, latest
   hardware/health/update snapshot) and **per-agent** JSON/CSV exports.
 - API: `GET /api/alerts`, `GET /api/alerts/open`, `POST /api/alerts/{id}/ack`,
   `POST /api/alerts/{id}/resolve`, `GET/PUT /api/alert-rules`,
   `GET /api/report/fleet`, `GET /api/report/agent/{id}?format=json|csv`,
-  `POST /api/alerts/test-email` (admin).
+  `POST /api/alerts/test-email`, `GET/PUT /api/alerts/webhook`,
+  `POST /api/alerts/test-webhook`, `GET /api/software/search`,
+  `GET /api/software/export`, `GET /api/license/compliance`,
+  `GET /api/license/export`, `GET/POST /api/companies`,
+  `GET/POST /api/settings/default-company` (admins).
 
 ## Verified
 
@@ -190,7 +212,8 @@ commits.
 ## Honest boundaries
 
 - Portal sessions + RBAC (admin / operation / monitoring) are live; **alerts +
-  reports** shipped in P6 (portal-first; SMTP email delivery optional later).
+  reports** shipped in P6, plus webhook delivery (F1), software/license
+  compliance (F3) and tenant scoping (F4) on top.
 - **MSI is live** (P0): built by CI on `windows-latest` and uploaded to the
   `agent_artifacts` volume — `GET /api/agent-msi` returns a valid installer.
   The `agent-build` job needs the repo secrets `SERVER_ENDPOINT` + `API_TOKEN`

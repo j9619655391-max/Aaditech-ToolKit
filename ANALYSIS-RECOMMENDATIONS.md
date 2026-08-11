@@ -1,5 +1,15 @@
 # IT Toolkit v2.0 — Comprehensive Analysis & Enhancement Roadmap
 
+> **⚠️ SUPERSEDED / HISTORICAL — v2.0 desktop-toolkit analysis (July 2026).**
+> This document analyzed the *local, single-machine* v2.0 toolkit before the
+> **Enterprise stack (Phase 3)** shipped. Its "Gaps Identified" items — no bulk
+> ops, no remote management, no alerting, single-machine-only — have since been
+> addressed by the Enterprise client-server stack: see `Enterprise/README.md`,
+> `Enterprise/ARCHITECTURE.md`, `Enterprise/ROADMAP.md`, `VERSION.md` and
+> `CHANGELOG.md`. Remote ops (WinRM, options 15–17), centralized collection,
+> alerting (email + webhooks), software/license compliance, and multi-tenant
+> scoping are all live now. Keep for historical context only.
+
 **Analysis Date:** July 9, 2026  
 **Toolkit Maturity:** v2.0 (Solid foundational toolkit, many expansion opportunities)  
 **Overall Assessment:** A well-structured, practical support toolkit with strong core diagnostics but opportunities for intelligent automation, data aggregation, and advanced features.
