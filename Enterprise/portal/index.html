@@ -4,65 +4,335 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IT-Toolkit Enterprise</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2338bdf8' d='M16 2l12 5v9c0 7-5 12-12 14-7-2-12-7-12-14V7z'/%3E%3Cpath fill='%230b1220' d='M16 7l7 3v5c0 4-3 7-7 9-4-2-7-5-7-9v-5z'/%3E%3C/svg%3E">
 <style>
-  :root { --bg:#0f172a; --panel:#1e293b; --line:#334155; --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --good:#4ade80; --bad:#f87171; }
+  :root {
+    --bg:#0b1220; --bg-2:#0f172a; --panel:#151e31; --panel-2:#1c2942; --line:#223049; --line-2:#31425f;
+    --text:#e8eef7; --muted:#93a3b8;
+    --accent:#38bdf8; --good:#34d399; --bad:#f87171; --warn:#fbbf24; --info:#60a5fa;
+    --side-w:248px; --radius:12px;
+    --shadow:0 10px 30px -14px rgba(0,0,0,.6);
+  }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
-  header { padding:14px 24px; background:var(--panel); border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px; }
-  header h1 { font-size:17px; margin:0; }
-  header .sub { color:var(--muted); font-size:12px; margin-left:4px; }
-  nav button { background:none; border:1px solid var(--line); color:var(--text); padding:6px 14px; border-radius:6px; cursor:pointer; }
-  nav button.active { background:var(--accent); border-color:var(--accent); color:#0f172a; font-weight:600; }
-  #authwrap { margin-left:auto; display:flex; align-items:center; gap:10px; }
-  main { padding:24px; max-width:1100px; margin:0 auto; }
-  table { width:100%; border-collapse:collapse; margin-top:12px; }
-  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); font-size:13px; vertical-align:top; }
-  th { color:var(--muted); text-transform:uppercase; font-size:11px; letter-spacing:.5px; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
-  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; }
-  .on { background:rgba(74,222,128,.15); color:var(--good); }
-  .off { background:rgba(248,113,113,.15); color:var(--bad); }
-  button.action { background:var(--accent); border:none; color:#0f172a; padding:5px 12px; border-radius:6px; cursor:pointer; font-weight:600; }
-  button.ghost { background:none; border:1px solid var(--line); color:var(--text); padding:5px 12px; border-radius:6px; cursor:pointer; }
-  pre { background:#0b1120; padding:12px; border-radius:8px; overflow:auto; max-height:320px; font-size:12px; }
-  .muted { color:var(--muted); font-size:12px; }
-  input, textarea, select { width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:8px; font-size:13px; }
-  textarea { font-family:monospace; font-size:12px; }
-  label { display:block; font-size:12px; color:var(--muted); margin:12px 0 4px; }
-  .center { max-width:420px; margin:8vh auto 0; }
-  .center h2 { margin:0 0 4px; }
+  html, body { height:100%; }
+  body { margin:0; font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; background:var(--bg); color:var(--text); font-size:13.5px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  svg.ic { width:17px; height:17px; flex:none; vertical-align:middle; }
+  a { color:var(--accent); }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+  ::selection { background:color-mix(in srgb,var(--accent) 28%,transparent); }
+
+  /* ================================================================ layout */
+  .app { display:flex; min-height:100vh; }
+  .sidebar { position:fixed; top:0; left:0; bottom:0; width:var(--side-w); background:#0a101e; border-right:1px solid var(--line); display:flex; flex-direction:column; z-index:60; }
+  .main-col { flex:1; margin-left:var(--side-w); display:flex; flex-direction:column; min-width:0; min-height:100vh; }
+  body.auth .sidebar { display:none !important; }
+  body.auth .main-col { margin-left:0; }
+  body.auth .topbar { display:none !important; }
+
+  /* ================================================================ sidebar */
+  .brand { display:flex; align-items:center; gap:11px; padding:16px 16px 14px; border-bottom:1px solid var(--line); }
+  .logo-mark { width:34px; height:34px; border-radius:9px; display:grid; place-items:center; background:color-mix(in srgb,var(--accent) 16%,transparent); color:var(--accent); }
+  .logo-mark svg.ic { width:19px; height:19px; }
+  .b-name { font-size:13.5px; font-weight:700; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .b-sub { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
+  nav { flex:1; overflow-y:auto; overflow-x:hidden; padding:4px 10px 12px; display:flex; flex-direction:column; gap:2px; }
+  .nav-label { margin:16px 8px 5px; font-size:9.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px; }
+  .nav-label::after { content:""; flex:1; height:1px; background:var(--line); }
+  nav button { display:flex; align-items:center; gap:10px; width:100%; background:transparent; border:none; border-radius:8px; color:var(--muted); padding:8px 10px; font-size:13px; font-weight:500; cursor:pointer; text-align:left; font-family:inherit; transition:background .12s ease, color .12s ease; }
+  nav button:hover { background:rgba(255,255,255,.05); color:var(--text); }
+  nav button.active { background:color-mix(in srgb,var(--accent) 13%,transparent); color:var(--accent); box-shadow:inset 3px 0 0 var(--accent); font-weight:600; }
+  nav button .alert-badge { margin-left:auto; background:var(--bad); color:#1a0d12; border-radius:999px; padding:0 7px; font-size:10.5px; font-weight:700; line-height:16px; }
+  .side-foot { border-top:1px solid var(--line); padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+  .side-user { display:flex; align-items:center; gap:10px; min-width:0; }
+  .avatar { width:30px; height:30px; border-radius:50%; flex:none; display:grid; place-items:center; font-weight:700; font-size:12px; text-transform:uppercase; background:color-mix(in srgb,var(--accent) 18%,transparent); color:var(--accent); }
+  .u-meta { min-width:0; }
+  .u-name { font-size:12px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .u-role { font-size:10.5px; color:var(--muted); text-transform:capitalize; letter-spacing:.04em; }
+  .logout-btn { display:flex; align-items:center; gap:8px; background:transparent; border:1px solid var(--line); color:var(--muted); padding:7px 10px; border-radius:8px; cursor:pointer; font-size:12px; font-family:inherit; }
+  .logout-btn:hover { color:var(--bad); border-color:var(--bad); background:color-mix(in srgb,var(--bad) 8%,transparent); }
+
+  /* ================================================================ topbar */
+  .topbar { position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px; padding:14px 26px; background:color-mix(in srgb,var(--bg-2) 82%,transparent); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+  .page-desc h2 { margin:0; font-size:16px; font-weight:700; display:flex; align-items:center; gap:9px; letter-spacing:.01em; }
+  .page-desc h2 svg.ic { color:var(--accent); }
+  .page-desc p { margin:2px 0 0; font-size:12px; color:var(--muted); }
+  .topbar .spacer { margin-left:auto; }
+  .menu-btn { display:none; background:transparent; border:1px solid var(--line-2); color:var(--muted); border-radius:8px; width:34px; height:34px; place-items:center; cursor:pointer; padding:0; }
+  .icon-btn { display:inline-flex; align-items:center; gap:7px; background:transparent; border:1px solid var(--line-2); color:var(--muted); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12.5px; font-family:inherit; }
+  .icon-btn:hover { color:var(--text); border-color:var(--accent); }
+  .ingest-banner { display:flex; align-items:center; gap:10px; padding:8px 26px; background:color-mix(in srgb,var(--bad) 12%,var(--bg-2)); border-bottom:1px solid color-mix(in srgb,var(--bad) 35%,transparent); color:#fecaca; font-size:12.5px; }
+  .ingest-banner svg.ic { color:var(--bad); }
+  .ingest-banner .dismiss { margin-left:auto; background:transparent; border:none; color:var(--muted); cursor:pointer; padding:2px; display:grid; place-items:center; }
+  .ingest-banner .dismiss:hover { color:var(--text); }
+
+  /* ================================================================ content */
+  main { padding:20px 26px 44px; width:100%; max-width:1360px; margin:0 auto; }
+  .statcards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:16px; }
+  .stat { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:13px 15px; display:flex; align-items:center; gap:13px; box-shadow:var(--shadow); min-width:0; }
+  .stat .s-ic { width:38px; height:38px; border-radius:10px; display:grid; place-items:center; flex:none; }
+  .stat .s-ic svg.ic { width:19px; height:19px; }
+  .stat .s-kind { min-width:0; }
+  .stat .s-val { font-size:22px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:.01em; }
+  .stat .s-lab { font-size:10px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); font-weight:600; margin-top:3px; }
+  .stat .s-sub { font-size:11px; color:var(--muted); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .stat[data-tone="accent"] .s-ic { background:color-mix(in srgb,var(--accent) 15%,transparent); color:var(--accent); }
+  .stat[data-tone="good"] .s-ic { background:color-mix(in srgb,var(--good) 15%,transparent); color:var(--good); }
+  .stat[data-tone="bad"]  .s-ic { background:color-mix(in srgb,var(--bad) 15%,transparent); color:var(--bad); }
+  .stat[data-tone="warn"] .s-ic { background:color-mix(in srgb,var(--warn) 15%,transparent); color:var(--warn); }
+  .stat[data-tone="info"] .s-ic { background:color-mix(in srgb,var(--info) 15%,transparent); color:var(--info); }
+
+  /* ================================================================ cards */
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:16px; box-shadow:var(--shadow); overflow-x:auto; }
+  .card h3 { margin:0 0 10px; font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .card h3 + p { margin-top:0; }
+  h3 { font-size:14px; }
+  p { margin:6px 0; }
+
+  /* ================================================================ tables */
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); text-transform:uppercase; font-size:10.5px; letter-spacing:.06em; font-weight:600; background:color-mix(in srgb,var(--panel-2) 40%,transparent); position:sticky; top:0; }
+  tbody tr:hover { background:rgba(255,255,255,.025); }
+  td.muted { color:var(--muted); }
+  tr:last-child td { border-bottom:none; }
+
+  /* ================================================================ badges */
+  .badge { display:inline-flex; align-items:center; gap:5px; padding:2.5px 9px; border-radius:999px; font-size:10.5px; font-weight:700; letter-spacing:.03em; white-space:nowrap; background:#ffffff12; color:var(--muted); }
+  .badge.on  { background:color-mix(in srgb,var(--good) 15%,transparent); color:var(--good); }
+  .badge.ok  { background:color-mix(in srgb,var(--good) 15%,transparent); color:var(--good); }
+  .badge.off { background:color-mix(in srgb,var(--bad) 15%,transparent); color:var(--bad); }
+  .badge.warn{ background:color-mix(in srgb,var(--warn) 15%,transparent); color:var(--warn); }
+  .badge.info{ background:color-mix(in srgb,var(--info) 15%,transparent); color:var(--info); }
+
+  /* ================================================================ buttons */
+  button.action, a.action { display:inline-flex; align-items:center; justify-content:center; gap:6px; background:var(--accent); color:#06222f; border:none; border-radius:8px; padding:6px 14px; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; font-family:inherit; transition:filter .12s ease; }
+  button.action:hover, a.action:hover { filter:brightness(1.09); }
+  button.ghost, a.ghost { display:inline-flex; align-items:center; justify-content:center; gap:6px; background:transparent; border:1px solid var(--line-2); color:var(--text); padding:6px 14px; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:500; text-decoration:none; font-family:inherit; transition:background .12s ease, border-color .12s ease; }
+  button.ghost:hover, a.ghost:hover { background:rgba(255,255,255,.05); border-color:var(--accent); }
+  button.ghost.active, a.ghost.active { background:color-mix(in srgb,var(--accent) 14%,transparent); border-color:var(--accent); color:var(--accent); font-weight:600; }
+
+  /* ================================================================ forms */
+  label { display:block; font-size:12px; color:var(--muted); margin:12px 0 4px; font-weight:500; }
+  input, textarea, select { width:100%; background:var(--bg-2); border:1px solid var(--line-2); color:var(--text); border-radius:8px; padding:8px 10px; font-size:13px; font-family:inherit; }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent); }
+  textarea { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }
+  select { cursor:pointer; }
+  input[type="color"] { padding:2px; height:38px; }
+
+  /* ================================================================ code */
+  pre { background:#0a101f; border:1px solid var(--line); padding:12px; border-radius:10px; overflow:auto; max-height:320px; font-size:12px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; line-height:1.5; }
+  code { background:rgba(255,255,255,.08); border:1px solid var(--line); padding:1px 6px; border-radius:6px; font-size:11px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; background:#0a101f; border:1px solid var(--line); padding:10px; border-radius:8px; overflow:auto; white-space:pre-wrap; word-break:break-all; }
+
+  /* ================================================================ misc */
+  .muted { color:var(--muted); }
+  .error { color:var(--bad); font-size:13px; margin-top:10px; font-weight:500; }
   .row { display:flex; gap:10px; align-items:center; }
-  .error { color:var(--bad); font-size:13px; margin-top:10px; }
-  .code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; background:#0b1120; padding:10px; border-radius:8px; overflow:auto; white-space:pre-wrap; word-break:break-all; }
+  .steps { list-style:none; margin:12px 0 0; padding:0; counter-reset:st; }
+  .steps li { counter-increment:st; display:flex; align-items:flex-start; gap:10px; padding:7px 0; font-size:13px; color:var(--text); line-height:1.5; }
+  .steps li::before { content:counter(st); flex:0 0 26px; height:26px; border-radius:999px; background:color-mix(in srgb,var(--accent) 16%,transparent); color:var(--accent); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .steps li code { background:#0a101f; border:1px solid var(--line); border-radius:6px; padding:1px 8px; font-size:12px; }
+  .center { max-width:460px; margin:7vh auto 0; }
+  .center h2 { margin:0 0 4px; font-size:19px; }
+  .center.card { padding:26px; }
+  .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
+  .quick-links { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+
+  /* ================================================================ responsive */
+  @media (max-width:900px){
+    .sidebar { transform:translateX(-100%); transition:transform .2s ease; }
+    .sidebar.open { transform:none; box-shadow:0 0 0 100vmax rgba(5,10,20,.6); }
+    .menu-btn { display:grid; }
+    .main-col { margin-left:0; }
+    .dash-grid { grid-template-columns:1fr; }
+    main { padding:16px; }
+    .topbar { padding:12px 16px; }
+    .topbar .page-desc p { display:none; }
+  }
 </style>
 </head>
-<body>
-<header id="header" style="display:none">
-  <h1><span id="company"></span> <span class="sub" id="subtitle">IT-Toolkit Enterprise</span></h1>
-  <nav>
-    <button data-view="agents" class="active">Agents</button>
-    <button data-view="fleet">Fleet</button>
-    <button data-view="events">Events</button>
-    <button data-view="commands">Commands</button>
-    <button data-view="alerts">Alerts <span id="alertBadge" style="display:none;background:var(--bad);color:#0f172a;border-radius:999px;padding:0 6px;font-size:11px;margin-left:4px"></span></button>
-    <button data-view="software">Software</button>
-    <button data-view="reports">Reports</button>
-    <button data-view="features">Features</button>
-    <button data-view="users">Users</button>
-    <button data-view="agent">Agent Setup</button>
-  </nav>
-  <div id="authwrap">
-    <span class="muted" id="who"></span>
-    <button class="ghost" onclick="logout()">Log out</button>
+<body class="auth">
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="ic-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="ic-devices" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></symbol>
+  <symbol id="ic-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+  <symbol id="ic-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></symbol>
+  <symbol id="ic-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></symbol>
+  <symbol id="ic-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+  <symbol id="ic-app-window" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/><line x1="5" y1="6" x2="5.01" y2="6"/><line x1="8" y1="6" x2="8.01" y2="6"/></symbol>
+  <symbol id="ic-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></symbol>
+  <symbol id="ic-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
+  <symbol id="ic-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="ic-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="ic-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="ic-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></symbol>
+  <symbol id="ic-hard-drive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></symbol>
+  <symbol id="ic-battery" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="13" x2="23" y2="11"/><line x1="5" y1="10" x2="5" y2="14"/><line x1="9" y1="10" x2="9" y2="14"/><line x1="13" y1="10" x2="13" y2="14"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="ic-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="ic-x-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></symbol>
+  <symbol id="ic-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="ic-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+  <symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="ic-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="ic-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></symbol>
+  <symbol id="ic-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></symbol>
+  <symbol id="ic-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></symbol>
+  <symbol id="ic-webhook" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2"/><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06"/><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8"/></symbol>
+  <symbol id="ic-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></symbol>
+  <symbol id="ic-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+  <symbol id="ic-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="ic-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></symbol>
+  <symbol id="ic-zap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="ic-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+  <symbol id="ic-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+  <symbol id="ic-bar-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+</svg>
+
+<div id="ingestBanner" class="ingest-banner" style="display:none"></div>
+<div class="app">
+  <aside class="sidebar" id="header">
+    <div class="brand">
+      <span class="logo-mark"><svg class="ic" aria-hidden="true"><use href="#ic-shield"/></svg></span>
+      <div style="min-width:0">
+        <div class="b-name" id="company">IT-Toolkit</div>
+        <div class="b-sub">Fleet operations</div>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-label">Operations</div>
+      <button data-view="dashboard" class="active" aria-current="page"><svg class="ic" aria-hidden="true"><use href="#ic-dashboard"/></svg>Dashboard</button>
+      <button data-view="agents"><svg class="ic" aria-hidden="true"><use href="#ic-devices"/></svg>Agents</button>
+      <button data-view="fleet"><svg class="ic" aria-hidden="true"><use href="#ic-layers"/></svg>Fleet</button>
+      <button data-view="events"><svg class="ic" aria-hidden="true"><use href="#ic-activity"/></svg>Events</button>
+      <button data-view="commands"><svg class="ic" aria-hidden="true"><use href="#ic-terminal"/></svg>Commands</button>
+      <button data-view="alerts"><svg class="ic" aria-hidden="true"><use href="#ic-bell"/></svg>Alerts <span id="alertBadge" class="alert-badge" style="display:none"></span></button>
+      <button data-view="software"><svg class="ic" aria-hidden="true"><use href="#ic-app-window"/></svg>Software</button>
+      <div class="nav-label">Administration</div>
+      <button data-view="features"><svg class="ic" aria-hidden="true"><use href="#ic-sliders"/></svg>Features</button>
+      <button data-view="users"><svg class="ic" aria-hidden="true"><use href="#ic-users"/></svg>Users</button>
+      <div class="nav-label">Deployment</div>
+      <button data-view="reports"><svg class="ic" aria-hidden="true"><use href="#ic-file-text"/></svg>Reports</button>
+      <button data-view="agent"><svg class="ic" aria-hidden="true"><use href="#ic-download"/></svg>Agent Setup</button>
+      <button data-view="deploy"><svg class="ic" aria-hidden="true"><use href="#ic-package"/></svg>Deploy Guide</button>
+    </nav>
+    <div class="side-foot">
+      <div class="side-user">
+        <span class="avatar" id="whoAvatar">?</span>
+        <div class="u-meta">
+          <div class="u-name" id="who"></div>
+          <div class="u-role" id="whoRole"></div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()"><svg class="ic" aria-hidden="true"><use href="#ic-logout"/></svg>Log out</button>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <div class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()" aria-label="Toggle navigation"><svg class="ic" aria-hidden="true"><use href="#ic-menu"/></svg></button>
+      <div class="page-desc">
+        <h2 id="pageTitle"><svg class="ic" aria-hidden="true"><use href="#ic-dashboard"/></svg>Dashboard</h2>
+        <p id="pageSubtitle"></p>
+      </div>
+      <div class="spacer"></div>
+      <button class="icon-btn" onclick="render()" aria-label="Refresh"><svg class="ic" aria-hidden="true"><use href="#ic-refresh"/></svg>Refresh</button>
+    </div>
+    <div id="statcards" class="statcards"></div>
+    <main id="app"></main>
   </div>
-</header>
-<main id="app"></main>
+</div>
 
 <script>
 const app = document.getElementById('app');
-let view = 'agents';
+let view = 'dashboard';
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+
+const ic = name => `<svg class="ic" aria-hidden="true"><use href="#ic-${name}"/></svg>`;
+
+function sevBadge(s) {
+  return `<span class="badge ${s === 'critical' ? 'off' : s === 'warning' ? 'warn' : 'info'}">${esc(s)}</span>`;
+}
+
+function statCardsEl(cards) {
+  const el = document.getElementById('statcards');
+  if (!el) return;
+  el.innerHTML = (cards && cards.length)
+    ? cards.map(c => `<div class="stat" data-tone="${esc(c.tone || 'accent')}">
+        <div class="s-ic">${ic(c.icon || 'bar-chart')}</div>
+        <div class="s-kind">
+          <div class="s-val">${esc(c.value)}</div>
+          <div class="s-lab">${esc(c.label)}</div>
+          ${c.sub ? `<div class="s-sub">${esc(c.sub)}</div>` : ''}
+        </div>
+      </div>`).join('')
+    : '';
+}
+
+const VIEW_META = {
+  dashboard: ['Dashboard', 'Fleet health, open alerts and recent activity', 'dashboard'],
+  agents: ['Agents', 'Registered agents and check-in status', 'devices'],
+  fleet: ['Fleet', 'Cross-fleet disk, battery, update and health posture', 'layers'],
+  events: ['Events', 'Sanitized telemetry captured from agents', 'activity'],
+  commands: ['Commands', 'Issue reboot / wake / run-script and track delivery', 'terminal'],
+  alerts: ['Alerts', 'Open, acknowledged and resolved alerts · delivery channels', 'bell'],
+  software: ['Software', 'Installed-application inventory search and license compliance', 'app-window'],
+  reports: ['Reports', 'Fleet and per-agent CSV / JSON export', 'file-text'],
+  features: ['Features', 'Enable, disable and configure collector modules', 'sliders'],
+  users: ['Users', 'Team accounts, roles and companies / tenants', 'users'],
+  agent: ['Agent Setup', 'Company bundle, MSI build and rollout target', 'download'],
+  deploy: ['Deploy Guide', 'Agent rollout: MSI-only vs full bundle, step by step', 'package'],
+};
+
+function updatePageHeader(v) {
+  const m = VIEW_META[v] || VIEW_META.agents;
+  const t = document.getElementById('pageTitle');
+  const s = document.getElementById('pageSubtitle');
+  if (t) t.innerHTML = ic(m[2]) + esc(m[0]);
+  if (s) s.textContent = m[1];
+}
+
+function gotoView(v) {
+  view = v;
+  document.querySelectorAll('nav button').forEach(x => {
+    const on = x.dataset.view === v;
+    x.classList.toggle('active', on);
+    if (on) x.setAttribute('aria-current', 'page'); else x.removeAttribute('aria-current');
+  });
+  const sb = document.getElementById('header');
+  if (sb) sb.classList.remove('open');
+  render();
+}
+
+function toggleSidebar() { document.getElementById('header').classList.toggle('open'); }
+
+function pruneNavGroups() {
+  document.querySelectorAll('nav .nav-label').forEach(l => {
+    let g = l.nextElementSibling, any = false;
+    while (g && !(g.classList && g.classList.contains('nav-label'))) {
+      if (g.tagName === 'BUTTON' && g.style.display !== 'none') any = true;
+      g = g.nextElementSibling;
+    }
+    l.style.display = any ? '' : 'none';
+  });
+}
+
+async function checkIngestStatus() {
+  const el = document.getElementById('ingestBanner');
+  if (!el) return;
+  try {
+    const r = await fetch('/api/status');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.last_ingest_error) {
+      el.innerHTML = `${ic('alert-triangle')} <span>Last ingest failed: ${esc(d.last_ingest_error)}</span> <button class="dismiss" onclick="this.parentElement.style.display='none'" aria-label="Dismiss">${ic('x')}</button>`;
+      el.style.display = 'flex';
+    } else el.style.display = 'none';
+  } catch {}
+}
 
 async function api(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
@@ -94,13 +364,20 @@ async function start() {
   window.boot = boot;
   window.user = boot.user;
   applyBranding(boot);
+  document.body.classList.remove('auth');
   document.getElementById('header').style.display = 'flex';
-  document.getElementById('who').textContent =
-    (boot.user ? boot.user.username + ' · ' + boot.user.role : '')
+  document.getElementById('who').textContent = boot.user ? boot.user.username : '';
+  document.getElementById('whoRole').textContent =
+    (boot.user ? boot.user.role : '')
     + (boot.company && boot.company.name ? ' · ' + boot.company.name : '');
+  const av = document.getElementById('whoAvatar');
+  if (av) av.textContent = boot.user && boot.user.username ? boot.user.username[0] : '?';
   setupNav();
+  pruneNavGroups();
   refreshAlertBadge();
   setInterval(refreshAlertBadge, 30000);
+  checkIngestStatus();
+  setInterval(checkIngestStatus, 60000);
   render();
 }
 
@@ -120,7 +397,7 @@ function setupNav() {
   const canAgentSetup = window.user && (window.user.role === 'admin' || window.user.role === 'operation');
   document.querySelectorAll('nav button').forEach(b => {
     if (b.dataset.view === 'users') b.style.display = isAdmin ? '' : 'none';
-    if (b.dataset.view === 'agent') b.style.display = canAgentSetup ? '' : 'none';
+    if (b.dataset.view === 'agent' || b.dataset.view === 'deploy') b.style.display = canAgentSetup ? '' : 'none';
   });
 }
 
@@ -256,7 +533,7 @@ function renderSecretBackup(secret) {
       <p class="muted">This key encrypts stored secrets (SMTP password, GitHub token) and signs login sessions.
       It is shown <b>only once</b>. Download it now — you'll need it to restore this server from a backup.
       Treat it like a password: anyone with it can decrypt your stored secrets.</p>
-      <div style="margin:14px 0;padding:10px;background:#0b0f14;border:1px solid #2a3b4d;border-radius:8px;font-family:monospace;word-break:break-all;font-size:13px">${esc(secret)}</div>
+      <div style="margin:14px 0;padding:10px;background:#0a101f;border:1px solid var(--line-2);border-radius:8px;font-family:monospace;word-break:break-all;font-size:13px">${esc(secret)}</div>
       <div class="row" style="align-items:flex-end;gap:10px">
         <a class="action" style="flex:1;text-align:center" href="${url}" download="itk-session-secret.txt">Download key file</a>
         <button class="action" style="flex:1" onclick="copySecret('${esc(secret)}', this)">Copy</button>
@@ -299,19 +576,19 @@ async function logout() {
 }
 
 function startAuthFlow() {
+  document.body.classList.add('auth');
   document.getElementById('header').style.display = 'none';
   start();
 }
 
 // ---------------------------------------------------------------- nav
 
-document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
-  view = b.dataset.view;
-  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('active', x === b));
-  render();
-}));
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => gotoView(b.dataset.view)));
 
 async function render() {
+  statCardsEl([]);
+  updatePageHeader(view);
+  if (view === 'dashboard') return renderDashboard();
   if (view === 'agents') return renderAgents();
   if (view === 'fleet') return renderFleet();
   if (view === 'events') return renderEvents();
@@ -321,7 +598,67 @@ async function render() {
   if (view === 'reports') return renderReports();
   if (view === 'features') return renderFeatures();
   if (view === 'users') return renderUsers();
+  if (view === 'deploy') return renderDeploy();
   renderAgentSetup();
+}
+
+// ---------------------------------------------------------------- dashboard
+
+async function renderDashboard() {
+  const [agents, alerts, events] = await Promise.all([
+    api('/api/agents'),
+    api('/api/alerts?status=open&limit=8'),
+    api('/api/events?limit=12'),
+  ]);
+  const list = agents || [];
+  const now = Date.now();
+  const online = list.filter(x => now - new Date(x.last_seen).getTime() <= 10 * 60 * 1000).length;
+  const offline = list.length - online;
+  statCardsEl([
+    { icon: 'devices', label: 'Total agents', value: list.length, tone: 'accent', sub: offline ? offline + ' offline' : 'all checked in' },
+    { icon: 'activity', label: 'Online now', value: online, tone: 'good' },
+    { icon: 'x-circle', label: 'Offline', value: offline, tone: offline ? 'bad' : 'good' },
+    { icon: 'bell', label: 'Open alerts', value: (alerts || []).length, tone: (alerts || []).length ? 'bad' : 'good', sub: 'open · to resolve' },
+  ]);
+
+  const canOps = window.user && (window.user.role === 'admin' || window.user.role === 'operation');
+  const isAdmin = window.user && window.user.role === 'admin';
+  const links = [
+    ['agents', 'Agents', 'devices'],
+    ['fleet', 'Fleet', 'layers'],
+    ['alerts', 'Alerts', 'bell'],
+  ];
+  if (canOps) links.push(['commands', 'Commands', 'terminal']);
+  if (isAdmin) links.push(['users', 'Users', 'users']);
+  if (canOps) links.push(['agent', 'Agent Setup', 'download']);
+
+  app.innerHTML = `
+    <div class="dash-grid">
+      <div class="card"><h3>Open alerts <span class="badge ${(alerts || []).length ? 'off' : 'on'}">${(alerts || []).length}</span></h3>
+        <table><thead><tr><th>Agent</th><th>Severity</th><th>Message</th><th></th></tr></thead>
+        <tbody>${(alerts || []).map(al => `<tr>
+          <td>${esc(al.hostname || '—')}</td>
+          <td>${sevBadge(al.severity)}</td>
+          <td style="white-space:normal">${esc(al.message)}</td>
+          <td><button class="action" onclick="ackAlert(${al.id})">Ack</button> <button class="ghost" onclick="resolveAlert(${al.id})">Resolve</button></td>
+        </tr>`).join('') || '<tr><td colspan="4" class="muted">No open alerts — all clear.</td></tr>'}</tbody></table>
+      </div>
+      <div class="card"><h3>Recent events</h3>
+        <table><thead><tr><th>Agent</th><th>Kind</th><th>Captured</th><th></th></tr></thead>
+        <tbody>${(events || []).map(e => `<tr>
+          <td>${esc(e.hostname)}</td>
+          <td>${esc(e.kind)}</td>
+          <td>${esc(new Date(e.captured_at).toLocaleString())}</td>
+          <td><button class="action" onclick="toggleJson(${e.id})">view</button></td>
+        </tr><tr id="json-${e.id}" style="display:none"><td colspan="4"><pre>${esc(JSON.stringify(e.payload, null, 2))}</pre></td></tr>`).join('') || '<tr><td colspan="4" class="muted">No events received yet.</td></tr>'}</tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Quick actions</h3>
+      <div class="quick-links">
+        ${links.map(l => `<button class="ghost" onclick="gotoView('${l[0]}')">${ic(l[2])}${esc(l[1])}</button>`).join('')}
+      </div>
+    </div>`;
 }
 
 // ---------------------------------------------------------------- fleet panels
@@ -415,6 +752,17 @@ async function renderFleet() {
       <table><thead><tr><th>Hostname</th><th>Uptime</th><th>CPU</th><th>RAM</th><th>Reboot</th></tr></thead>
       <tbody>${healthRows || '<tr><td colspan="5" class="muted">No health reports yet.</td></tr>'}</tbody></table>
     </div>` + licenseBlock;
+
+  const offlineCount = offline.length;
+  const smartFail = disks.filter(e => { const p = e.payload || {}; return p.predicted_failure || (p.smart_failures && p.smart_failures.length); }).length;
+  const batteryWarn = hw.filter(e => e.payload && e.payload.battery && e.payload.battery.wear_percent != null && e.payload.battery.wear_percent > 30).length;
+  const rebootPend = health.filter(e => e.payload && e.payload.reboot_pending).length;
+  statCardsEl([
+    { icon: 'devices', label: 'Agents online', value: (agents || []).length - offlineCount, tone: 'good', sub: offlineCount ? offlineCount + ' offline' : 'all checked in' },
+    { icon: 'hard-drive', label: 'Disks at risk', value: smartFail, tone: smartFail ? 'bad' : 'good' },
+    { icon: 'battery', label: 'Battery degraded', value: batteryWarn, tone: batteryWarn ? 'warn' : 'good' },
+    { icon: 'refresh', label: 'Reboot pending', value: rebootPend, tone: rebootPend ? 'warn' : 'good' },
+  ]);
 }
 
 async function renderAgents() {
@@ -433,6 +781,15 @@ async function renderAgents() {
       <table><thead><tr><th>Hostname</th><th>OS</th><th>IP</th><th>Agent</th><th>Last seen</th></tr></thead>
       <tbody>${rows || '<tr><td colspan="5" class="muted">No agents yet — see the Agent Setup tab.</td></tr>'}</tbody></table>
     </div>`;
+  const now = Date.now();
+  const online = data.filter(a => now - new Date(a.last_seen).getTime() <= 10 * 60 * 1000).length;
+  const offline = data.length - online;
+  statCardsEl([
+    { icon: 'devices', label: 'Registered agents', value: data.length, tone: 'accent', sub: offline ? offline + ' offline' : 'all online' },
+    { icon: 'activity', label: 'Online now', value: online, tone: 'good' },
+    { icon: 'x-circle', label: 'Offline', value: offline, tone: offline ? 'bad' : 'good' },
+    { icon: 'cpu', label: 'Agent versions', value: new Set(data.map(a => a.agent_version)).size, tone: 'info' },
+  ]);
 }
 
 async function renderEvents() {
@@ -453,6 +810,13 @@ async function renderEvents() {
       <table><thead><tr><th>Agent</th><th>Kind</th><th>PII</th><th>Captured</th><th></th></tr></thead>
       <tbody>${rows || '<tr><td colspan="5" class="muted">No events received yet.</td></tr>'}</tbody></table>
     </div>`;
+  const sanitized = data.filter(e => e.sanitized).length;
+  statCardsEl([
+    { icon: 'activity', label: 'Events in view', value: data.length, tone: 'accent' },
+    { icon: 'sliders', label: 'Kinds', value: new Set(data.map(e => e.kind)).size, tone: 'info' },
+    { icon: 'shield', label: 'Sanitized', value: sanitized, tone: 'good' },
+    { icon: 'alert-triangle', label: 'Raw payloads', value: data.length - sanitized, tone: (data.length - sanitized) ? 'warn' : 'good' },
+  ]);
 }
 
 function toggleJson(id) {
@@ -507,7 +871,7 @@ async function renderCommands() {
     <tr>
       <td>${esc(c.hostname)}</td>
       <td>${esc(c.kind)}</td>
-      <td><span class="badge ${c.status === 'completed' ? 'on' : c.status === 'failed' ? 'off' : ''}">${esc(c.status)}</span></td>
+      <td><span class="badge ${c.status === 'completed' ? 'on' : c.status === 'failed' ? 'off' : 'warn'}">${esc(c.status)}</span></td>
       <td>${esc(new Date(c.created_at).toLocaleString())}</td>
       <td><button class="action" onclick="toggleCmd(${c.id})">view</button></td>
     </tr>
@@ -535,6 +899,15 @@ ${c.result ? 'result: ' + esc(JSON.stringify(c.result, null, 2)) : ''}</pre>
       <tbody>${rows || '<tr><td colspan="5" class="muted">No commands issued yet.</td></tr>'}</tbody></table>
     </div>`;
   cmdKind();
+  const pending = cmds.filter(c => !['completed', 'failed', 'cancelled'].includes(c.status)).length;
+  const completed = cmds.filter(c => c.status === 'completed').length;
+  const failed = cmds.filter(c => c.status === 'failed').length;
+  statCardsEl([
+    { icon: 'terminal', label: 'Total issued', value: cmds.length, tone: 'accent' },
+    { icon: 'clock', label: 'Pending', value: pending, tone: pending ? 'warn' : 'good' },
+    { icon: 'check', label: 'Completed', value: completed, tone: 'good' },
+    { icon: 'x-circle', label: 'Failed', value: failed, tone: failed ? 'bad' : 'good' },
+  ]);
 }
 
 // ---------------------------------------------------------------- alerts (P6)
@@ -543,12 +916,12 @@ let alertFilter = 'open';
 
 async function ackAlert(id) {
   const r = await api('/api/alerts/' + id + '/ack', { method: 'POST' });
-  if (r) { renderAlerts(); refreshAlertBadge(); }
+  if (r) { gotoView('alerts'); refreshAlertBadge(); }
 }
 
 async function resolveAlert(id) {
   const r = await api('/api/alerts/' + id + '/resolve', { method: 'POST' });
-  if (r) { renderAlerts(); refreshAlertBadge(); }
+  if (r) { gotoView('alerts'); refreshAlertBadge(); }
 }
 
 async function toggleRule(name, enabled) {
@@ -575,15 +948,16 @@ async function renderAlerts() {
   if (webhook) window.__webhook = webhook;
   const canAct = window.user && (window.user.role === 'admin' || window.user.role === 'operation');
   const isAdmin = window.user && window.user.role === 'admin';
-  const severityBadge = s => `<span class="badge ${s === 'critical' ? 'off' : s === 'warning' ? '' : 'on'}">${esc(s)}</span>`;
+  const severityBadge = s => `<span class="badge ${s === 'critical' ? 'off' : s === 'warning' ? 'warn' : 'info'}">${esc(s)}</span>`;
+  const statusBadge = s => `<span class="badge ${s === 'open' ? 'off' : s === 'acknowledged' ? 'warn' : 'on'}">${esc(s)}</span>`;
 
   const rows = alerts.map(al => `
     <tr>
       <td>${esc(al.hostname || '—')}</td>
       <td>${esc(al.rule || '')}</td>
       <td>${severityBadge(al.severity)}</td>
-      <td>${esc(al.message)}</td>
-      <td><span class="badge ${al.status === 'open' ? 'off' : al.status === 'acknowledged' ? '' : 'on'}">${esc(al.status)}</span></td>
+      <td style="white-space:normal">${esc(al.message)}</td>
+      <td>${statusBadge(al.status)}</td>
       <td>${esc(new Date(al.created_at).toLocaleString())}</td>
       <td>${canAct && al.status !== 'resolved'
         ? (al.status === 'open'
@@ -594,7 +968,7 @@ async function renderAlerts() {
     </tr>`).join('');
 
   const filterBtns = ['open', 'acknowledged', 'resolved', 'all'].map(s =>
-    `<button class="ghost ${alertFilter === s ? 'active' : ''}" style="${alertFilter === s ? 'background:var(--accent);border-color:var(--accent);color:#0f172a' : ''}" onclick="setAlertFilter('${s}')">${s}</button>`).join(' ');
+    `<button class="ghost ${alertFilter === s ? 'active' : ''}" onclick="setAlertFilter('${s}')">${s}</button>`).join(' ');
 
   const emailBlock = isAdmin ? `
     <div class="card"><h3>Email notifications (admin)</h3>
@@ -646,6 +1020,17 @@ async function renderAlerts() {
       <table><thead><tr><th>Agent</th><th>Rule</th><th>Severity</th><th>Message</th><th>Status</th><th>Created</th><th></th></tr></thead>
       <tbody>${rows || '<tr><td colspan="7" class="muted">No alerts match this filter.</td></tr>'}</tbody></table>
     </div>` + emailBlock + webhookBlock + rulesBlock;
+
+  const open = alerts.filter(a => a.status === 'open').length;
+  const ack = alerts.filter(a => a.status === 'acknowledged').length;
+  const res = alerts.filter(a => a.status === 'resolved').length;
+  const crit = alerts.filter(a => a.severity === 'critical').length;
+  statCardsEl([
+    { icon: 'bell', label: 'Open', value: open, tone: open ? 'bad' : 'good', sub: 'in current view' },
+    { icon: 'clock', label: 'Acknowledged', value: ack, tone: 'warn' },
+    { icon: 'check', label: 'Resolved', value: res, tone: 'good' },
+    { icon: 'alert-triangle', label: 'Critical', value: crit, tone: crit ? 'bad' : 'good' },
+  ]);
 }
 
 async function testAlertEmail() {
@@ -730,6 +1115,19 @@ async function renderSoftware() {
       <div style="margin-top:10px">${search.agents ? `<span class="badge on">${search.agents} agent(s)</span> <span class="badge">${appRows.length} app(s)</span>` : ''}</div>
     </div>
     <div class="card"><h3>Results</h3>${table}</div>` + licenseBlock;
+
+  const lic = (license && license.compliance) || [];
+  const winOk = lic.filter(r => r.windows_ok).length;
+  const winMiss = lic.length - winOk;
+  const cards = [
+    { icon: 'app-window', label: 'Agents reporting', value: search.agents || 0, tone: 'accent' },
+    { icon: 'search', label: 'Apps matched', value: appRows.length, tone: 'info', sub: softwareQ ? `for \u201c${softwareQ}\u201d` : 'all inventory' },
+  ];
+  if (isAdmin) cards.push(
+    { icon: 'key', label: 'License OK', value: winOk, tone: 'good' },
+    { icon: 'x-circle', label: 'License missing', value: winMiss, tone: winMiss ? 'bad' : 'good' },
+  );
+  statCardsEl(cards);
 }
 
 function softwareSearch() {
@@ -772,7 +1170,7 @@ async function renderFeatures() {
   const canConfig = window.user && window.user.role !== 'monitoring';
   const controls = f => canConfig
     ? `<button class="action" onclick="toggleFeature('${esc(f.name)}', ${!f.enabled})">${f.enabled ? 'Disable' : 'Enable'}</button>
-       <button class="action" onclick="editFeature('${esc(f.name)}')">Edit config</button>
+       <button class="ghost" onclick="editFeature('${esc(f.name)}')">Edit config</button>
        <div id="cfg-${esc(f.name)}" style="display:none;margin-top:10px">
          <textarea id="cfgval-${esc(f.name)}" rows="4">${esc(JSON.stringify(f.config || {}, null, 2))}</textarea><br>
          <button class="action" onclick="saveConfig('${esc(f.name)}')">Save</button>
@@ -785,6 +1183,13 @@ async function renderFeatures() {
       ${controls(f)}
     </div>`).join('');
   app.innerHTML = `<h3>Feature Controls</h3><p class="muted">Enable/disable or tweak each toolkit feature. Agents pick these up on their next cycle.</p>${rows}`;
+  const enabled = data.filter(f => f.enabled).length;
+  statCardsEl([
+    { icon: 'sliders', label: 'Features', value: data.length, tone: 'accent', sub: 'collector modules' },
+    { icon: 'check', label: 'Enabled', value: enabled, tone: 'good' },
+    { icon: 'x-circle', label: 'Disabled', value: data.length - enabled, tone: (data.length - enabled) ? 'warn' : 'good' },
+    { icon: 'zap', label: 'Active agents pick up', value: 'next cycle', tone: 'info' },
+  ]);
 }
 
 async function toggleFeature(name, enabled) {
@@ -862,6 +1267,13 @@ async function renderUsers() {
       </div>
       <div class="error" id="companies_err"></div>
     </div>`;
+  const active = data.filter(u => u.active).length;
+  statCardsEl([
+    { icon: 'users', label: 'Users', value: data.length, tone: 'accent' },
+    { icon: 'check', label: 'Active', value: active, tone: 'good' },
+    { icon: 'x-circle', label: 'Disabled', value: data.length - active, tone: (data.length - active) ? 'warn' : 'good' },
+    { icon: 'briefcase', label: 'Companies', value: (companies || []).length, tone: 'info' },
+  ]);
 }
 
 async function addCompany() {
@@ -930,7 +1342,6 @@ async function renderAgentSetup() {
       </div>
       <p class="muted" style="margin-top:10px">Company: <code>${esc(data.company)}</code> · Server: <code>${esc(data.server_host)}</code> · Scheme: <code>${esc(data.scheme)}</code></p>
       <label>Endpoint</label>
-      <label>Endpoint</label>
       <div class="code">${esc(data.agent_json.endpoint)}</div>
       <label>Agent token (keep secret — ships inside agent.json)</label>
       <div class="code">${esc(data.agent_json.token)}</div>
@@ -959,6 +1370,64 @@ async function setRolloutTarget() {
   if (r) renderAgentSetup();
 }
 
+async function renderDeploy() {
+  const [bundle, build] = await Promise.all([
+    api('/api/agent-bundle'),
+    api('/api/build/status').catch(() => null),
+  ]);
+  if (!bundle) return;
+  const a = bundle.agent_json || {};
+  const msiState = bundle.msi_available
+    ? `<span class="badge ok">MSI published (${(bundle.msi_size / 1048576).toFixed(1)} MB)</span>`
+    : `<span class="badge off">MSI not built yet — see "Build the MSI" below</span>`;
+  const fileList = bundle.ca_cert ? 'MSI, agent.json, ca.crt, install-agent.cmd' : 'MSI, agent.json, install-agent.cmd';
+  const caLink = bundle.ca_cert
+    ? `<a href="/api/ca.crt" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">${ic('shield')} ca.crt</a>` : '';
+  const msiLink = bundle.msi_available
+    ? `<a href="${esc(bundle.msi_url)}" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">${ic('package')} MSI (${(bundle.msi_size / 1048576).toFixed(1)} MB)</a>` : '';
+  app.innerHTML = `
+    <div class="card"><h3>${ic('server')} Server config</h3>
+      <p class="muted">This is what every installed agent connects to. If the server IP / domain ever changes, just re-generate the bundle and re-run <code>install-agent.cmd</code> — the MSI does not need to be reinstalled.</p>
+      <label>Company</label>
+      <div class="code">${esc(bundle.company)}</div>
+      <label>Ingest endpoint (agent → server)</label>
+      <div class="code">${esc(a.endpoint || '—')}</div>
+      <label>Enroll URL (auto mTLS client-cert + CA)</label>
+      <div class="code">${esc(a.enroll_url || '—')}</div>
+      <div class="row" style="flex-wrap:wrap;margin-top:10px">${msiState} ${build ? `<span class="badge">build mode: ${esc(build.mode || 'manual')}</span>` : ''}</div>
+    </div>
+
+    <div class="card"><h3>${ic('package')} Option A — MSI only (easiest)</h3>
+      <p class="muted">Use this when the MSI was built by <em>this</em> server — its <code>agent.json</code> is baked in with the endpoint, token and enroll URL above. Deploy just the MSI via Intune / GPO / SCCM, or install silently:</p>
+      <ol class="steps">
+        <li><code>msiexec /i IT-Toolkit-Agent.msi /qn</code></li>
+        <li>First scheduled run auto-enrolls the mTLS client certificate and installs the server CA into the LocalMachine Root — no manual <code>ca.crt</code> copy needed.</li>
+        <li>Verify: the machine shows up under <strong>Agents</strong> within one interval (default ${esc(a.interval_minutes || 30)} min).</li>
+      </ol>
+    </div>
+
+    <div class="card"><h3>${ic('briefcase')} Option B — Full bundle (guaranteed)</h3>
+      <p class="muted">Recommended for USB / intranet shares, generic MSIs, or after a server address change. Download every file into one folder on the target and run <code>install-agent.cmd</code> as Administrator — it installs the MSI, then overwrites <code>agent.json</code> + <code>ca.crt</code> with this server's values and writes the endpoint into the registry.</p>
+      <div class="row" style="flex-wrap:wrap;margin:10px 0">
+        <a href="/api/agent/agent.json" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">${ic('file-text')} agent.json</a>
+        ${caLink}
+        <a href="/api/agent/install.cmd" class="action" style="text-decoration:none;display:inline-block;margin-right:8px">${ic('download')} install-agent.cmd</a>
+        ${msiLink}
+      </div>
+      <ol class="steps">
+        <li>Copy ${esc(fileList)} into one folder on the target machine.</li>
+        <li>Run <code>install-agent.cmd</code> as Administrator (double-click, or push silently via Intune / GPO / SCCM).</li>
+        <li>Manual fallback without the cmd: install the MSI, then copy <code>agent.json</code> + <code>ca.crt</code> into <code>C:\\ProgramData\\ITToolkit-Agent\\</code>.</li>
+      </ol>
+      <p class="muted" style="margin-top:8px">GPO tip: fleet-wide override is possible via <code>HKLM\\SOFTWARE\\ITToolkit\\Agent\\EndpointUrl</code>.</p>
+    </div>
+
+    <div class="card"><h3>${ic('info')} Build the MSI</h3>
+      ${build ? renderBuildPanel(build) : '<span class="muted">Build status unavailable.</span>'}
+      <p class="muted" style="margin-top:8px">Windows Server: <code>pwsh ./Enterprise/deploy/deploy.ps1</code> auto-builds, signs and publishes. Linux server: use the GitHub Actions build from <strong>Agent Setup</strong>. Manual: run <code>build-agent.ps1</code> then <code>build-msi.ps1</code> on a Windows machine and upload the MSI into the server's <code>agent_artifacts</code> volume.</p>
+    </div>`;
+}
+
 function renderBuildPanel(build) {
   const mode = build.mode || 'manual';
   let body;
@@ -973,14 +1442,14 @@ function renderBuildPanel(build) {
           : (gh.conclusion === 'failure'
               ? `<span class="badge off">build failed</span>`
               : (gh.state === 'in_progress' || gh.state === 'queued'
-                  ? `<span class="badge">build ${esc(gh.state)}…</span>`
-                  : `<span class="badge off">no build yet</span>`)));
+                  ? `<span class="badge warn">build ${esc(gh.state)}…</span>`
+                  : `<span class="badge">no build yet</span>`)));
     body = `
       <p class="muted">Remote build via GitHub Actions on <code>${esc(build.github_repo || '—')}</code>.</p>
       <p>Status: ${stateBadge} ${gh.run_number ? `#${esc(gh.run_number)}` : ''} ${gh.html_url ? `(<a href="${esc(gh.html_url)}" target="_blank">run</a>)` : ''}</p>
       <div style="margin-top:10px">
         <button class="action" onclick="githubBuild()">Trigger GitHub build</button>
-        <button class="action" style="background:transparent;color:var(--text);border:1px solid var(--line)" onclick="renderAgentSetup()">Refresh</button>
+        <button class="ghost" onclick="renderAgentSetup()">Refresh</button>
       </div>
       <p class="muted" style="margin-top:10px">Requires the repo + PAT entered at setup (repo + actions: write/read). The server fires <code>workflow_dispatch</code>, waits for success and downloads the signed MSI into the volume automatically.</p>`;
   } else {
