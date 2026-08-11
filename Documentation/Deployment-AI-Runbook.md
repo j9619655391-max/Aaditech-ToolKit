@@ -169,8 +169,13 @@ PASS = `curl` returns 200/JSON with status ok.
 Gate 4.2 — **setup wizard with github build mode**:
 1. Open `http://<server>/` → wizard.
 2. Build mode = **GitHub Actions**, enter `owner/repo` + a fine-grained PAT
-   (`Actions: Read/Write`).
+   (`Actions: Read/Write`). A full URL (`https://github.com/OWNER/REPO.git`)
+   also works — the server normalizes it to `owner/repo` on save.
 3. Complete setup → login as the new admin.
+
+> **Tip:** on a dev machine (macOS/Linux) before deploying, run the full
+> `Documentation/Local-E2E-Test.md` checklist — identical steps to this server,
+> with a simulated agent standing in for the Windows-only agent.
 
 Gate 4.3 — **remote build triggers + MSI comes back** (Agent Setup tab):
 - `POST /api/build/validate` → PASS: repo reachable, `actions_write` true.

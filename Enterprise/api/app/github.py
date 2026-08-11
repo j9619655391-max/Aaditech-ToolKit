@@ -65,8 +65,29 @@ def _request(method: str, path: str, token: str, payload: dict | None = None) ->
         raise GitHubError(f"Cannot reach GitHub: {e.reason}") from e
 
 
+def _normalize_repo(repo: str) -> str:
+    """Turn whatever the operator pasted into `owner/repo`.
+
+    Accepts full URLs (https://github.com/OWNER/REPO.git, github.com/OWNER/REPO,
+    git@github.com:OWNER/REPO.git) as well as bare `OWNER/REPO`. Returns the
+    canonical `owner/repo` used in every API path.
+    """
+    repo = (repo or "").strip().strip("/")
+    if not repo:
+        return ""
+    if repo.endswith(".git"):
+        repo = repo[:-4]
+    repo = repo.replace("git@github.com:", "github.com/")
+    repo = repo.replace("https://github.com/", "github.com/")
+    repo = repo.replace("http://github.com/", "github.com/")
+    repo = repo.removeprefix("github.com/")
+    repo = repo.strip("/")
+    return repo
+
+
 def validate(repo: str, token: str) -> dict:
     """Returns {ok, repo, permissions} or raises GitHubError."""
+    repo = _normalize_repo(repo)
     info = _request("GET", f"/repos/{repo}", token)
     perms = info.get("permissions", {})
     ok = bool(info.get("id"))
@@ -88,6 +109,7 @@ def validate(repo: str, token: str) -> dict:
 def trigger(repo: str, token: str, branch: str = "main") -> dict:
     """Fire workflow_dispatch on ci.yml. Returns the dispatched run id (may be
     null until GitHub schedules it — status() resolves it)."""
+    repo = _normalize_repo(repo)
     _request(
         "POST",
         f"/repos/{repo}/actions/workflows/{_WORKFLOW}/dispatches",
@@ -99,6 +121,7 @@ def trigger(repo: str, token: str, branch: str = "main") -> dict:
 
 def status(repo: str, token: str) -> dict:
     """Latest run for ci.yml on this repo (push or workflow_dispatch)."""
+    repo = _normalize_repo(repo)
     info = _request(
         "GET",
         f"/repos/{repo}/actions/workflows/{_WORKFLOW}/runs?per_page=1",
@@ -119,6 +142,7 @@ def status(repo: str, token: str) -> dict:
 
 
 def latest_artifact(repo: str, token: str) -> dict | None:
+    repo = _normalize_repo(repo)
     info = _request("GET", f"/repos/{repo}/actions/artifacts?per_page=10", token)
     for art in info.get("artifacts", []):
         if art.get("name") == _ARTIFACT and not art.get("expired"):
@@ -139,6 +163,7 @@ def download_msi(repo: str, token: str, artifact_id: int, created_at: str | None
     be forwarded there (the CDN rejects it with 401), so we follow the redirect
     manually and re-issue the GET without auth headers.
     """
+    repo = _normalize_repo(repo)
     config.ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
     dest = config.ARTIFACTS_DIR / _MSI
     stamp = config.ARTIFACTS_DIR / ".msi_artifact.json"

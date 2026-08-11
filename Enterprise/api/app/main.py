@@ -169,14 +169,16 @@ def _company_scope(user: dict, alias: str, args: list, sql: str) -> tuple[str, l
     """F4: restrict a query to the caller's company.
 
     Appends an AND clause on <alias>.company_id. Users without a company
-    (legacy installs / no setup yet) are unscoped so they keep working. Callers
-    must build their LIMIT clause AFTER this returns.
+    (legacy installs / no setup yet) are unscoped so they keep working. Rows
+    with a NULL company_id (legacy agents enrolled before F4, or alerts with no
+    agent) are treated as unassigned and stay visible to every company user.
+    Callers must build their LIMIT clause AFTER this returns.
     """
     cid = user.get("company_id")
     if not cid:
         return sql, args
     args.append(cid)
-    return f"{sql} AND {alias}.company_id = ${len(args)}", args
+    return f"{sql} AND ({alias}.company_id = ${len(args)} OR {alias}.company_id IS NULL)", args
 
 
 async def _company_id(pool) -> int | None:
@@ -488,7 +490,7 @@ async def run_setup(payload: SetupRequest, request: Request, response: Response)
                     ("server_host", payload.server_host),
                     ("branding", branding),
                     ("build_mode", mode),
-                    ("github_repo", payload.github_repo.strip()),
+                    ("github_repo", github._normalize_repo(payload.github_repo)),
                     ("github_token", vault.encrypt(payload.github_token.strip())),
                 ):
                     await conn.execute(
@@ -922,7 +924,7 @@ async def build_trigger(payload: BuildTriggerRequest, request: Request, user: di
         raise HTTPException(status_code=400, detail=str(e))
     for key, value in (
         ("build_mode", "github"),
-        ("github_repo", repo.strip()),
+        ("github_repo", github._normalize_repo(repo)),
         ("github_token", vault.encrypt(token.strip())),
     ):
         await pool.execute(

@@ -164,6 +164,40 @@ Complete guide to all documentation files and resources in the toolkit.
 
 ---
 
+### Local-E2E-Test.md
+**Purpose:** Full-stack Enterprise server E2E on a developer machine (macOS or
+Linux) before deploying — the same steps transfer verbatim to the Ubuntu VM
+
+**Covers:**
+- `deploy.sh` bring-up (identical macOS + Linux)
+- First-run web setup (company / admin / GitHub remote-build with full-URL repo)
+- Simulated agent via curl (heartbeat + ingest + command round-trip)
+- Portal verification checklist (Agents/Fleet/Events/Software/Commands/Alerts)
+- Automated pytest suite + notes on reusing the flow on the Ubuntu VM
+
+**When to use:** Before touching a real server — proves the server path end-to-end
+from a Mac or Linux box when the Windows agent isn't available
+
+---
+
+### PROJECT-SPEC.md
+**Purpose:** Clean-room conceptual specification of the entire platform —
+concept-first description of all three layers (base toolkit, enterprise agent,
+server/portal) with design-level contracts and acceptance checks
+
+**Covers:**
+- Part 0 — design philosophy + how contracts are written
+- Parts 1–3 — toolkit, agent (collectors + lifecycle), server (data model, API,
+  portal, F4 multi-tenant, alerts, F3 software, GitHub remote build)
+- Part 4 — deployment (deploy.sh/deploy.ps1, build modes, env contract)
+- Part 5 — security model
+- Part 6 — per-layer acceptance checklist (anti-hallucination anchor)
+
+**When to use:** Handing the project to a developer/AI agent to rebuild fresh
+without inheriting existing implementation bugs — or as a design reference
+
+---
+
 ### Enterprise/ (Phase 3 — client-server stack)
 **Purpose:** Centralized agent → server → web-portal layer. Additive, zero changes to the existing toolkit.
 
@@ -251,6 +285,8 @@ Documentation/
 ├── Cheat-Sheet.md ..................... Quick reference (print this)
 ├── Troubleshooting-Flowcharts.md ...... Decision trees (use when stuck)
 ├── Windows-Smoke-Run.md ............... Manual Windows release gate (new)
+├── Local-E2E-Test.md .................. Full-stack server E2E on macOS/Linux (simulated agent)
+├── PROJECT-SPEC.md .................... Clean-room conceptual spec (rebuild reference)
 └── README.md (this file) ............. Documentation overview
 
 Scripts/

@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.3.1 — bugfixes (GitHub repo normalization + legacy-agent visibility)
+
+- **GitHub repo normalization:** the repo is now canonicalized to `owner/repo`
+  on save (setup + build trigger) and on every GitHub API call. Pasting a full
+  URL (`https://github.com/OWNER/REPO.git`) previously produced a broken
+  `/repos/https://github.com/…` request → `404: Not Found` in the Agent Setup
+  tab; now full URLs, `git@github.com:` form, trailing `/`, and `.git` suffixes
+  all collapse to the correct API path (`app/github.py` `_normalize_repo`).
+- **Legacy-agent visibility (F4):** the company scope clause is now
+  `company_id = $N OR company_id IS NULL`, so agents enrolled before
+  multi-tenant (NULL `company_id`) no longer vanish from the Agents tab for
+  company-scoped users — while cross-tenant isolation is preserved.
+- **Tests:** suite grown to 27 — `_normalize_repo` edge cases and a live
+  NULL-company agent visibility check.
+- **Docs:** new `Documentation/PROJECT-SPEC.md` — a clean-room conceptual spec
+  of the whole platform (3 layers, concepts + design-level contracts +
+  acceptance checklist) for handing the project to a developer/AI agent.
+
 ## v1.3.0 — post-release feature additions (F1/F3/F4)
 
 - **F1 — Webhook alert delivery:** new-alert digests can now be POSTed to a

@@ -458,3 +458,49 @@ def test_company_isolates_agents_and_users(client, admin, shared_token):
 
     # restore default so later ingests go to ACME again
     client.post("/api/settings/default-company", json={"name": "ACME Test Corp"}, headers=admin)
+
+
+# ---------------------------------------------------------------- fixes: repo normalize + legacy agents
+
+
+def test_normalize_repo_accepts_full_urls():
+    """Operators pasting a full GitHub URL no longer produce a 404 on the
+    GitHub API (/repos/https://github.com/...). Every accepted form collapses
+    to canonical `owner/repo`."""
+    from app import github
+
+    cases = {
+        "https://github.com/j9619655391-max/Aaditech-ToolKit.git": "j9619655391-max/Aaditech-ToolKit",
+        "https://github.com/OWNER/REPO": "OWNER/REPO",
+        "http://github.com/OWNER/REPO": "OWNER/REPO",
+        "github.com/OWNER/REPO": "OWNER/REPO",
+        "git@github.com:OWNER/REPO.git": "OWNER/REPO",
+        "  OWNER/REPO/  ": "OWNER/REPO",
+        "OWNER/REPO": "OWNER/REPO",
+        "": "",
+    }
+    for raw, expected in cases.items():
+        assert github._normalize_repo(raw) == expected, raw
+
+
+def test_legacy_null_company_agent_visible_to_admin(client, admin):
+    """F4 fix: agents enrolled before multi-tenant (company_id NULL) stay
+    visible to company-scoped users instead of vanishing from the Agents tab."""
+    import asyncio
+    import asyncpg
+    import os
+
+    async def _seed():
+        conn = await asyncpg.connect(os.environ["DATABASE_URL"])
+        try:
+            await conn.execute(
+                "INSERT INTO agents (hostname, company_id) VALUES ('pc-legacy-null', NULL) "
+                "ON CONFLICT (hostname) DO NOTHING"
+            )
+        finally:
+            await conn.close()
+
+    asyncio.run(_seed())
+
+    agents = client.get("/api/agents", headers=admin).json()
+    assert any(a["hostname"] == "pc-legacy-null" for a in agents), "NULL-company agent invisible!"
