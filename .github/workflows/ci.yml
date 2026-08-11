@@ -135,7 +135,11 @@ jobs:
           ENROLL_URL: ${{ secrets.ENROLL_URL }}
           RUN_SCRIPT_ALLOWLIST: ${{ secrets.RUN_SCRIPT_ALLOWLIST }}
         run: |
-          $endpoint = if ($env:SERVER_ENDPOINT) { $env:SERVER_ENDPOINT } else { 'http://CHANGE-ME/ingest' }
+          # Endpoint comes from the repo's committed endpoint.json (authoritative
+          # for this deployment) so a stale/missing SERVER_ENDPOINT secret can't
+          # bake the wrong URL; the secret only wins when the file is absent.
+          $fileCfg = if (Test-Path ./Enterprise/agent/endpoint.json) { Get-Content ./Enterprise/agent/endpoint.json -Raw | ConvertFrom-Json } else { $null }
+          $endpoint = if ($fileCfg -and $fileCfg.endpoint) { $fileCfg.endpoint } elseif ($env:SERVER_ENDPOINT) { $env:SERVER_ENDPOINT } else { 'http://CHANGE-ME/ingest' }
           $token = if ($env:API_TOKEN) { $env:API_TOKEN } else { 'CHANGE-ME' }
           $manifest = (Get-Content ./Enterprise/api/features.json -Raw | ConvertFrom-Json).features
           $features = @($manifest | ForEach-Object {
@@ -154,9 +158,11 @@ jobs:
             features = $features
             run_script_allowlist = @($runScripts)
           }
-          # Optional mTLS: when MTLS_ENDPOINT is set, agents talk to the :9443
-          # client-auth port and enroll for a client cert over the main port.
-          if ($env:MTLS_ENDPOINT) {
+          # Optional mTLS: only when the committed endpoint.json does NOT pin the
+          # endpoint (file is authoritative), MTLS_ENDPOINT points agents at the
+          # :9443 client-auth port and they enroll for a client cert over the
+          # main port. MTLS_ENDPOINT is also honored standalone if set.
+          if ($env:MTLS_ENDPOINT -and (-not $fileCfg -or -not $fileCfg.endpoint)) {
             $cfg.endpoint = $env:MTLS_ENDPOINT
             $cfg.enroll_url = if ($env:ENROLL_URL) { $env:ENROLL_URL } else { ($env:MTLS_ENDPOINT -replace '/ingest$', '/api/agent/enroll') }
           }

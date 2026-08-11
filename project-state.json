@@ -1,25 +1,26 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-12T04:29:10+05:30",
+  "generated": "2026-08-12T04:56:59+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "e2445393e6134f11781beaebebb8b014ae40116f",
-  "last_verified_date": "2026-08-12T04:17:04+05:30",
+  "last_verified_commit": "44d67517c2da26fa62c3f44a7c23d3deed548edb",
+  "last_verified_date": "2026-08-12T04:29:10+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 98,
+    "commit_count": 99,
     "clean_working_tree": false,
-    "head": "e2445393e6134f11781beaebebb8b014ae40116f"
+    "head": "44d67517c2da26fa62c3f44a7c23d3deed548edb"
   },
   "latest_delta": {
-    "detected_at": "2026-08-12T04:29:10+05:30",
-    "added": [],
+    "detected_at": "2026-08-12T04:56:59+05:30",
+    "added": [
+      "Enterprise/agent/endpoint.json"
+    ],
     "removed": [],
     "changed": [
-      "Enterprise/agent/agent-version.json",
-      "Enterprise/agent/wix/Agent.wxs"
+      ".github/workflows/ci.yml"
     ],
-    "unchanged_count": 129
+    "unchanged_count": 130
   },
   "module_state": {
     "working": [

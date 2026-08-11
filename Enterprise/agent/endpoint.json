@@ -1,0 +1,4 @@
+{
+  "endpoint": "http://10.73.99.35/ingest",
+  "enroll_url": "http://10.73.99.35/api/agent/enroll"
+}
