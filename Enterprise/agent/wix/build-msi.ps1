@@ -1,4 +1,4 @@
-# build-msi.ps1 - produces IT-Toolkit-Agent.msi.
+# build-msi.ps1 - produces IT-Toolkit-Agent-<version>.msi.
 #
 # Stages the built agent exe, its config, and the toolkit files it wraps into
 # wix\stage\ (the WXS references stage\...), then invokes WiX.
@@ -7,7 +7,7 @@
 # (WiX v7 requires accepting the OSMF EULA; v5 is MIT and uses the same v4 WXS schema.)
 # Steps:
 #   1. run Enterprise/agent/build/build-agent.ps1  (produces build/out/)
-#   2. run this script                               (produces build/out/IT-Toolkit-Agent.msi)
+#   2. run this script                               (produces build/out/IT-Toolkit-Agent-<version>.msi)
 
 [CmdletBinding()]
 param(
@@ -106,16 +106,20 @@ Write-Host "Baking AgentVersion=$AgentVersion AgentInterval=$AgentInterval MsiVe
 # against the WXS location regardless of the caller's working directory.
 Push-Location $WixDir
 try {
-    & $wix.Source build 'Agent.wxs' -o "$(Join-Path $BuildOut 'IT-Toolkit-Agent.msi')" -d "AgentVersion=$MsiVersion" -d "AgentInterval=$AgentInterval"
+    # Versioned artifact name so every build is distinguishable at a glance:
+    # IT-Toolkit-Agent-<semver>.msi (semver, NOT the 4-part upgrade revision).
+    $MsiName = "IT-Toolkit-Agent-$AgentVersion.msi"
+    & $wix.Source build 'Agent.wxs' -o "$(Join-Path $BuildOut $MsiName)" -d "AgentVersion=$MsiVersion" -d "AgentInterval=$AgentInterval"
     if ($LASTEXITCODE -ne 0) { throw "WiX build failed with exit code $LASTEXITCODE (see output above)" }
 }
 finally {
     Pop-Location
 }
 
-if (-not (Test-Path (Join-Path $BuildOut 'IT-Toolkit-Agent.msi'))) {
-    throw "WiX build reported success but no MSI was produced at $BuildOut\IT-Toolkit-Agent.msi"
+$MsiPath = Join-Path $BuildOut $MsiName
+if (-not (Test-Path $MsiPath)) {
+    throw "WiX build reported success but no MSI was produced at $MsiPath"
 }
 
-Write-Host "MSI built: $BuildOut\IT-Toolkit-Agent.msi"
-Write-Host "Deploy with: msiexec /i IT-Toolkit-Agent.msi /qn   (or push via Intune/GPO/SCCM)"
+Write-Host "MSI built: $MsiPath"
+Write-Host "Deploy with: msiexec /i $MsiName /qn   (or push via Intune/GPO/SCCM)"

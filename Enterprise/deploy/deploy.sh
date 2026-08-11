@@ -308,10 +308,10 @@ echo "  Portal:     $SCHEME://$HOST/"
 echo "  API token:  $API_TOKEN  (also in .env)"
 echo
 echo "To make the agent downloadable from the portal (P3), upload the CI-built"
-echo "generic IT-Toolkit-Agent.msi into the agent_artifacts volume:"
-echo "  docker compose -f $HERE/docker-compose.yml cp <path>/IT-Toolkit-Agent.msi api:/artifacts/"
+echo "generic IT-Toolkit-Agent-<version>.msi into the agent_artifacts volume:"
+echo "  docker compose -f $HERE/docker-compose.yml cp <path>/IT-Toolkit-Agent-1.1.1.msi api:/artifacts/IT-Toolkit-Agent.msi"
 echo
 echo "Next: build the agent exe/msi on Windows (or CI):"
 echo "  1) .\\Enterprise\\agent\\build\\build-agent.ps1"
 echo "  2) .\\Enterprise\\agent\\wix\\build-msi.ps1"
-echo "Then push IT-Toolkit-Agent.msi via Intune/GPO/SCCM (silent: msiexec /i ... /qn)."
+echo "Then push IT-Toolkit-Agent-<version>.msi via Intune/GPO/SCCM (silent: msiexec /i ... /qn)."

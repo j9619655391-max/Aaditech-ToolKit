@@ -821,7 +821,10 @@ async def download_msi(request: Request, user: dict = Depends(require_role("admi
         user=user,
         ip=ratelimit.client_ip(request),
     )
-    return FileResponse(path, media_type="application/octet-stream", filename=bundle.MSI_FILENAME)
+    # Versioned download name (IT-Toolkit-Agent-<version>.msi) so operators can
+    # tell at a glance whether the artifact on disk is the latest build.
+    filename = f"IT-Toolkit-Agent-{bundle.AGENT_VERSION}.msi"
+    return FileResponse(path, media_type="application/octet-stream", filename=filename)
 
 
 # ---------------------------------------------------------------- SaaS build (github remote / local_windows)

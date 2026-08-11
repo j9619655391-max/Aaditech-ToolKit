@@ -1,25 +1,31 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-12T04:10:08+05:30",
+  "generated": "2026-08-12T04:17:04+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "b34a1822090222986cdd7070e41761d8310d657c",
-  "last_verified_date": "2026-08-12T03:38:46+05:30",
+  "last_verified_commit": "ceb6717041975d6ca8cbcff13fe3ed08d2048355",
+  "last_verified_date": "2026-08-12T04:10:08+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 96,
+    "commit_count": 97,
     "clean_working_tree": false,
-    "head": "b34a1822090222986cdd7070e41761d8310d657c"
+    "head": "ceb6717041975d6ca8cbcff13fe3ed08d2048355"
   },
   "latest_delta": {
-    "detected_at": "2026-08-12T04:10:08+05:30",
+    "detected_at": "2026-08-12T04:17:04+05:30",
     "added": [],
     "removed": [],
     "changed": [
-      "Enterprise/agent/wix/Agent.wxs",
-      "Enterprise/agent/agent-version.json"
+      "Enterprise/api/app/main.py",
+      "Enterprise/README.md",
+      "Enterprise/agent/wix/build-msi.ps1",
+      ".github/workflows/ci.yml",
+      "Enterprise/api/app/github.py",
+      "Enterprise/api/app/bundle.py",
+      "Enterprise/deploy/deploy.sh",
+      "Enterprise/deploy/deploy.ps1"
     ],
-    "unchanged_count": 129
+    "unchanged_count": 123
   },
   "module_state": {
     "working": [

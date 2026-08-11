@@ -29,7 +29,8 @@ from . import config
 _API = "https://api.github.com"
 _WORKFLOW = "ci.yml"
 _ARTIFACT = "it-toolkit-agent"
-_MSI = "IT-Toolkit-Agent.msi"
+_MSI = "IT-Toolkit-Agent.msi"      # canonical storage name in the artifacts dir
+_MSI_GLOB = ".msi"                 # zip contains IT-Toolkit-Agent-<version>.msi
 _TIMEOUT = 30
 
 
@@ -206,9 +207,9 @@ def download_msi(repo: str, token: str, artifact_id: int, created_at: str | None
             raise GitHubError(f"Artifact CDN download {loc} -> {e2.code}: {e2.reason}") from e2
 
     with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-        names = [n for n in zf.namelist() if n.endswith(_MSI)]
+        names = [n for n in zf.namelist() if n.lower().endswith(_MSI_GLOB)]
         if not names:
-            raise GitHubError(f"Artifact zip has no {_MSI} (contents: {zf.namelist()[:5]})")
+            raise GitHubError(f"Artifact zip has no {_MSI_GLOB} installer (contents: {zf.namelist()[:5]})")
         with zf.open(names[0]) as src, open(dest, "wb") as out:
             out.write(src.read())
     return dest

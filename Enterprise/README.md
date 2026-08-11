@@ -104,7 +104,7 @@ fallback for `/api/build/*`):
 
 ```powershell
 .\Enterprise\agent\build\build-agent.ps1     # → build/out/IT-Toolkit-Agent.exe
-.\Enterprise\agent\wix\build-msi.ps1         # → build/out/IT-Toolkit-Agent.msi
+.\Enterprise\agent\wix\build-msi.ps1         # → build/out/IT-Toolkit-Agent-<version>.msi
 ```
 
 ### One-click company install (post-setup)
@@ -126,7 +126,8 @@ only. Where the MSI comes from depends on your setup-wizard choice:
 - **manual** → copy your own MSI into the volume with:
 
 ```bash
-docker compose cp IT-Toolkit-Agent.msi api:/artifacts/
+# portal serves the versioned download name; store the MSI under the canonical name
+docker compose cp IT-Toolkit-Agent-<version>.msi api:/artifacts/IT-Toolkit-Agent.msi
 ```
 
 ## What's in here

@@ -393,7 +393,8 @@ $env:Path = "$env:USERPROFILE\.dotnet\tools;$env:Path"
 # ---------------------------------------------------------------- sign
 
 $Exe = Join-Path $BuildOut 'IT-Toolkit-Agent.exe'
-$Msi = Join-Path $BuildOut 'IT-Toolkit-Agent.msi'
+# build-msi.ps1 now emits a versioned artifact name.
+$Msi = Join-Path $BuildOut "IT-Toolkit-Agent-$AgentVersion.msi"
 if (Test-Path $Pfx) {
     $passFile = Join-Path $CodesignDir 'codesign-password.txt'
     $pass = if (Test-Path $passFile) { (Get-Content $passFile -Raw).Trim() } else { '' }
@@ -436,7 +437,7 @@ else {
 
 if (Test-Path $Msi) {
     Log "Publishing MSI into agent_artifacts volume (portal /api/agent-msi)"
-    docker compose -f $ComposeFile cp $Msi api:/artifacts/ | Out-Null
+    docker compose -f $ComposeFile cp $Msi api:/artifacts/IT-Toolkit-Agent.msi | Out-Null
     if ($LASTEXITCODE -ne 0) { Die "docker compose cp failed - is the api container running?" }
     Log "MSI published."
 }

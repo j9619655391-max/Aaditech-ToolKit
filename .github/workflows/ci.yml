@@ -187,7 +187,7 @@ jobs:
           CODESIGN_PFX_PASSWORD: ${{ secrets.CODESIGN_PFX_PASSWORD }}
         run: |
           $out = 'Enterprise/agent/build/out'
-          $targets = @("$out\IT-Toolkit-Agent.exe", "$out\IT-Toolkit-Agent.msi")
+          $targets = @(Join-Path $out 'IT-Toolkit-Agent.exe') + @(Get-ChildItem (Join-Path $out '*.msi') | ForEach-Object { $_.FullName })
           if (-not $env:CODESIGN_PFX_B64) {
             Write-Host "::warning::CODESIGN_PFX_B64 not set — artifacts left UNSIGNED"
             exit 0
