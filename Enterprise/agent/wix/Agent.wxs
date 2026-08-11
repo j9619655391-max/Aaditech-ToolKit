@@ -168,7 +168,7 @@
                   Return="check"
                   Impersonate="no"
                   Execute="deferred"
-                  ExeCommand="&quot;[SystemFolder]schtasks.exe&quot; /create /tn ITToolkitAgent /sc minute /mo $(var.AgentInterval) /ru &quot;NETWORK SERVICE&quot; /f /tr &quot;\&quot;[INSTALLFOLDER]IT-Toolkit-Agent.exe\&quot; -LoopMinutes $(var.AgentInterval)&quot;" />
+                  ExeCommand="&quot;[SystemFolder]schtasks.exe&quot; /create /tn ITToolkitAgent /sc minute /mo $(var.AgentInterval) /ru &quot;NT AUTHORITY\NETWORK SERVICE&quot; /rp &quot;&quot; /f /tr &quot;\&quot;[INSTALLFOLDER]IT-Toolkit-Agent.exe\&quot; -LoopMinutes $(var.AgentInterval)&quot;" />
 
     <CustomAction Id="CreateElevatedTask"
                   Directory="INSTALLFOLDER"
@@ -196,7 +196,7 @@
     <!-- Modify so collection still writes; restricted to privileged identities.   -->
     <CustomAction Id="HardenAgentDataAcl"
                   Directory="INSTALLFOLDER"
-                  Return="check"
+                  Return="ignore"
                   Impersonate="no"
                   Execute="deferred"
                   ExeCommand="&quot;[SystemFolder]icacls.exe&quot; &quot;[CommonAppDataFolder]ITToolkit-Agent&quot; /inheritance:r /grant:r SYSTEM:(OI)(CI)F Administrators:(OI)(CI)F &quot;NETWORK SERVICE&quot;:(OI)(CI)M /T /C" />
@@ -207,7 +207,7 @@
          Read on this one. -->
     <CustomAction Id="HardenLocalJsonAcl"
                   Directory="INSTALLFOLDER"
-                  Return="check"
+                  Return="ignore"
                   Impersonate="no"
                   Execute="deferred"
                   ExeCommand="&quot;[SystemFolder]icacls.exe&quot; &quot;[INSTALLFOLDER]agent.json&quot; /inheritance:r /grant:r SYSTEM:R Administrators:R &quot;NETWORK SERVICE&quot;:R /C" />
