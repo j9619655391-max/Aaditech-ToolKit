@@ -1,32 +1,26 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-12T00:21:43+05:30",
+  "generated": "2026-08-12T03:12:26+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "9ae3b831c001948f9688957447aa161c6c5f90cc",
-  "last_verified_date": "2026-08-11T05:32:29+05:30",
+  "last_verified_commit": "f1255a79057bef29e2257f75234331474ec6fc34",
+  "last_verified_date": "2026-08-12T00:21:42+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 93,
+    "commit_count": 94,
     "clean_working_tree": false,
-    "head": "9ae3b831c001948f9688957447aa161c6c5f90cc"
+    "head": "f1255a79057bef29e2257f75234331474ec6fc34"
   },
   "latest_delta": {
-    "detected_at": "2026-08-12T00:21:43+05:30",
-    "added": [
-      "Documentation/PROJECT-SPEC.md",
-      "Documentation/Local-E2E-Test.md"
-    ],
+    "detected_at": "2026-08-12T03:12:26+05:30",
+    "added": [],
     "removed": [],
     "changed": [
-      "Documentation/README.md",
-      "CHANGELOG.md",
-      "Enterprise/api/tests/test_smoke.py",
-      "Enterprise/api/app/main.py",
-      "Enterprise/api/app/github.py",
-      "Documentation/Deployment-AI-Runbook.md"
+      "Enterprise/agent/agent-version.json",
+      "Enterprise/agent/wix/Agent.wxs",
+      "Enterprise/portal/index.html"
     ],
-    "unchanged_count": 123
+    "unchanged_count": 128
   },
   "module_state": {
     "working": [

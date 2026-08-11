@@ -215,9 +215,13 @@
     <InstallExecuteSequence>
       <Custom Action="RemoveSchedTask" After="InstallInitialize" Condition="REMOVE=&quot;ALL&quot;" />
       <Custom Action="RemoveElevatedTask" After="InstallInitialize" Condition="REMOVE=&quot;ALL&quot;" />
-      <Custom Action="CreateSchedTask" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE" />
+      <!-- Deferred actions MUST run between InstallInitialize and InstallFinalize;
+           scheduling After=InstallFinalize makes msiexec fail with Error 2762
+           ("Unable to schedule operation"). After=InstallFiles is the last valid
+           slot that still guarantees the files exist first. -->
+      <Custom Action="CreateSchedTask" After="InstallFiles" Condition="NOT Installed AND NOT REMOVE" />
       <Custom Action="CreateElevatedTask" After="CreateSchedTask" Condition="NOT Installed AND NOT REMOVE" />
-      <Custom Action="HardenAgentDataAcl" After="InstallFinalize" Condition="NOT REMOVE" />
+      <Custom Action="HardenAgentDataAcl" After="InstallFiles" Condition="NOT REMOVE" />
       <Custom Action="HardenLocalJsonAcl" After="HardenAgentDataAcl" Condition="NOT REMOVE" />
     </InstallExecuteSequence>
 
