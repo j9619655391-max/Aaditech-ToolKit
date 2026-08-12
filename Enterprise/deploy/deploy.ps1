@@ -251,6 +251,7 @@ $AgentVersionJson = Join-Path $Here 'agent\agent-version.json'
 $agentMeta = Get-Content $AgentVersionJson -Raw | ConvertFrom-Json
 $AgentVersion = [string]$agentMeta.agent_version
 $IntervalMinutes = [int]$agentMeta.interval_minutes
+$MetricsIntervalSeconds = [int]$agentMeta.metrics_interval_seconds
 Copy-Item $AgentVersionJson (Join-Path $Here 'api\agent-version.json') -Force
 
 # mTLS: agents always talk to the :9443 client-auth port (TLS via internal CA).
@@ -262,6 +263,7 @@ $cfg = [ordered]@{
     token = $env:API_TOKEN
     agent_version = $AgentVersion
     interval_minutes = $IntervalMinutes
+    metrics_interval_seconds = $MetricsIntervalSeconds
     # C5: agent-side run-script allowlist (mirror of RUN_SCRIPT_ALLOWLIST).
     run_script_allowlist = @($env:RUN_SCRIPT_ALLOWLIST -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
     features = $features

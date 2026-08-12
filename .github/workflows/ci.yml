@@ -155,6 +155,7 @@ jobs:
             token = $token
             agent_version = [string]$agentMeta.agent_version
             interval_minutes = [int]$agentMeta.interval_minutes
+            metrics_interval_seconds = [int]$agentMeta.metrics_interval_seconds
             features = $features
             run_script_allowlist = @($runScripts)
           }

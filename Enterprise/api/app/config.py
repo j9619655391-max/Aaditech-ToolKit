@@ -44,6 +44,19 @@ RUN_SCRIPT_ALLOWLIST = [
 
 ALERT_EVAL_MINUTES = int(os.environ.get("ALERT_EVAL_MINUTES", "1"))
 
+# ---------------------------------------------------------------- time-series metrics (Phase A)
+# Raw samples stream from agents at metrics_interval_seconds; the rollup task
+# downsamples to hour/day buckets and retention purges old data so storage stays
+# bounded on plain Postgres. Query windows wider than raw retention read the
+# rollups, so 7d/30d graphs stay cheap.
+
+TS_RAW_RETENTION_HOURS = int(os.environ.get("TS_RAW_RETENTION_HOURS", "48"))
+TS_HOURLY_RETENTION_DAYS = int(os.environ.get("TS_HOURLY_RETENTION_DAYS", "30"))
+TS_DAILY_RETENTION_DAYS = int(os.environ.get("TS_DAILY_RETENTION_DAYS", "365"))
+TS_ROLLUP_MINUTES = int(os.environ.get("TS_ROLLUP_MINUTES", "60"))
+MAX_METRICS_POINTS = int(os.environ.get("MAX_METRICS_POINTS", "2000"))
+METRICS_INTERVAL_SECONDS = int(os.environ.get("METRICS_INTERVAL_SECONDS", "60"))
+
 # SMTP email delivery for alerts (P6.1). Emails are only sent when SMTP_HOST
 # is set; the rest are optional. Provider presets fill in host/port/encryption
 # when the operator picks one during first-run setup (custom keeps env values).

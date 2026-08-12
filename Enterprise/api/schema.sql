@@ -114,3 +114,34 @@ ALTER TABLE agents ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES compan
 ALTER TABLE users  ADD COLUMN IF NOT EXISTS company_id INTEGER REFERENCES companies(id);
 CREATE INDEX IF NOT EXISTS idx_agents_company ON agents(company_id);
 CREATE INDEX IF NOT EXISTS idx_users_company ON users(company_id);
+
+-- Phase A: real-time metrics time-series. One row per agent sample (kind
+-- 'metrics' events are routed here by /ingest, NOT into events). payload is a
+-- stable JSONB shape the rollup + API render from. client_msg_id gives
+-- at-most-once dedup identical to events.
+CREATE TABLE IF NOT EXISTS metrics (
+    id            BIGSERIAL PRIMARY KEY,
+    agent_id      INTEGER NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    ts            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    client_msg_id TEXT,
+    payload       JSONB NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_metrics_client_msg ON metrics(client_msg_id);
+CREATE INDEX IF NOT EXISTS idx_metrics_agent_ts ON metrics(agent_id, ts DESC);
+CREATE INDEX IF NOT EXISTS idx_metrics_ts ON metrics USING brin (ts);
+
+-- Phase A: downsampled rollups (hour/day) kept long-term while raw samples are
+-- purged after TS_RAW_RETENTION_HOURS. avg/max/min are flattened numeric dicts
+-- (e.g. {"cpu": 12.3, "disk_used_pct:C": 74.1}).
+CREATE TABLE IF NOT EXISTS metrics_rollup (
+    id            BIGSERIAL PRIMARY KEY,
+    agent_id      INTEGER NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    granularity   TEXT NOT NULL,                 -- 'hour' | 'day'
+    bucket        TIMESTAMPTZ NOT NULL,
+    avg           JSONB NOT NULL,
+    max           JSONB NOT NULL,
+    min           JSONB NOT NULL,
+    samples       INTEGER NOT NULL DEFAULT 0
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_metrics_rollup ON metrics_rollup(agent_id, granularity, bucket);
+CREATE INDEX IF NOT EXISTS idx_metrics_rollup_agent ON metrics_rollup(agent_id, bucket DESC);

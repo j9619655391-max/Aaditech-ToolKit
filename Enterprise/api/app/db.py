@@ -168,6 +168,43 @@ _SCHEMA_MIGRATIONS = [
     """
     CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action)
     """,
+    # Phase A: real-time metrics time-series + downsampled rollups.
+    """
+    CREATE TABLE IF NOT EXISTS metrics (
+        id            BIGSERIAL PRIMARY KEY,
+        agent_id      INTEGER NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+        ts            TIMESTAMPTZ NOT NULL DEFAULT now(),
+        client_msg_id TEXT,
+        payload       JSONB NOT NULL
+    )
+    """,
+    """
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_metrics_client_msg ON metrics(client_msg_id)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_metrics_agent_ts ON metrics(agent_id, ts DESC)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_metrics_ts ON metrics USING brin (ts)
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS metrics_rollup (
+        id            BIGSERIAL PRIMARY KEY,
+        agent_id      INTEGER NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+        granularity   TEXT NOT NULL,
+        bucket        TIMESTAMPTZ NOT NULL,
+        avg           JSONB NOT NULL,
+        max           JSONB NOT NULL,
+        min           JSONB NOT NULL,
+        samples       INTEGER NOT NULL DEFAULT 0
+    )
+    """,
+    """
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_metrics_rollup ON metrics_rollup(agent_id, granularity, bucket)
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_metrics_rollup_agent ON metrics_rollup(agent_id, bucket DESC)
+    """,
 ]
 
 

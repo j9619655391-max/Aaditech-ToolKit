@@ -83,6 +83,15 @@ are all derived from the setup answers.
   table + `company_id` on users/agents; setup creates the tenant and binds the
   admin; list queries are company-scoped; `/api/companies` +
   `/api/settings/default-company` + portal Companies manager.
+- **Phase A — real-time metrics time-series done & verified (2026-08-13)**: a `metrics`
+  collector streams CPU/RAM/disk/net/GPU/battery samples every
+  `metrics_interval_seconds` on its own fast cadence into a dedicated `metrics`
+  table; a background rollup task downsamples to hour/day `metrics_rollup`
+  buckets (backfill from each agent's earliest sample, advisory-locked) and
+  enforces raw/hour/day retention so 7d/30d graphs stay cheap
+  (`api/app/timeseries.py`, `Get-RealtimeMetrics.ps1`). New Performance portal
+  tab + `/api/agents/{id}/metrics|latest|keys` (session + company scoped,
+  auto raw→hour→day granularity). API suite grown to 30 pytest cases.
 - CI: PowerShell validation + agent build both green on `windows-latest`.
 
 ---

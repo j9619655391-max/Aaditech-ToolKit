@@ -246,6 +246,7 @@ PY
 AGENT_VERSION_JSON="$HERE/agent/agent-version.json"
 AGENT_VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["agent_version"])' "$AGENT_VERSION_JSON")"
 INTERVAL_MINUTES="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["interval_minutes"])' "$AGENT_VERSION_JSON")"
+METRICS_INTERVAL_SECONDS="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("metrics_interval_seconds", 60))' "$AGENT_VERSION_JSON")"
 cp "$AGENT_VERSION_JSON" "$HERE/api/agent-version.json"
 
 # C5: mirror the run-script allowlist into agent-config so the agent enforces it
@@ -265,6 +266,7 @@ cat > "$CONFIG_OUT" <<EOF
   "token": "$API_TOKEN",
   "agent_version": "$AGENT_VERSION",
   "interval_minutes": $INTERVAL_MINUTES,
+  "metrics_interval_seconds": $METRICS_INTERVAL_SECONDS,
   "run_script_allowlist": $RUN_SCRIPT_ALLOWLIST_JSON,
   "features": $FEATURES_JSON
 }

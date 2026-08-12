@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.4.0 — real-time metrics time-series (Phase A)
+
+- **Relentless per-minute sampling:** a new `metrics` collector
+  (`Enterprise/agent/collectors/Get-RealtimeMetrics.ps1`) streams CPU (overall +
+  per-core), RAM, per-drive disk usage/throughput, per-interface network
+  throughput, GPU utilization, temperature, and battery state on its own fast
+  cadence (`metrics_interval_seconds`, default 60s) — independent of the slow
+  `interval_minutes` inventory pass. Samples enqueue as `kind=metrics` through
+  the existing outbox, so they inherit queuing, dedup (`client_msg_id`),
+  batching and backoff (`Agent-Collect.ps1`).
+- **Dedicated `metrics` table:** `kind=metrics` events are routed by `/ingest`
+  into `metrics` (raw samples, BRIN-indexed on ts), NOT `events` — keeping the
+  inventory/event store clean while the sample store churns.
+- **Downsampled rollups:** a background `rollup_loop` aggregates raw samples
+  into `metrics_rollup` hour buckets, promotes to day buckets, and purges raw
+  rows after `TS_RAW_RETENTION_HOURS` (48h default); hour rows live
+  `TS_HOURLY_RETENTION_DAYS` (30d), day rows `TS_DAILY_RETENTION_DAYS` (365d).
+  Long-range dashboard queries read the rollups, so 7d/30d graphs stay cheap.
+  The rollup backfills from each agent's earliest raw sample (idle agents'
+  older data is not lost) and is serialized with `pg_advisory_lock` so
+  concurrent workers can't double-write (`api/app/timeseries.py`).
+- **Read endpoints + Performance portal tab:** `GET /api/agents/{id}/metrics`
+  (range `1h|24h|7d|30d`, auto-bucket to `MAX_METRICS_POINTS`, on-the-fly
+  raw→hour→day granularity with raw fallback for a cold rollup table),
+  `/metrics/latest`, `/metrics/keys`. New **Performance** portal tab renders
+  CPU / RAM / disk / network / GPU / battery charts with a 15s auto-refresh;
+  agent hostnames on the Agents tab deep-link straight into the agent's graph.
+  All endpoints are session + company scoped (`_get_scoped_agent`).
+- **Config knobs:** `TS_RAW_RETENTION_HOURS`, `TS_HOURLY_RETENTION_DAYS`,
+  `TS_DAILY_RETENTION_DAYS`, `TS_ROLLUP_MINUTES`, `MAX_METRICS_POINTS`,
+  `METRICS_INTERVAL_SECONDS` — all wired through `.env`/deploy and
+  `docker-compose.yml`.
+- **Tests:** `tests/test_metrics.py` adds ingest row-counts, read endpoints,
+  dedup, and the rollup/retention path (backfill → hour/day buckets →
+  retention purge) — suite grown to 30, all green against a throwaway Postgres.
+
 ## v1.3.1 — bugfixes (GitHub repo normalization + legacy-agent visibility)
 
 - **GitHub repo normalization:** the repo is now canonicalized to `owner/repo`

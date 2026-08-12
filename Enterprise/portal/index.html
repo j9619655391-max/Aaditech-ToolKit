@@ -107,6 +107,8 @@
   /* ================================================================ buttons */
   button.action, a.action { display:inline-flex; align-items:center; justify-content:center; gap:6px; background:var(--accent); color:#06222f; border:none; border-radius:8px; padding:6px 14px; font-size:12.5px; font-weight:700; cursor:pointer; text-decoration:none; font-family:inherit; transition:filter .12s ease; }
   button.action:hover, a.action:hover { filter:brightness(1.09); }
+  button.link { background:none; border:none; padding:0; color:var(--accent); font:inherit; font-weight:600; cursor:pointer; text-align:left; }
+  button.link:hover { text-decoration:underline; }
   button.ghost, a.ghost { display:inline-flex; align-items:center; justify-content:center; gap:6px; background:transparent; border:1px solid var(--line-2); color:var(--text); padding:6px 14px; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:500; text-decoration:none; font-family:inherit; transition:background .12s ease, border-color .12s ease; }
   button.ghost:hover, a.ghost:hover { background:rgba(255,255,255,.05); border-color:var(--accent); }
   button.ghost.active, a.ghost.active { background:color-mix(in srgb,var(--accent) 14%,transparent); border-color:var(--accent); color:var(--accent); font-weight:600; }
@@ -137,6 +139,21 @@
   .center.card { padding:26px; }
   .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
   .quick-links { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+
+  /* ================================================================ performance (Phase A) */
+  .perf-controls { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
+  .perf-controls label { margin:0; }
+  .perf-controls select { width:auto; min-width:180px; }
+  .seg-group { display:inline-flex; border:1px solid var(--line-2); border-radius:8px; overflow:hidden; }
+  .seg { background:transparent; border:none; color:var(--muted); font-family:inherit; font-size:12px; font-weight:600; padding:7px 12px; cursor:pointer; }
+  .seg:hover { color:var(--text); }
+  .seg.on { background:color-mix(in srgb,var(--accent) 18%,transparent); color:var(--accent); }
+  .chart-wrap { position:relative; }
+  .chart-wrap svg { width:100%; height:auto; max-height:200px; display:block; }
+  .chart-txt { font-size:10px; fill:var(--muted); }
+  .chart-legend { display:flex; flex-wrap:wrap; gap:12px; margin-top:8px; font-size:11px; color:var(--muted); }
+  .lg { display:inline-flex; align-items:center; gap:5px; }
+  .lg i { width:8px; height:8px; border-radius:999px; display:inline-block; }
 
   /* ================================================================ responsive */
   @media (max-width:900px){
@@ -210,6 +227,7 @@
       <button data-view="commands"><svg class="ic" aria-hidden="true"><use href="#ic-terminal"/></svg>Commands</button>
       <button data-view="alerts"><svg class="ic" aria-hidden="true"><use href="#ic-bell"/></svg>Alerts <span id="alertBadge" class="alert-badge" style="display:none"></span></button>
       <button data-view="software"><svg class="ic" aria-hidden="true"><use href="#ic-app-window"/></svg>Software</button>
+      <button data-view="performance"><svg class="ic" aria-hidden="true"><use href="#ic-bar-chart"/></svg>Performance</button>
       <div class="nav-label">Administration</div>
       <button data-view="features"><svg class="ic" aria-hidden="true"><use href="#ic-sliders"/></svg>Features</button>
       <button data-view="users"><svg class="ic" aria-hidden="true"><use href="#ic-users"/></svg>Users</button>
@@ -249,6 +267,11 @@
 const app = document.getElementById('app');
 let view = 'dashboard';
 
+// Performance tab state (Phase A): selected agent id + range; auto-refresh timer.
+let perfAgent = null;
+let perfRange = '1h';
+let perfTimer = null;
+
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 
 const ic = name => `<svg class="ic" aria-hidden="true"><use href="#ic-${name}"/></svg>`;
@@ -280,6 +303,7 @@ const VIEW_META = {
   commands: ['Commands', 'Issue reboot / wake / run-script and track delivery', 'terminal'],
   alerts: ['Alerts', 'Open, acknowledged and resolved alerts · delivery channels', 'bell'],
   software: ['Software', 'Installed-application inventory search and license compliance', 'app-window'],
+  performance: ['Performance', 'Per-agent real-time CPU / RAM / disk / network / GPU / battery graphs', 'bar-chart'],
   reports: ['Reports', 'Fleet and per-agent CSV / JSON export', 'file-text'],
   features: ['Features', 'Enable, disable and configure collector modules', 'sliders'],
   users: ['Users', 'Team accounts, roles and companies / tenants', 'users'],
@@ -595,6 +619,7 @@ async function render() {
   if (view === 'commands') return renderCommands();
   if (view === 'alerts') return renderAlerts();
   if (view === 'software') return renderSoftware();
+  if (view === 'performance') return renderPerformance();
   if (view === 'reports') return renderReports();
   if (view === 'features') return renderFeatures();
   if (view === 'users') return renderUsers();
@@ -770,7 +795,7 @@ async function renderAgents() {
   if (!data) return;
   const rows = data.map(a => `
     <tr>
-      <td>${esc(a.hostname)}</td>
+      <td><button class="link" onclick="openPerf(${a.id})" title="View real-time metrics">${esc(a.hostname)}</button></td>
       <td>${esc(a.os)}</td>
       <td>${esc(a.ip)}</td>
       <td>v${esc(a.agent_version)}</td>
@@ -822,6 +847,181 @@ async function renderEvents() {
 function toggleJson(id) {
   const row = document.getElementById('json-' + id);
   row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+
+// ---------------------------------------------------------------- performance (Phase A)
+
+function openPerf(agentId) {
+  perfAgent = String(agentId);
+  gotoView('performance');
+}
+
+function schedulePerfRefresh() {
+  if (perfTimer) clearTimeout(perfTimer);
+  if (view !== 'performance') return;
+  perfTimer = setTimeout(() => { if (view === 'performance') renderPerformance(); }, 15000);
+}
+
+const perfColors = ['var(--accent)', '#0ea5e9', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#14b8a6', '#f97316'];
+
+function perfSeries(avg, key) {
+  if (!avg || typeof avg[key] !== 'number' || !isFinite(avg[key])) return null;
+  return avg[key];
+}
+
+function chartCard(title, seriesList, unit, points) {
+  // seriesList: [{key, label, color}] drawn against the shared time axis of
+  // `points` (each {ts, avg, max, min}).
+  const W = 900, H = 190, PAD = 8;
+  let all = [];
+  seriesList.forEach((s, si) => {
+    s.points = points.map(p => perfSeries(p.avg, s.key)).map((v, i) => ({ i, v: v == null ? null : v }));
+    all = all.concat(s.points.filter(p => p.v != null).map(p => p.v));
+    if (s.points.every(p => p.v == null) && !(si === 0 && seriesList.length === 1)) s.hidden = true;
+  });
+  if (all.length === 0) {
+    return `<div class="card"><h3>${esc(title)}</h3><p class="muted">No ${esc(unit)} data yet — the agent starts streaming after it next checks in with metrics enabled.</p></div>`;
+  }
+  let mn = Math.min(...all), mx = Math.max(...all);
+  if (mn === mx) { mn -= 1; mx += 1; }
+  const span = mx - mn || 1;
+  const inner = p => p.v == null ? null : (PAD + (H - 2 * PAD) * (1 - (p.v - mn) / span));
+  const xp = i => PAD + (points.length <= 1 ? 0 : (W - 2 * PAD) * i / Math.max(1, points.length - 1));
+  const n = seriesList.filter(s => !s.hidden).length;
+  const polys = seriesList.map((s, si) => {
+    if (s.hidden) return '';
+    const pts = s.points.map(p => (inner(p) == null ? '' : `${xp(p.i)},${inner(p).toFixed(1)}`)).filter(Boolean).join(' ');
+    const y0 = (maxAt) => PAD + (H - 2 * PAD) * (1 - (maxAt - mn) / span);
+    let path = '';
+    s.points.forEach((p, j) => {
+      const y = inner(p);
+      if (y == null) return;
+      path += (j === 0 ? `M${xp(p.i)},${y.toFixed(1)}` : `L${xp(p.i)},${y.toFixed(1)}`);
+    });
+    return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2" opacity="0.9"/>` +
+      `<path d="M${xp(0)},${y0(mn)}H${xp(points.length ? points.length - 1 : 0)}" stroke="currentColor" stroke-opacity="0.15" stroke-width="1"/>`;
+  }).join('');
+  const mid = Math.round((mn + mx) / 2);
+  const legend = seriesList.filter(s => !s.hidden).map(s =>
+    `<span class="lg"><i style="background:${s.color}"></i>${esc(s.label)}</span>`).join('');
+  const last = points.length ? points[points.length - 1] : null;
+  return `<div class="card"><h3>${esc(title)} <span class="badge info">${esc(unit)}</span></h3>
+    <div class="chart-wrap">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(title)} graph">
+        <line x1="${PAD}" y1="${PAD}" x2="${W - PAD}" y2="${PAD}" stroke="currentColor" stroke-opacity="0.1"/>
+        <line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="currentColor" stroke-opacity="0.1"/>
+        <text x="${PAD + 2}" y="${PAD - 4}" class="chart-txt">${fmtNum(mx)}</text>
+        <text x="${PAD + 2}" y="${H - PAD + 14}" class="chart-txt">${fmtNum(mn)}</text>
+        <text x="${PAD + 2}" y="${H / 2 + 4}" class="chart-txt">${fmtNum(mid)}</text>
+        <text x="${W - PAD}" y="${H - PAD + 14}" class="chart-txt" text-anchor="end">${last ? new Date(last.ts).toLocaleString() : ''}</text>
+        ${polys}
+      </svg>
+      <div class="chart-legend">${legend}</div>
+    </div></div>`;
+}
+
+function fmtNum(v) {
+  if (v == null || !isFinite(v)) return '—';
+  if (Math.abs(v) >= 1e9) return (v / 1e9).toFixed(1) + 'G';
+  if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (Math.abs(v) >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  return Math.round(v).toString();
+}
+
+function diskChartCards(points) {
+  // one card per drive, using its disk_used_pct:<drive> series
+  const keys = [...new Set(points.flatMap(p => p.avg ? Object.keys(p.avg) : [])
+    .filter(k => k.startsWith('disk_used_pct:')))];
+  return keys.map((k, i) => chartCard(`Disk ${k.split(':')[1]}`, [{ key: k, label: 'Used %', color: perfColors[i % perfColors.length] }], '%', points)).join('');
+}
+
+function netChartCard(points) {
+  // per-interface download/upload in Mbps (converted from bytes/sec)
+  const suff = [...new Set(points.flatMap(p => p.avg ? Object.keys(p.avg) : [])
+    .filter(k => k.startsWith('net_rx_bps:'))
+    .map(k => k.split(':')[1]))];
+  if (!suff.length) return '';
+  const cards = suff.slice(0, 4).map((s, i) => {
+    const Mbps = (k, v) => v == null ? null : v / (1024 * 1024);
+    const pts = points.map(p => ({ ts: p.ts, avg: {}, max: {}, min: {} }));
+    // re-map to a Mbps view via a custom series extractor by temporarily scaling
+    const keyR = `net_rx_bps:${s}`, keyT = `net_tx_bps:${s}`;
+    const scaled = points.map(p => ({ ts: p.ts, avg: {
+      __rx: Mbps(keyR, perfSeries(p.avg, keyR)),
+      __tx: Mbps(keyT, perfSeries(p.avg, keyT)),
+    }, max: {}, min: {} }));
+    return chartCard(`Network ${s}`, [
+      { key: '__rx', label: '↓ Download Mbps', color: '#0ea5e9' },
+      { key: '__tx', label: '↑ Upload Mbps', color: '#f59e0b' },
+    ], 'Mbps', scaled);
+  }).join('');
+  return cards;
+}
+
+async function renderPerformance() {
+  const agents = await api('/api/agents');
+  if (!agents) return;
+  if (!perfAgent || !agents.some(a => String(a.id) === perfAgent)) perfAgent = agents.length ? String(agents[0].id) : null;
+  const opts = agents.map(a => `<option value="${a.id}" ${String(a.id) === perfAgent ? 'selected' : ''}>${esc(a.hostname)}</option>`).join('');
+  const rangeBtns = ['1h', '24h', '7d', '30d'].map(r =>
+    `<button class="seg ${perfRange === r ? 'on' : ''}" onclick="perfRange='${r}'; renderPerformance()">${r}</button>`).join('');
+
+  if (!perfAgent) {
+    app.innerHTML = `<div class="card"><h3>Performance</h3><p class="muted">No agents yet — install the agent to start streaming metrics. See Agent Setup.</p></div>`;
+    statCardsEl([]);
+    schedulePerfRefresh();
+    return;
+  }
+
+  const [series, latest] = await Promise.all([
+    api(`/api/agents/${perfAgent}/metrics?range=${perfRange}`),
+    api(`/api/agents/${perfAgent}/metrics/latest`),
+  ]);
+  const data = series && series.points ? series.points : [];
+  const payload = latest ? latest.payload : {};
+
+  const cards = document.createElement('div');
+  cards.id = 'perfCards';
+  app.innerHTML = `
+    <div class="card" style="padding-bottom:10px">
+      <div class="perf-controls">
+        <label>Agent
+          <select id="perfAgentSel" onchange="perfAgent=this.value; renderPerformance()">${opts}</select>
+        </label>
+        <div class="seg-group">${rangeBtns}</div>
+        <button class="action" onclick="renderPerformance()">Refresh now</button>
+      </div>
+      <p class="muted">Samples stream from the agent every minute by default (metrics_interval_seconds). Long windows read downsampled hour/day buckets.</p>
+    </div>
+    <div id="perfCards">
+      ${chartCard('CPU', [{ key: 'cpu', label: '% Kernel+User', color: perfColors[0] }], '%', data)}
+      ${chartCard('Memory', [{ key: 'mem_pct', label: 'Used %', color: perfColors[1] }], '%', data)}
+      ${diskChartCards(data)}
+      ${netChartCard(data)}
+      ${('gpu_util' in (payload || {}) ? chartCard('GPU', [{ key: 'gpu_util', label: 'Utilization', color: perfColors[4] }], '%', data) : '')}
+      ${('battery_pct' in (payload || {}) ? chartCard('Battery', [{ key: 'battery_pct', label: 'Charge %', color: perfColors[2] }], '%', data) : '')}
+      ${data.length ? '' : '<div class="card"><h3>No samples yet</h3><p class="muted">No metrics received in this window — the agent must check in with the metrics collector enabled.</p></div>'}
+    </div>`;
+
+  statCardsEl([
+    { icon: 'cpu', label: 'CPU', value: payload && payload.cpu != null ? payload.cpu + '%' : '—', tone: 'accent' },
+    { icon: 'layers', label: 'RAM', value: payload && payload.mem_pct != null ? payload.mem_pct + '%' : '—', tone: 'info' },
+    { icon: 'hard-drive', label: 'Disk worst', value: worstDisk(payload) + '%', tone: 'accent' },
+    { icon: 'activity', label: 'Net ↑↓', value: netTotal(payload) + ' Mbps', tone: 'good' },
+    { icon: 'battery', label: 'Battery', value: payload && payload.battery_pct != null ? payload.battery_pct + '%' : '—', tone: 'good' },
+  ]);
+  schedulePerfRefresh();
+}
+
+function worstDisk(payload) {
+  if (!payload || !Array.isArray(payload.disks) || !payload.disks.length) return '—';
+  return Math.max(...payload.disks.filter(d => d && d.used_pct != null).map(d => d.used_pct));
+}
+
+function netTotal(payload) {
+  if (!payload || !Array.isArray(payload.net) || !payload.net.length) return 0;
+  const mb = payload.net.reduce((s, n) => s + (n.rx_bps || 0) + (n.tx_bps || 0), 0);
+  return (mb / (1024 * 1024)).toFixed(1);
 }
 
 // ---------------------------------------------------------------- commands (P5)

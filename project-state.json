@@ -1,26 +1,44 @@
 {
   "state_version": "1.0",
   "path": "project-state.json",
-  "generated": "2026-08-12T04:56:59+05:30",
+  "generated": "2026-08-13T04:26:09+05:30",
   "phase": "POST-REMEDIATION / RELEASE READY",
-  "last_verified_commit": "44d67517c2da26fa62c3f44a7c23d3deed548edb",
-  "last_verified_date": "2026-08-12T04:29:10+05:30",
+  "last_verified_commit": "3a255f613f8e382a0655d39e2e96b0cab8e5ac1c",
+  "last_verified_date": "2026-08-12T04:56:58+05:30",
   "git": {
     "branch": "main",
-    "commit_count": 99,
+    "commit_count": 100,
     "clean_working_tree": false,
-    "head": "44d67517c2da26fa62c3f44a7c23d3deed548edb"
+    "head": "3a255f613f8e382a0655d39e2e96b0cab8e5ac1c"
   },
   "latest_delta": {
-    "detected_at": "2026-08-12T04:56:59+05:30",
+    "detected_at": "2026-08-13T04:26:09+05:30",
     "added": [
-      "Enterprise/agent/endpoint.json"
+      "Enterprise/agent/collectors/Get-RealtimeMetrics.ps1",
+      "Enterprise/api/tests/test_metrics.py",
+      "Enterprise/api/app/timeseries.py"
     ],
     "removed": [],
     "changed": [
-      ".github/workflows/ci.yml"
+      "Enterprise/portal/index.html",
+      "Enterprise/deploy/deploy.sh",
+      "CHANGELOG.md",
+      "Enterprise/agent/agent-version.json",
+      "Enterprise/agent/Agent-Collect.ps1",
+      "Enterprise/api/schema.sql",
+      "Enterprise/api/app/bundle.py",
+      "VERSION.md",
+      "Enterprise/agent/agent-config.example.json",
+      "Enterprise/api/app/config.py",
+      "Enterprise/api/features.json",
+      "Enterprise/deploy/deploy.ps1",
+      ".github/workflows/ci.yml",
+      "Enterprise/api/app/db.py",
+      "Enterprise/docker-compose.yml",
+      "Enterprise/ROADMAP.md",
+      "Enterprise/api/app/main.py"
     ],
-    "unchanged_count": 130
+    "unchanged_count": 115
   },
   "module_state": {
     "working": [

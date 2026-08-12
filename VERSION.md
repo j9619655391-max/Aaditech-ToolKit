@@ -1,12 +1,22 @@
 # IT-Toolkit — Version Reference
 
-**Current release:** `v1.3.0`
-**Release date:** 2026-08-09
+**Current release:** `v1.4.0`
+**Release date:** 2026-08-13
 **Branch:** `main`
 **Repository:** https://github.com/j9619655391-max/Aaditech-ToolKit
 **Remote:** `origin` (GitHub, public) — `main` + `v1.0.0`, `v1.1.0`, `v1.2.0`, `v1.3.0` tags pushed
 **CI status:** ✅ green on `windows-latest` — PowerShell validation + **agent exe/MSI build** (WiX v5) both pass end-to-end; **API pytest smoke suite** (vs Postgres service) added in this release.
 
+> **v1.4.0 = real-time metrics time-series (Phase A)**: a new `metrics`
+> collector streams CPU/RAM/disk/network/GPU/battery samples every
+> `metrics_interval_seconds` (60s default) into a dedicated `metrics` table;
+> the rollup task downsamples them into hour/day buckets and enforces
+> retention, so 7d/30d graphs stay cheap on plain Postgres. New Performance
+> portal tab + `/api/agents/{id}/metrics*` endpoints (session + company
+> scoped). All six `TS_*`/`MAX_METRICS_POINTS`/`METRICS_INTERVAL_SECONDS` knobs
+> are wired through `.env` and `docker-compose.yml`. The API test suite grew to
+> 30 cases, all green.
+>
 > **v1.3.0 = Enterprise hardening (SCALING-PLAN A–E)**: least-privilege agent
 > task (NETWORK SERVICE + on-demand elevated helper, E4), agent heartbeat /
 > queue pruning / self-update (E1–E3), metrics + structured logs + audit log

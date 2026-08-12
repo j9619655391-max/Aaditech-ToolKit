@@ -395,6 +395,11 @@ function Invoke-AgentCollection {
 
     foreach ($feature in $Config.features) {
         if (-not $feature.enabled) { continue }
+        # Phase A: the real-time metrics collector runs on its own fast cadence
+        # (metrics_interval_seconds) via the dedicated sampling loop, so it is
+        # NOT part of the slow inventory pass - that would only give one sample
+        # per cycle. Skipping it here keeps a single sample per 60s stream.
+        if ($feature.name -eq 'metrics') { continue }
         # E4: collectors needing elevation are opt-in. Under the least-privilege
         # NETWORK SERVICE task these run only when this process is elevated
         # (i.e. the on-demand elevated task, which reuses this same loop).
@@ -427,6 +432,42 @@ function Invoke-AgentCollection {
         }
     }
     return $results
+}
+
+# ---------------------------------------------------------------- real-time metrics (Phase A)
+
+function Get-MetricsCollectorPath {
+    # The collector lives at the same relative path the feature manifest uses.
+    $p = Join-Path $script:RepoRoot 'Enterprise\agent\collectors\Get-RealtimeMetrics.ps1'
+    if (Test-Path $p) { return $p }
+    Write-AgentLog 'Realtime metrics collector not found (Get-RealtimeMetrics.ps1)'
+    return $null
+}
+
+function Get-MetricsIntervalSeconds {
+    # Cadence knob for the fast metrics stream (default 60s). Independent of
+    # interval_minutes which still drives the slow inventory pass.
+    if ($Config.metrics_interval_seconds) { return [int]$Config.metrics_interval_seconds }
+    return 60
+}
+
+function Invoke-MetricsSample {
+    # Sample real-time metrics exactly once and enqueue it as kind=metrics.
+    # Reuses the same outbox + sanitize path as the inventory collectors, so a
+    # sample inherits queuing, dedup (client_msg_id), batching and backoff.
+    $scriptPath = Get-MetricsCollectorPath
+    if (-not $scriptPath) { return $false }
+    try {
+        $output = Invoke-AgentScript -ScriptPath $scriptPath -TimeoutSeconds 60
+        $structured = ConvertFrom-CollectorOutput -Raw $output
+        $payload = ConvertTo-JsonPayload -Result $structured
+        Invoke-SQLite -Query "INSERT INTO outbox (kind, payload, sanitized) VALUES ('metrics', '$($payload.Replace("'","''"))', 1);" -DatabasePath $QueueDb | Out-Null
+        return $true
+    }
+    catch {
+        Write-AgentLog "Metrics sample failed: $($_.Exception.Message)"
+        return $false
+    }
 }
 
 function Get-AgentHostname {
@@ -916,11 +957,27 @@ do {
     Write-AgentLog "Agent cycle complete"
 
     if ($LoopMinutes -gt 0) {
-        # E2: jitter the inter-cycle sleep (±15%) so agents that boot together or
-        # share an interval don't stay synchronized (thundering-herd prevention).
-        $base = $LoopMinutes * 60
-        $jitterPct = (Get-Random -Minimum -15 -Maximum 15) / 100.0
-        $cycle = [Math]::Max(1, [Math]::Round($base * (1 + $jitterPct)))
-        Start-Sleep -Seconds $cycle
+        # Between inventory cycles, stream real-time metrics on their own fast
+        # cadence. The scheduled task keeps running the exe every interval_minutes
+        # and each run loops for ~its own duration, so we simply sample at
+        # metrics_interval_seconds until the cycle window elapses - no scheduler
+        # change needed and the inventory pass stays at interval_minutes.
+        $metricsInt = Get-MetricsIntervalSeconds
+        $windowEnd  = (Get-Date).AddMinutes($LoopMinutes)
+        $jitter     = (Get-Random -Minimum -15 -Maximum 15) / 100.0
+        while ((Get-Date) -lt $windowEnd) {
+            if (-not $FlushOnly) {
+                if (Invoke-MetricsSample) { Write-AgentLog "Metrics sample queued (every ${metricsInt}s)" }
+            }
+            if (-not $CollectOnly) {
+                $sent = Send-AgentBatch -Config $Config
+                if ($sent -gt 0) { Write-AgentLog "Metrics batch sent: $sent events" }
+            }
+            $remaining = ($windowEnd - (Get-Date)).TotalSeconds
+            if ($remaining -le 0) { break }
+            $sleep = [Math]::Min($metricsInt, $remaining)
+            $sleep = [Math]::Max(1, [Math]::Round($sleep * (1 + $jitter)))
+            Start-Sleep -Seconds $sleep
+        }
     }
 } while ($LoopMinutes -gt 0)

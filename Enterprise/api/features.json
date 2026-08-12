@@ -81,6 +81,14 @@
       "requires_elevation": false
     },
     {
+      "name": "metrics",
+      "label": "Realtime Metrics",
+      "script": "Enterprise/agent/collectors/Get-RealtimeMetrics.ps1",
+      "description": "Frequent CPU/RAM/disk/network/GPU/battery samples for time-series graphs (agent.json metrics_interval_seconds).",
+      "default_enabled": true,
+      "requires_elevation": false
+    },
+    {
       "name": "bitlocker",
       "label": "BitLocker Status",
       "script": "Enterprise/agent/collectors/Get-BitLockerStatus.ps1",

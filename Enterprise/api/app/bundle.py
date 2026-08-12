@@ -22,6 +22,7 @@ def _agent_meta() -> dict:
 
 AGENT_VERSION = _agent_meta()["agent_version"]
 INTERVAL_MINUTES = int(_agent_meta()["interval_minutes"])
+METRICS_INTERVAL_SECONDS = int(_agent_meta().get("metrics_interval_seconds", 60))
 
 
 def is_ip_literal(host: str) -> bool:
@@ -71,6 +72,7 @@ async def build_agent_json(pool) -> dict:
         "token": config.API_TOKEN,
         "agent_version": AGENT_VERSION,
         "interval_minutes": INTERVAL_MINUTES,
+        "metrics_interval_seconds": METRICS_INTERVAL_SECONDS,
         "features": features,
     }
 
